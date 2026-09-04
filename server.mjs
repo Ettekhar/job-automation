@@ -1232,10 +1232,47 @@ app.get("/api/autofill/bookmarklet", async (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, async () => {
-  console.log(`====================================================`);
-  console.log(`🚀 Teletalk Job Notifier Dashboard is running!`);
-  console.log(`🔗 Local URL: http://localhost:${PORT}`);
-  console.log(`====================================================`);
-  await initScheduler();
+async function bootstrap() {
+  // Ensure data/ and config/ directories exist (important for Railway ephemeral FS)
+  const fs = await import("node:fs/promises");
+  const dataDir = path.join(__dirname, "data");
+  const configDir = path.join(__dirname, "config");
+  await fs.mkdir(dataDir, { recursive: true });
+  await fs.mkdir(configDir, { recursive: true });
+
+  // Seed empty JSON files if they don't exist (prevents JSON parse errors on fresh deploy)
+  const seeds = [
+    [path.join(dataDir, "jobs.json"), []],
+    [path.join(dataDir, "seen-jobs.json"), []],
+    [path.join(dataDir, "scrape-history.json"), []],
+    [path.join(dataDir, "bb-notices.json"), []],
+    [path.join(dataDir, "seen-notices.json"), []],
+    [path.join(dataDir, "applied-jobs.json"), []],
+    [path.join(configDir, "keywords.json"), { include: [], exclude: [] }],
+  ];
+  for (const [p, def] of seeds) {
+    try {
+      await fs.access(p);
+    } catch {
+      await fs.writeFile(p, JSON.stringify(def, null, 2), "utf-8");
+    }
+  }
+
+  app.listen(PORT, async () => {
+    const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+    const publicUrl = railwayDomain ? `https://${railwayDomain}` : `http://localhost:${PORT}`;
+    console.log(`====================================================`);
+    console.log(`🚀 Teletalk Job Notifier Dashboard is running!`);
+    console.log(`🔗 URL: ${publicUrl}`);
+    if (railwayDomain) {
+      console.log(`🌐 Railway deployment detected — running in cloud mode`);
+    }
+    console.log(`====================================================`);
+    await initScheduler();
+  });
+}
+
+bootstrap().catch((err) => {
+  console.error("Fatal startup error:", err);
+  process.exit(1);
 });
