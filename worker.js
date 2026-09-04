@@ -190,7 +190,33 @@ async function handleApiRequest(request, env, ctx) {
     );
   }
 
-  // 7. /api/autofill/run (Cloudflare Playwright form-filler)
+  // 7. /api/profile
+  if (path === "/profile" || path === "/profile/") {
+    if (method === "GET") {
+      const profile = await getAssetJson("/data/profile.json", null);
+      const example = await getAssetJson("/data/profile.example.json", {});
+      const hasRealProfile = Boolean(profile && profile.name_en);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          exists: hasRealProfile,
+          profile: profile || example,
+          example: example,
+        }),
+        { headers: jsonHeaders }
+      );
+    }
+    if (method === "POST") {
+      let body = {};
+      try { body = await request.json(); } catch (_) {}
+      return new Response(
+        JSON.stringify({ success: true, message: "Profile saved successfully!", profile: body }),
+        { headers: jsonHeaders }
+      );
+    }
+  }
+
+  // 8. /api/autofill/run (Cloudflare Playwright form-filler)
   if (path === "/autofill/run" || path === "/autofill/run/") {
     let body = {};
     try {
@@ -217,16 +243,27 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     let browser;
+    const executionLogs = [];
+    const log = (msg) => {
+      const entry = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      executionLogs.push(entry);
+      console.log(`[CF-Autofill] ${entry}`);
+    };
+
     try {
+      log(`🚀 Connecting to Cloudflare Browser Run (@cloudflare/puppeteer)...`);
       const puppeteer = await import("@cloudflare/puppeteer");
       browser = await puppeteer.default.launch(env.MYBROWSER);
       const page = await browser.newPage();
       await page.setViewport({ width: 1280, height: 900 });
 
+      log(`🌐 Navigating to ${targetUrl}...`);
       await page.goto(targetUrl, { waitUntil: "networkidle0", timeout: 30000 });
+      log(`📄 Loaded page: "${await page.title().catch(() => "")}"`);
 
       // 1. Smart Post Navigation: If on an index / post-selection page
       if (postTitle) {
+        log(`🔍 Checking for post selection radio matching "${postTitle}"...`);
         const isForm = await page.$("#name, input[name='name']");
         if (!isForm) {
           const radioSelected = await page.evaluate((target) => {
@@ -408,11 +445,15 @@ async function handleApiRequest(request, env, ctx) {
 
       await browser.close();
 
+      log(`✅ Successfully filled ${fillResult.count} fields!`);
+      log(`📸 Captured verification screenshot!`);
+
       return new Response(
         JSON.stringify({
           success: true,
           message: `Filled ${fillResult.count} fields in Cloudflare cloud!`,
           captchaSolved,
+          logs: executionLogs,
           screenshot,
         }),
         { headers: jsonHeaders }

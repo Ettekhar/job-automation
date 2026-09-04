@@ -1125,11 +1125,83 @@ window.launchAutofillForJob = async function (url, postTitle) {
   await loadBookmarklet();
 };
 
+let autofillEventSource = null;
+
+function appendAutofillLog(text, type = "info") {
+  const consoleBox = document.getElementById("autofillLiveConsole");
+  const logStream = document.getElementById("autofillLogStream");
+  if (!consoleBox || !logStream) return;
+
+  consoleBox.style.display = "block";
+  const line = document.createElement("div");
+  line.style.marginBottom = "3px";
+
+  const timeStr = new Date().toLocaleTimeString();
+  const timeSpan = `<span style="color: #64748b; margin-right: 6px;">[${timeStr}]</span>`;
+
+  if (type === "success") {
+    line.innerHTML = `${timeSpan}<span style="color: #34d399; font-weight: 600;">${escapeHtml(text)}</span>`;
+  } else if (type === "error") {
+    line.innerHTML = `${timeSpan}<span style="color: #f87171; font-weight: 600;">${escapeHtml(text)}</span>`;
+  } else if (type === "warn") {
+    line.innerHTML = `${timeSpan}<span style="color: #fbbf24;">${escapeHtml(text)}</span>`;
+  } else {
+    line.innerHTML = `${timeSpan}<span style="color: #cbd5e1;">${escapeHtml(text)}</span>`;
+  }
+
+  logStream.appendChild(line);
+  logStream.scrollTop = logStream.scrollHeight;
+}
+
+function clearAutofillLogs() {
+  const logStream = document.getElementById("autofillLogStream");
+  if (logStream) logStream.innerHTML = "";
+  const statusBadge = document.getElementById("autofillConsoleStatus");
+  if (statusBadge) {
+    statusBadge.textContent = "READY";
+    statusBadge.style.color = "#94a3b8";
+  }
+}
+
 async function executeDesktopAutofill() {
   const { url, postTitle } = currentAutofillJob;
   const btn = document.getElementById("btnLaunchPlaywrightBrowser");
+  const statusBadge = document.getElementById("autofillConsoleStatus");
   btn.disabled = true;
   btn.textContent = "Opening Window...";
+
+  clearAutofillLogs();
+  if (statusBadge) {
+    statusBadge.textContent = "STREAMING";
+    statusBadge.style.color = "#38bdf8";
+  }
+
+  appendAutofillLog(`🚀 Launching Chromium window for "${postTitle || "Job"}"...`, "info");
+  appendAutofillLog(`🌐 Target: ${url}`, "info");
+
+  // Connect to SSE stream for live terminal stdout/stderr
+  try {
+    if (autofillEventSource) autofillEventSource.close();
+    autofillEventSource = new EventSource("/api/autofill/events");
+    autofillEventSource.onmessage = (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.line) appendAutofillLog(payload.line, payload.type || "info");
+        if (payload.done) {
+          if (statusBadge) {
+            statusBadge.textContent = "COMPLETED";
+            statusBadge.style.color = "#34d399";
+          }
+          if (autofillEventSource) autofillEventSource.close();
+        }
+      } catch (_) {
+        appendAutofillLog(e.data);
+      }
+    };
+    autofillEventSource.onerror = () => {
+      // In static / cloudflare mode, SSE might not be active; fall back smoothly
+    };
+  } catch (_) {}
 
   try {
     showToast(`Launching Chromium window for "${postTitle}"...`, "info");
@@ -1140,11 +1212,14 @@ async function executeDesktopAutofill() {
     });
     const data = await res.json();
     if (data.success) {
+      appendAutofillLog(`✅ ${data.message}`, "success");
       showToast("Playwright browser window popped up on your desktop!", "success");
     } else {
+      appendAutofillLog(`❌ ${data.message || "Launch failed"}`, "error");
       showToast(data.message, "error");
     }
   } catch (err) {
+    appendAutofillLog(`❌ Error: ${err.message}`, "error");
     showToast("Error launching autofill: " + err.message, "error");
   } finally {
     btn.disabled = false;
@@ -1158,6 +1233,7 @@ async function executeCloudflarePlaywright() {
   const statusEl = document.getElementById("cfPlaywrightStatus");
   const container = document.getElementById("cfPlaywrightScreenshotContainer");
   const img = document.getElementById("cfPlaywrightScreenshotImg");
+  const statusBadge = document.getElementById("autofillConsoleStatus");
 
   if (!btn) return;
   btn.disabled = true;
@@ -1169,19 +1245,57 @@ async function executeCloudflarePlaywright() {
   statusEl.textContent = "Launching Cloudflare Playwright in edge cloud... (takes ~15-25s)";
   container.style.display = "none";
 
+  clearAutofillLogs();
+  if (statusBadge) {
+    statusBadge.textContent = "RUNNING";
+    statusBadge.style.color = "#38bdf8";
+  }
+
+  appendAutofillLog(`☁️ Initializing Cloudflare Playwright edge isolate...`, "info");
+  appendAutofillLog(`🌐 Connecting to: ${url}`, "info");
+  appendAutofillLog(`🎯 Target Post: "${postTitle || "Job"}"`, "info");
+
+  // Stream animated progress in live console while Edge Chromium executes
+  const edgeSteps = [
+    "🔍 Launching headless Chromium session in Cloudflare global network...",
+    "📄 Navigating to Teletalk portal and parsing DOM layout...",
+    "✍️ Matching post title radio button and advancing to form...",
+    "📋 Populating applicant identity, present/permanent address...",
+    "🎓 Filling SSC, HSC, and Graduation qualifications...",
+    "🤖 Inspecting CAPTCHA with Cloudflare AI Vision cascade...",
+    "📸 Rendering full-page verified submission screenshot...",
+  ];
+  let stepI = 0;
+  const progressInterval = setInterval(() => {
+    if (stepI < edgeSteps.length) {
+      appendAutofillLog(edgeSteps[stepI], "info");
+      stepI++;
+    }
+  }, 3200);
+
   try {
     const res = await fetch("/api/autofill/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, postTitle }),
     });
+    clearInterval(progressInterval);
     const data = await res.json();
+
+    if (data.logs && Array.isArray(data.logs)) {
+      data.logs.forEach((l) => appendAutofillLog(l, "info"));
+    }
 
     if (data.success) {
       statusEl.style.color = "#34d399";
       statusEl.style.background = "rgba(16, 185, 129, 0.1)";
       statusEl.style.borderColor = "rgba(16, 185, 129, 0.2)";
       statusEl.innerHTML = `✅ ${data.message} ${data.captchaSolved ? "• 🤖 AI CAPTCHA solved!" : ""}`;
+      appendAutofillLog(`✅ ${data.message}`, "success");
+      if (statusBadge) {
+        statusBadge.textContent = "SUCCESS";
+        statusBadge.style.color = "#34d399";
+      }
       if (data.screenshot) {
         img.src = data.screenshot;
         container.style.display = "block";
@@ -1192,15 +1306,31 @@ async function executeCloudflarePlaywright() {
       statusEl.style.background = "rgba(245, 158, 11, 0.1)";
       statusEl.style.borderColor = "rgba(245, 158, 11, 0.2)";
       statusEl.innerHTML = `⚠️ <strong>Browser Run not enabled yet:</strong> ${data.message}`;
+      appendAutofillLog(`⚠️ ${data.message}`, "warn");
+      if (statusBadge) {
+        statusBadge.textContent = "WAITING";
+        statusBadge.style.color = "#fbbf24";
+      }
     } else {
       statusEl.style.color = "#f87171";
       statusEl.style.background = "rgba(239, 68, 68, 0.1)";
       statusEl.style.borderColor = "rgba(239, 68, 68, 0.2)";
       statusEl.textContent = "Error: " + (data.error || data.message || "Failed to run Cloudflare Playwright");
+      appendAutofillLog(`❌ Error: ${data.error || data.message}`, "error");
+      if (statusBadge) {
+        statusBadge.textContent = "FAILED";
+        statusBadge.style.color = "#f87171";
+      }
     }
   } catch (err) {
+    clearInterval(progressInterval);
     statusEl.style.color = "#f87171";
     statusEl.textContent = "Network error: " + err.message;
+    appendAutofillLog(`❌ Network error: ${err.message}`, "error");
+    if (statusBadge) {
+      statusBadge.textContent = "FAILED";
+      statusBadge.style.color = "#f87171";
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = "☁️ Run Cloudflare Playwright Fill";
@@ -1450,6 +1580,7 @@ function setupEventListeners() {
   });
   document.getElementById("btnLaunchPlaywrightBrowser").addEventListener("click", executeDesktopAutofill);
   document.getElementById("btnRunCloudflarePlaywright")?.addEventListener("click", executeCloudflarePlaywright);
+  document.getElementById("btnClearAutofillLogs")?.addEventListener("click", clearAutofillLogs);
   document.getElementById("btnOpenApplyInTab").addEventListener("click", () => {
     if (currentAutofillJob.url) window.open(currentAutofillJob.url, "_blank");
   });

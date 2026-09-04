@@ -7,3 +7,4 @@
 /api/auth/me /api/auth/me.json 200
 /api/auth/status /api/auth/status.json 200
 /api/settings /api/settings.json 200
+/api/profile /api/profile.json 200

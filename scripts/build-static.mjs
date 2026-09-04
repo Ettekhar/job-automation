@@ -47,6 +47,7 @@ async function build() {
   const history = await readJsonSafe(path.join(DATA_DIR, "scrape-history.json"), []);
   const keywords = await readJsonSafe(path.join(CONFIG_DIR, "keywords.json"), { include: [], exclude: [] });
   const profileExample = await readJsonSafe(path.join(CONFIG_DIR, "profile.example.json"), {});
+  const profile = await readJsonSafe(path.join(CONFIG_DIR, "profile.json"), profileExample);
   const status = await readJsonSafe(path.join(DATA_DIR, "status.json"), {
     lastRun: new Date().toISOString(),
     trigger: "build",
@@ -133,6 +134,7 @@ async function build() {
   await writeJsonSafe(path.join(publicDataDir, "scrape-history.json"), history);
   await writeJsonSafe(path.join(publicDataDir, "keywords.json"), keywords);
   await writeJsonSafe(path.join(publicDataDir, "overview.json"), overviewData);
+  await writeJsonSafe(path.join(publicDataDir, "profile.json"), profile);
   await writeJsonSafe(path.join(publicDataDir, "profile.example.json"), profileExample);
   await writeJsonSafe(path.join(publicDataDir, "status.json"), status);
 
@@ -153,6 +155,15 @@ async function build() {
   await writeJsonSafe(path.join(publicApiDir, "auth", "me"), authMeData);
   await writeJsonSafe(path.join(publicApiDir, "auth", "me.json"), authMeData);
 
+  const profileApiData = {
+    success: true,
+    exists: Boolean(profile && profile.name_en),
+    profile: profile,
+    example: profileExample,
+  };
+  await writeJsonSafe(path.join(publicApiDir, "profile"), profileApiData);
+  await writeJsonSafe(path.join(publicApiDir, "profile.json"), profileApiData);
+
   // 4. Create public/_redirects for Cloudflare Pages SPA & API mapping
   const redirects = `# Cloudflare Pages Redirects
 /api/overview /data/overview.json 200
@@ -163,6 +174,7 @@ async function build() {
 /api/auth/me /api/auth/me.json 200
 /api/auth/status /api/auth/status.json 200
 /api/settings /api/settings.json 200
+/api/profile /api/profile.json 200
 `;
   await fs.writeFile(path.join(PUBLIC_DIR, "_redirects"), redirects, "utf-8");
 

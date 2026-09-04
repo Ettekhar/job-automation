@@ -63,15 +63,35 @@ export function clearSessionCookie(res) {
 
 export function authMiddleware(req, res, next) {
   const token = req.cookies?.[COOKIE_NAME];
-  if (!token) return _unauthorized(req, res);
-  verifyToken(token).then((payload) => {
-    if (!payload) {
+  if (token) {
+    return verifyToken(token).then((payload) => {
+      if (payload) {
+        req.user = payload;
+        return next();
+      }
       clearSessionCookie(res);
-      return _unauthorized(req, res);
-    }
-    req.user = payload;
-    next();
-  }).catch(() => _unauthorized(req, res));
+      return handleLocalOrUnauthorized(req, res, next);
+    }).catch(() => handleLocalOrUnauthorized(req, res, next));
+  }
+
+  return handleLocalOrUnauthorized(req, res, next);
+}
+
+function handleLocalOrUnauthorized(req, res, next) {
+  const host = req.hostname || "";
+  const ip = req.ip || "";
+  const isLocal = host === "localhost" || host === "127.0.0.1" || ip === "127.0.0.1" || ip === "::1" || ip.endsWith("127.0.0.1");
+
+  // If accessing from local machine, automatically permit as Admin
+  if (isLocal) {
+    req.user = {
+      email: (process.env.ALLOWED_EMAILS || "taion16240@gmail.com").split(",")[0].trim(),
+      name: "Taion (Admin)",
+    };
+    return next();
+  }
+
+  return _unauthorized(req, res);
 }
 
 function _unauthorized(req, res) {

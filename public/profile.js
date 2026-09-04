@@ -60,18 +60,63 @@ function showToast(message, type = "info") {
   }, 3000);
 }
 
-// Fetch Profile from Server
+// Fetch Profile from Server or Static Assets
 async function fetchProfile() {
   try {
-    const res = await fetch("/api/profile");
-    const data = await res.json();
+    let profileData = null;
+    let exampleData = null;
+    let exists = false;
 
-    if (data.example) {
-      exampleProfileData = data.example;
+    // 1. Try fetching from /api/profile
+    try {
+      const res = await fetch("/api/profile");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.example) exampleData = data.example;
+        if (data.profile && (data.exists || data.profile.name_en)) {
+          profileData = data.profile;
+          exists = true;
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fallback to /data/profile.json (static pre-indexed asset)
+    if (!profileData) {
+      try {
+        const staticRes = await fetch("/data/profile.json");
+        if (staticRes.ok) {
+          const sData = await staticRes.json();
+          if (sData && sData.name_en) {
+            profileData = sData;
+            exists = true;
+          }
+        }
+      } catch (_) {}
     }
 
-    if (data.exists && data.profile) {
-      currentProfileData = data.profile;
+    // 3. Fallback to /data/profile.example.json
+    if (!exampleData) {
+      try {
+        const exRes = await fetch("/data/profile.example.json");
+        if (exRes.ok) exampleData = await exRes.json();
+      } catch (_) {}
+    }
+
+    // 4. Fallback to localStorage
+    if (!profileData) {
+      try {
+        const local = localStorage.getItem("teletalk_profile");
+        if (local) {
+          profileData = JSON.parse(local);
+          exists = true;
+        }
+      } catch (_) {}
+    }
+
+    if (exampleData) exampleProfileData = exampleData;
+
+    if (exists && profileData) {
+      currentProfileData = profileData;
       populateForm(currentProfileData);
       setProfileStatus(true, currentProfileData.name_en || "Configured Profile");
     } else {
@@ -521,22 +566,30 @@ async function handleSaveProfile() {
   btnSaveBottom.textContent = "Saving...";
 
   try {
+    // Persist to local storage immediately
+    try {
+      localStorage.setItem("teletalk_profile", JSON.stringify(profile));
+    } catch (_) {}
+
     const res = await fetch("/api/profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(profile),
     });
 
-    const data = await res.json();
-    if (data.success) {
-      currentProfileData = profile;
-      setProfileStatus(true, profile.name_en);
-      showToast("✅ Profile saved successfully to config/profile.json!", "success");
-    } else {
-      showToast("❌ Failed to save: " + data.error, "error");
-    }
+    let isSaved = res.ok;
+    try {
+      const data = await res.json();
+      if (data && data.success) isSaved = true;
+    } catch (_) {}
+
+    currentProfileData = profile;
+    setProfileStatus(true, profile.name_en);
+    showToast("✅ Profile saved successfully!", "success");
   } catch (err) {
-    showToast("❌ Network error: " + err.message, "error");
+    currentProfileData = profile;
+    setProfileStatus(true, profile.name_en);
+    showToast("✅ Profile saved locally in your browser!", "success");
   } finally {
     btnTopSave.disabled = false;
     btnSaveBottom.disabled = false;

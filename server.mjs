@@ -898,75 +898,87 @@ app.post("/api/ai/test-all", async (req, res) => {
   }
 });
 
-// 12. Launch Autofill Script in headed browser
-//
-// NOTE: A "headed" (non-headless) Chromium needs an actual display to draw
-// into. If this server is running inside a container / headless VPS with no
-// X server, no amount of spawning will make a window "pop up" — you'll need
-// something like `xvfb-run` in front of the command, or run this server on
-// a machine with a real desktop session. The fixes below make failures
-// visible instead of silent, which is the part code alone can fix.
+// Live Autofill Log SSE Broadcast
+let autofillSseClients = [];
+let autofillLogsHistory = [];
+
+function broadcastAutofillLog(line, type = "info", done = false) {
+  const entry = { line, type, done, timestamp: new Date().toISOString() };
+  autofillLogsHistory.push(entry);
+  if (autofillLogsHistory.length > 300) autofillLogsHistory.shift();
+
+  const msg = `data: ${JSON.stringify(entry)}\n\n`;
+  autofillSseClients.forEach((res) => {
+    try { res.write(msg); } catch (_) {}
+  });
+}
+
+app.get("/api/autofill/events", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  if (typeof res.flushHeaders === "function") res.flushHeaders();
+
+  // Send recent history
+  autofillLogsHistory.slice(-15).forEach((entry) => {
+    res.write(`data: ${JSON.stringify(entry)}\n\n`);
+  });
+
+  autofillSseClients.push(res);
+  req.on("close", () => {
+    autofillSseClients = autofillSseClients.filter((c) => c !== res);
+  });
+});
+
+// 12. Launch Autofill Script with live terminal streaming
 app.post("/api/autofill/launch", async (req, res) => {
   try {
     const { url, postTitle } = req.body;
     const nodeExe = process.execPath;
     const scriptPath = path.join(__dirname, "scripts", "autofill.mjs");
 
-    const scriptArgs = [scriptPath];
+    const scriptArgs = [scriptPath, "--headed"];
     if (url) scriptArgs.push("--url", url);
     if (postTitle) scriptArgs.push("--post", postTitle);
 
-    let child;
+    autofillLogsHistory = []; // Reset log buffer for this session
+    broadcastAutofillLog(`🚀 Launching Playwright Chromium for "${postTitle || "Job"}"...`, "info");
+    broadcastAutofillLog(`🌐 Target: ${url || "Teletalk Portal"}`, "info");
 
-    if (process.platform === "win32") {
-      // `cmd /c start "title" <exe> <args...>` opens a NEW visible console window.
-      // Passed as an array (not a hand-built string), so node handles the
-      // Windows argument escaping instead of us — no more broken quoting
-      // when postTitle has spaces or Bangla text.
-      child = spawn(
-        "cmd.exe",
-        ["/c", "start", "Teletalk Autofill Assistant", nodeExe, ...scriptArgs],
-        { cwd: __dirname, detached: true, stdio: "ignore", windowsHide: false }
-      );
-    } else if (process.platform === "darwin") {
-      // macOS: hand off to Terminal.app via a small osascript wrapper.
-      const shellCmd = [nodeExe, ...scriptArgs].map((a) => `'${String(a).replace(/'/g, `'\\''`)}'`).join(" ");
-      child = spawn(
-        "osascript",
-        ["-e", `tell application "Terminal" to do script "cd ${__dirname} && ${shellCmd}"`],
-        { detached: true, stdio: "ignore" }
-      );
-    } else {
-      // Linux: try common terminal emulators in order until one exists.
-      const candidates = [
-        { cmd: "x-terminal-emulator", args: ["-e", nodeExe, ...scriptArgs] },
-        { cmd: "gnome-terminal", args: ["--", nodeExe, ...scriptArgs] },
-        { cmd: "konsole", args: ["-e", nodeExe, ...scriptArgs] },
-        { cmd: "xterm", args: ["-e", nodeExe, ...scriptArgs] },
-      ];
-      const term = candidates.find((c) => {
-        try {
-          require("node:child_process").execSync(`command -v ${c.cmd}`, { stdio: "ignore" });
-          return true;
-        } catch {
-          return false;
-        }
+    const child = spawn(nodeExe, scriptArgs, {
+      cwd: __dirname,
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: false,
+    });
+
+    child.stdout.on("data", (chunk) => {
+      const text = chunk.toString();
+      text.split("\n").forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed) broadcastAutofillLog(trimmed, "info");
       });
-      if (!term) {
-        throw new Error("No terminal emulator found (tried x-terminal-emulator, gnome-terminal, konsole, xterm). Install one, or run headless.");
-      }
-      child = spawn(term.cmd, term.args, { cwd: __dirname, detached: true, stdio: "ignore" });
-    }
+    });
+
+    child.stderr.on("data", (chunk) => {
+      const text = chunk.toString();
+      text.split("\n").forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed) broadcastAutofillLog(trimmed, "warn");
+      });
+    });
+
+    child.on("close", (code) => {
+      broadcastAutofillLog(`🏁 Autofill browser session finished (code ${code}).`, code === 0 ? "success" : "warn", true);
+    });
 
     child.on("error", (err) => {
       console.error("[Autofill Spawn Error]:", err);
+      broadcastAutofillLog(`❌ Failed to start autofill: ${err.message}`, "error", true);
     });
-
-    child.unref(); // let the terminal/browser run independently of the server process
 
     res.json({
       success: true,
-      message: "A new terminal window has been launched running the autofill script.",
+      message: "Playwright browser launched and live streaming console logs to modal!",
       command: `npm run autofill -- ${scriptArgs.slice(1).map((a) => JSON.stringify(a)).join(" ")}`,
     });
   } catch (err) {
