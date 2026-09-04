@@ -255,7 +255,66 @@ async function handleApiRequest(request, env, ctx) {
     );
   }
 
-  // 10. /api/autofill/run (Cloudflare Playwright form-filler)
+  // 10. /api/autofill/bookmarklet
+  if (path === "/autofill/bookmarklet" || path === "/autofill/bookmarklet/") {
+    const profile = await getAssetJson("/data/profile.json", await getAssetJson("/data/profile.example.json", {}));
+    const jsCode = `(function(){
+      var p = ${JSON.stringify(profile)};
+      function setVal(sel, val) {
+        if (val === undefined || val === null || val === '') return;
+        var el = document.querySelector(sel);
+        if (!el) return;
+        el.value = val;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        el.style.backgroundColor = '#ecfdf5';
+      }
+      function selectFuzzy(sel, wanted) {
+        if (!wanted) return;
+        var el = document.querySelector(sel);
+        if (!el || !el.options) return;
+        var target = String(wanted).toLowerCase().replace(/[^a-z0-9]/g, '');
+        for (var i = 0; i < el.options.length; i++) {
+          var opt = el.options[i].text.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (opt === target || opt.indexOf(target) !== -1 || target.indexOf(opt) !== -1) {
+            el.selectedIndex = i;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            el.style.backgroundColor = '#ecfdf5';
+            break;
+          }
+        }
+      }
+      if (p.name_en) setVal('#name, input[name="name"]', p.name_en);
+      if (p.name_bn) setVal('#name_bn, input[name="name_bn"]', p.name_bn);
+      if (p.father_en) setVal('#father, input[name="father"]', p.father_en);
+      if (p.mother_en) setVal('#mother, input[name="mother"]', p.mother_en);
+      if (p.dob) {
+        var parts = p.dob.split('-');
+        if (parts.length === 3) {
+          selectFuzzy('#dob_year, select[name="dob_year"]', parts[0]);
+          selectFuzzy('#dob_month, select[name="dob_month"]', parts[1]);
+          selectFuzzy('#dob_day, select[name="dob_day"]', parts[2]);
+        }
+      }
+      if (p.gender) selectFuzzy('#gender, select[name="gender"]', p.gender);
+      if (p.religion) selectFuzzy('#religion, select[name="religion"]', p.religion);
+      if (p.nid) setVal('#nid, input[name="nid"]', p.nid);
+      if (p.mobile) setVal('#mobile, input[name="mobile"]', p.mobile);
+      if (p.email) setVal('#email, input[name="email"]', p.email);
+      alert('✅ Teletalk form autofilled successfully with your profile!');
+    })();`;
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        rawJs: jsCode,
+        bookmarkletUrl: "javascript:" + encodeURIComponent(jsCode),
+      }),
+      { headers: jsonHeaders }
+    );
+  }
+
+  // 11. /api/autofill/run (Cloudflare Playwright form-filler)
   if (path === "/autofill/run" || path === "/autofill/run/") {
     let body = {};
     try {
@@ -266,7 +325,7 @@ async function handleApiRequest(request, env, ctx) {
     let profile = body.profile;
 
     if (!profile) {
-      profile = await getAssetJson("/data/profile.example.json", {});
+      profile = await getAssetJson("/data/profile.json", await getAssetJson("/data/profile.example.json", {}));
     }
 
     if (!env.MYBROWSER) {
@@ -296,8 +355,33 @@ async function handleApiRequest(request, env, ctx) {
       const page = await browser.newPage();
       await page.setViewport({ width: 1280, height: 900 });
 
+      await page.setUserAgent(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+      );
+      await page.setExtraHTTPHeaders({
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,bn;q=0.8",
+        "Upgrade-Insecure-Requests": "1",
+      });
+
       log(`🌐 Navigating to ${targetUrl}...`);
-      await page.goto(targetUrl, { waitUntil: "networkidle0", timeout: 30000 });
+      let navigated = false;
+      try {
+        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
+        navigated = true;
+      } catch (e1) {
+        log(`⚠️ Primary load warning: ${e1.message}. Trying protocol fallback...`);
+        const altUrl = targetUrl.startsWith("https://")
+          ? targetUrl.replace("https://", "http://")
+          : targetUrl.replace("http://", "https://");
+        try {
+          await page.goto(altUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
+          navigated = true;
+          log(`🌐 Connected via fallback: ${altUrl}`);
+        } catch (e2) {
+          throw new Error(`Portal connection reset (${e1.message})`);
+        }
+      }
       log(`📄 Loaded page: "${await page.title().catch(() => "")}"`);
 
       // 1. Smart Post Navigation: If on an index / post-selection page
@@ -324,7 +408,7 @@ async function handleApiRequest(request, env, ctx) {
             const nextBtn = await page.$("input[type=submit], button[type=submit], input[value*='Next' i], input[value*='Submit' i]");
             if (nextBtn) {
               await Promise.all([
-                page.waitForNavigation({ waitUntil: "networkidle0", timeout: 15000 }).catch(() => {}),
+                page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
                 nextBtn.click().catch(() => {}),
               ]);
             }

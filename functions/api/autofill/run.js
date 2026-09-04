@@ -62,9 +62,60 @@ export async function onRequestPost(context) {
     const page = await browser.newPage();
 
     await page.setViewport({ width: 1280, height: 900 });
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+    );
+    await page.setExtraHTTPHeaders({
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9,bn;q=0.8",
+      "Upgrade-Insecure-Requests": "1"
+    });
 
-    // 1. Navigate to target portal
-    await page.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
+    // 1. Navigate to target portal with domcontentloaded & protocol fallback
+    let navigated = false;
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 25000 });
+      navigated = true;
+    } catch (e1) {
+      const altUrl = url.startsWith("https://") ? url.replace("https://", "http://") : url.replace("http://", "https://");
+      try {
+        await page.goto(altUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
+        navigated = true;
+      } catch (e2) {
+        throw new Error(`Portal connection reset (${e1.message})`);
+      }
+    }
+
+    // Advance if on post selection radio page
+    if (postTitle) {
+      const isForm = await page.$("#name, input[name='name']");
+      if (!isForm) {
+        const radioSelected = await page.evaluate((target) => {
+          const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          const needle = norm(target);
+          const radios = Array.from(document.querySelectorAll("input[type='radio']"));
+          for (const r of radios) {
+            const rowText = norm(r.closest("tr, label, td, div")?.textContent || "");
+            if (rowText.includes(needle) || needle.includes(rowText)) {
+              r.checked = true;
+              r.click();
+              return true;
+            }
+          }
+          return false;
+        }, postTitle);
+
+        if (radioSelected) {
+          const nextBtn = await page.$("input[type=submit], button[type=submit], input[value*='Next' i], input[value*='Submit' i]");
+          if (nextBtn) {
+            await Promise.all([
+              page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
+              nextBtn.click().catch(() => {}),
+            ]);
+          }
+        }
+      }
+    }
 
     // 2. Inject Teletalk Form Filler script
     const fillResult = await page.evaluate((p) => {

@@ -165,6 +165,62 @@ async function build() {
   await writeJsonSafe(path.join(publicApiDir, "profile"), profileApiData);
   await writeJsonSafe(path.join(publicApiDir, "profile.json"), profileApiData);
 
+  // Bookmarklet API
+  const activeProfile = profile || profileExample;
+  const jsCode = `(function(){
+    var p = ${JSON.stringify(activeProfile)};
+    function setVal(sel, val) {
+      if (val === undefined || val === null || val === '') return;
+      var el = document.querySelector(sel);
+      if (!el) return;
+      el.value = val;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.style.backgroundColor = '#ecfdf5';
+    }
+    function selectFuzzy(sel, wanted) {
+      if (!wanted) return;
+      var el = document.querySelector(sel);
+      if (!el || !el.options) return;
+      var target = String(wanted).toLowerCase().replace(/[^a-z0-9]/g, '');
+      for (var i = 0; i < el.options.length; i++) {
+        var opt = el.options[i].text.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (opt === target || opt.indexOf(target) !== -1 || target.indexOf(opt) !== -1) {
+          el.selectedIndex = i;
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.style.backgroundColor = '#ecfdf5';
+          break;
+        }
+      }
+    }
+    if (p.name_en) setVal('#name, input[name="name"]', p.name_en);
+    if (p.name_bn) setVal('#name_bn, input[name="name_bn"]', p.name_bn);
+    if (p.father_en) setVal('#father, input[name="father"]', p.father_en);
+    if (p.mother_en) setVal('#mother, input[name="mother"]', p.mother_en);
+    if (p.dob) {
+      var parts = p.dob.split('-');
+      if (parts.length === 3) {
+        selectFuzzy('#dob_year, select[name="dob_year"]', parts[0]);
+        selectFuzzy('#dob_month, select[name="dob_month"]', parts[1]);
+        selectFuzzy('#dob_day, select[name="dob_day"]', parts[2]);
+      }
+    }
+    if (p.gender) selectFuzzy('#gender, select[name="gender"]', p.gender);
+    if (p.religion) selectFuzzy('#religion, select[name="religion"]', p.religion);
+    if (p.nid) setVal('#nid, input[name="nid"]', p.nid);
+    if (p.mobile) setVal('#mobile, input[name="mobile"]', p.mobile);
+    if (p.email) setVal('#email, input[name="email"]', p.email);
+    alert('✅ Teletalk form autofilled successfully with your profile!');
+  })();`;
+
+  const bookmarkletData = {
+    success: true,
+    rawJs: jsCode,
+    bookmarkletUrl: "javascript:" + encodeURIComponent(jsCode),
+  };
+  await writeJsonSafe(path.join(publicApiDir, "autofill", "bookmarklet"), bookmarkletData);
+  await writeJsonSafe(path.join(publicApiDir, "autofill", "bookmarklet.json"), bookmarkletData);
+
   // 4. Create public/_redirects for Cloudflare Pages SPA & API mapping
   const redirects = `# Cloudflare Pages Redirects
 /api/overview /data/overview.json 200
@@ -176,6 +232,7 @@ async function build() {
 /api/auth/status /api/auth/status.json 200
 /api/settings /api/settings.json 200
 /api/profile /api/profile.json 200
+/api/autofill/bookmarklet /api/autofill/bookmarklet.json 200
 `;
   await fs.writeFile(path.join(PUBLIC_DIR, "_redirects"), redirects, "utf-8");
 

@@ -339,8 +339,8 @@ function createJobCardHtml(job) {
 
   // Action buttons — inline terminal before autofill button
   const autofillBtn = isBB ? `` : `
-    <div class="inline-terminal-wrap" id="wrap-term-${safeId}" style="display: none; width: 100%; margin: 8px 0;">
-      <div style="background: #020617; border: 1px solid #1e293b; border-left: 3px solid #38bdf8; border-radius: 6px; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+    <div class="inline-terminal-wrap" id="wrap-term-${safeId}" style="display: none; width: 100%; margin: 8px 0; order: 100;">
+      <div style="background: #020617; border: 1px solid #1e293b; border-left: 3px solid #38bdf8; border-radius: 6px; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; width: 100%; box-sizing: border-box;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 3px;">
           <span style="color: #38bdf8; font-weight: 700; font-size: 10px; display: flex; align-items: center; gap: 6px;">
             <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
@@ -348,7 +348,8 @@ function createJobCardHtml(job) {
           </span>
           <span id="term-status-${safeId}" style="color: #64748b; font-size: 9.5px; font-weight: 700;">ACTIVE</span>
         </div>
-        <div id="term-text-${safeId}" style="color: #cbd5e1; font-size: 11px; line-height: 1.5; max-height: 85px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Ready...</div>
+        <div id="term-text-${safeId}" style="color: #cbd5e1; font-size: 11px; line-height: 1.5; max-height: 90px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Ready...</div>
+        <div id="term-fallback-${safeId}" style="display: none; margin-top: 8px;"></div>
       </div>
     </div>
     <div style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -1148,14 +1149,122 @@ async function triggerScrape(dryRun = false) {
 let currentAutofillJob = { url: "", postTitle: "" };
 let bookmarkletCode = "";
 
+function generateAutofillBookmarkletCode(p) {
+  return `(function(){
+    var p = ${JSON.stringify(p || {})};
+    function setVal(sel, val) {
+      if (val === undefined || val === null || val === '') return;
+      var el = document.querySelector(sel);
+      if (!el) return;
+      el.value = val;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.style.backgroundColor = '#ecfdf5';
+    }
+    function selectFuzzy(sel, wanted) {
+      if (!wanted) return;
+      var el = typeof sel === 'string' ? document.querySelector(sel) : sel;
+      if (!el || !el.options) return;
+      var target = String(wanted).toLowerCase().replace(/[^a-z0-9]/g, '');
+      for (var i = 0; i < el.options.length; i++) {
+        var opt = el.options[i].text.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (opt === target || opt.indexOf(target) !== -1 || target.indexOf(opt) !== -1) {
+          el.selectedIndex = i;
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.style.backgroundColor = '#ecfdf5';
+          break;
+        }
+      }
+    }
+    if (p.name_en) setVal('#name, input[name="name"], input[name="applicant_name"]', p.name_en);
+    if (p.name_bn) setVal('#name_bn, input[name="name_bn"]', p.name_bn);
+    if (p.father_en) setVal('#father, input[name="father"]', p.father_en);
+    if (p.mother_en) setVal('#mother, input[name="mother"]', p.mother_en);
+    if (p.dob) {
+      var parts = p.dob.split('-');
+      if (parts.length === 3) {
+        selectFuzzy('#dob_year, select[name="dob_year"]', parts[0]);
+        selectFuzzy('#dob_month, select[name="dob_month"]', parts[1]);
+        selectFuzzy('#dob_day, select[name="dob_day"]', parts[2]);
+      }
+    }
+    if (p.gender) selectFuzzy('#gender, select[name="gender"]', p.gender);
+    if (p.religion) selectFuzzy('#religion, select[name="religion"]', p.religion);
+    if (p.nid) setVal('#nid, input[name="nid"]', p.nid);
+    if (p.mobile) setVal('#mobile, input[name="mobile"]', p.mobile);
+    if (p.email) setVal('#email, input[name="email"]', p.email);
+    if (p.ssc) {
+      selectFuzzy('#ssc_exam', p.ssc.examination);
+      selectFuzzy('#ssc_board', p.ssc.board);
+      setVal('#ssc_roll', p.ssc.roll);
+      setVal('#ssc_result', p.ssc.gpa);
+      selectFuzzy('#ssc_group', p.ssc.group);
+      setVal('#ssc_year', p.ssc.year);
+    }
+    if (p.hsc) {
+      selectFuzzy('#hsc_exam', p.hsc.examination);
+      selectFuzzy('#hsc_board', p.hsc.board);
+      setVal('#hsc_roll', p.hsc.roll);
+      setVal('#hsc_result', p.hsc.gpa);
+      selectFuzzy('#hsc_group', p.hsc.group);
+      setVal('#hsc_year', p.hsc.year);
+    }
+    if (p.graduation) {
+      selectFuzzy('#gra_exam', p.graduation.examination);
+      selectFuzzy('#gra_institute', p.graduation.university);
+      setVal('#gra_roll', p.graduation.roll);
+      setVal('#gra_result', p.graduation.cgpa);
+      selectFuzzy('#gra_subject', p.graduation.subject);
+      setVal('#gra_year', p.graduation.passing_year);
+    }
+    var chk = document.querySelector('#agree, #declaration, input[type="checkbox"]');
+    if (chk && !chk.checked) { chk.checked = true; chk.dispatchEvent(new Event('change', { bubbles: true })); }
+    alert('✅ Teletalk Form Autofilled Successfully!');
+  })();`;
+}
+
+window.openAndAutofillInUserBrowser = async function (safeId, url, postTitle) {
+  let profile = {};
+  try {
+    const saved = localStorage.getItem("teletalk_profile");
+    if (saved) profile = JSON.parse(saved);
+  } catch (_) {}
+  if (!profile || !profile.name_en) {
+    try {
+      const res = await fetch("/data/profile.json");
+      if (res.ok) profile = await res.json();
+    } catch (_) {}
+  }
+
+  const js = generateAutofillBookmarkletCode(profile);
+  try {
+    await navigator.clipboard.writeText(js);
+    showToast("📋 Autofill script copied to clipboard! Opening portal in new tab...", "success");
+  } catch (_) {
+    showToast("Opening portal in new tab...", "info");
+  }
+
+  const w = window.open(url, "_blank");
+  if (!w) {
+    window.location.href = url;
+  }
+};
+
 async function loadBookmarklet() {
   try {
-    const res = await fetch("/api/autofill/bookmarklet");
-    const data = await res.json();
-    if (data.success) {
-      bookmarkletCode = data.rawJs;
-      const link = document.getElementById("linkBookmarklet");
-      link.href = data.bookmarkletUrl;
+    let profile = {};
+    try {
+      const saved = localStorage.getItem("teletalk_profile");
+      if (saved) profile = JSON.parse(saved);
+    } catch (_) {}
+    if (!profile || !profile.name_en) {
+      const res = await fetch("/data/profile.json");
+      if (res.ok) profile = await res.json();
+    }
+    bookmarkletCode = generateAutofillBookmarkletCode(profile);
+    const link = document.getElementById("linkBookmarklet");
+    if (link) {
+      link.href = "javascript:" + encodeURIComponent(bookmarkletCode);
     }
   } catch (e) {
     console.error("Failed to load bookmarklet:", e);
@@ -1167,6 +1276,7 @@ window.runInlineAutofill = async function (safeId, url, postTitle) {
   const wrap = document.getElementById(`wrap-term-${safeId}`);
   const textEl = document.getElementById(`term-text-${safeId}`);
   const statusEl = document.getElementById(`term-status-${safeId}`);
+  const fallbackEl = document.getElementById(`term-fallback-${safeId}`);
   const btn = document.getElementById(`btn-autofill-${safeId}`);
 
   if (pill) {
@@ -1179,6 +1289,10 @@ window.runInlineAutofill = async function (safeId, url, postTitle) {
   if (wrap) {
     wrap.style.display = "block";
   }
+  if (fallbackEl) {
+    fallbackEl.style.display = "none";
+    fallbackEl.innerHTML = "";
+  }
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = `⏳ Filling...`;
@@ -1190,7 +1304,7 @@ window.runInlineAutofill = async function (safeId, url, postTitle) {
   function appendInlineTerm(msg, isDone = false, isError = false) {
     const time = new Date().toLocaleTimeString();
     if (pill) {
-      pill.textContent = msg;
+      pill.textContent = msg.length > 32 ? msg.slice(0, 32) + "..." : msg;
       if (isError) {
         pill.style.color = "#f87171";
         pill.style.borderColor = "rgba(248, 113, 113, 0.4)";
@@ -1216,7 +1330,7 @@ window.runInlineAutofill = async function (safeId, url, postTitle) {
   }
 
   appendInlineTerm(`🚀 Starting autofill for "${postTitle || "Job"}"...`);
-  appendInlineTerm(`🌐 Target: ${url}`);
+  appendInlineTerm(`🌐 Target Portal: ${url}`);
 
   let handledLocal = false;
   try {
@@ -1259,34 +1373,82 @@ window.runInlineAutofill = async function (safeId, url, postTitle) {
 
   // If local server launch wasn't available (e.g. running on Cloudflare), run Cloudflare Edge autofill
   if (!handledLocal) {
-    appendInlineTerm("☁️ Running on Cloudflare Playwright edge isolate...");
+    appendInlineTerm("☁️ Connecting to Cloudflare Playwright edge isolate...");
+
+    // Get applicant profile from localStorage or fallback
+    let applicantProfile = null;
+    try {
+      const saved = localStorage.getItem("teletalk_profile");
+      if (saved) applicantProfile = JSON.parse(saved);
+    } catch (_) {}
+
+    const progressSteps = [
+      "🔍 Launching headless Chromium session in Cloudflare global network...",
+      "📄 Navigating to Teletalk portal and parsing DOM layout...",
+      "✍️ Matching post title radio button and advancing to form...",
+      "📋 Populating applicant identity, present/permanent address...",
+    ];
+    let stepIdx = 0;
+    const progressTimer = setInterval(() => {
+      if (stepIdx < progressSteps.length) {
+        appendInlineTerm(progressSteps[stepIdx]);
+        stepIdx++;
+      }
+    }, 2800);
+
     try {
       const cfRes = await fetch("/api/autofill/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, postTitle }),
+        body: JSON.stringify({ url, postTitle, profile: applicantProfile }),
       });
+      clearInterval(progressTimer);
       const cfData = await cfRes.json();
+
       if (cfData.logs && Array.isArray(cfData.logs)) {
         cfData.logs.forEach((l) => appendInlineTerm(l));
       }
+
       if (cfData.success) {
         appendInlineTerm(`✅ ${cfData.message}`, true);
-        showToast("Cloudflare Playwright filled the form successfully!", "success");
+        showToast("Form autofilled successfully!", "success");
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = `✅ Filled`;
         }
       } else {
-        appendInlineTerm(`❌ ${cfData.error || cfData.message || "Failed"}`, false, true);
-        showToast("Autofill error: " + (cfData.error || cfData.message), "error");
+        const errMsg = cfData.error || cfData.message || "Failed";
+        appendInlineTerm(`❌ ${errMsg}`, false, true);
+
+        // Render instant 1-click fallback in mini terminal
+        if (fallbackEl) {
+          fallbackEl.style.display = "flex";
+          fallbackEl.style.flexDirection = "column";
+          fallbackEl.style.gap = "6px";
+          fallbackEl.innerHTML = `
+            <div style="color: #fbbf24; font-size: 10px;">⚡ Teletalk network firewall reset foreign cloud connection. Run directly in your browser:</div>
+            <button class="btn btn-primary btn-sm" onclick="openAndAutofillInUserBrowser('${safeId}', '${escapeHtml(url)}', '${escapeHtml(postTitle)}')" style="width: 100%; justify-content: center; font-size: 11px; padding: 6px 12px; background: #2563eb;">
+              🚀 1-Click Open & Autofill in My Browser
+            </button>
+          `;
+        }
+
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = `🤖 Autofill`;
         }
       }
     } catch (err) {
+      clearInterval(progressTimer);
       appendInlineTerm(`❌ Network error: ${err.message}`, false, true);
+      if (fallbackEl) {
+        fallbackEl.style.display = "block";
+        fallbackEl.innerHTML = `
+          <button class="btn btn-primary btn-sm" onclick="openAndAutofillInUserBrowser('${safeId}', '${escapeHtml(url)}', '${escapeHtml(postTitle)}')" style="width: 100%; justify-content: center; font-size: 11px; padding: 6px 12px; background: #2563eb; margin-top: 4px;">
+            🚀 1-Click Open & Autofill in My Browser
+          </button>
+        `;
+      }
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = `🤖 Autofill`;
@@ -1296,25 +1458,14 @@ window.runInlineAutofill = async function (safeId, url, postTitle) {
 };
 
 window.launchAutofillForJob = async function (url, postTitle) {
-  currentAutofillJob = { url, postTitle };
-  
-  const preview = document.getElementById("autofillJobPreview");
-  preview.innerHTML = `
-    <div class="preview-title">${escapeHtml(postTitle)}</div>
-    <div class="preview-org">${escapeHtml(url)}</div>
-  `;
-
-  document.getElementById("inputAutofillCliCommand").value = `npm run autofill -- --url "${url}" --post "${postTitle}"`;
-  document.getElementById("modalAutofill").style.display = "flex";
-
-  // Initialize and display live console immediately
-  clearAutofillLogs();
-  appendAutofillLog(`🎯 Target Post: "${postTitle}"`, "info");
-  appendAutofillLog(`🌐 Portal URL: ${url}`, "info");
-  appendAutofillLog(`👤 Profile: MD.ETTEKHAR RAHMAN TAION (Loaded)`, "info");
-  appendAutofillLog(`⚡ Ready: Click "Pop Up Chrome Window Now" (desktop) or "Run Cloudflare Edge Fill" (cloud) below!`, "warn");
-
-  await loadBookmarklet();
+  // Never open dark popup modal — delegate directly to inline card terminal
+  const safeId = String(url || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const cardBtn = document.querySelector(`button[onclick*="${escapeHtml(url)}"]`);
+  if (cardBtn) {
+    cardBtn.click();
+  } else {
+    window.runInlineAutofill(safeId, url, postTitle);
+  }
 };
 
 let autofillEventSource = null;

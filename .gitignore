@@ -8,3 +8,4 @@ application/*.jpeg
 application/*.png
 *.log
 dist/
+public/screenshots/

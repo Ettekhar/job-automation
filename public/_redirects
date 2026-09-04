@@ -8,3 +8,4 @@
 /api/auth/status /api/auth/status.json 200
 /api/settings /api/settings.json 200
 /api/profile /api/profile.json 200
+/api/autofill/bookmarklet /api/autofill/bookmarklet.json 200
