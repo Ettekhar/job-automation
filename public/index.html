@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teletalk Job Notifier — Control Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header class="top-nav">
+      <div class="brand-section">
+        <div class="logo-radar">
+          <div class="radar-circle circle-1"></div>
+          <div class="radar-circle circle-2"></div>
+          <div class="radar-dot"></div>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">Teletalk <span class="gradient-text">Job Radar</span></div>
+          <div class="brand-subtitle">Automated Government CSE/IT Notification & Application Hub</div>
+        </div>
+      </div>
+
+      <div class="nav-controls">
+        <div class="status-pill" id="schedulerStatusPill">
+          <span class="status-dot green"></span>
+          <span id="schedulerStatusText">Auto-Scan: Manual</span>
+        </div>
+
+        <a href="/profile" class="btn btn-secondary" id="btnNavProfile" title="Manage your personal and educational profile for form autofill (config/profile.json)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span>👤 Profile Info</span>
+          <span class="badge-count" id="navProfileBadge" style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc;">Checking...</span>
+        </a>
+
+        <button class="btn btn-secondary" id="btnOpenKeywords" title="Manage monitored target job titles">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+          <span>Keywords</span>
+          <span class="badge-count" id="navKeywordsCount">10</span>
+        </button>
+
+        <button class="btn btn-secondary" id="btnOpenHistory" title="View previous scrape runs and stats">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span>History</span>
+        </button>
+
+        <button class="btn btn-secondary" id="btnOpenAiSettings" title="Manage AI Brain Providers & Vision Keys (Gemini, Groq, Cloudflare, OpenRouter)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path><rect x="4" y="8" width="16" height="12" rx="2"></rect><circle cx="9" cy="14" r="1"></circle><circle cx="15" cy="14" r="1"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
+          <span>AI Providers</span>
+          <span class="badge-count" id="navAiActiveCount" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">Active</span>
+        </button>
+
+        <button class="btn btn-secondary" id="btnOpenSettings" title="Configure Titan SMTP & Auto Scheduler">
+
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>SMTP & Settings</span>
+        </button>
+
+        <button class="btn btn-secondary btn-notices-nav" id="btnOpenNoticeBoard" title="View Bangladesh Bank BSCS Official Notice Board (MCQ, VIVA, Results)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>📋 Notice Board</span>
+          <span class="badge-count" id="navNoticesCount" style="background: rgba(245, 158, 11, 0.25); color: #fcd34d;">0</span>
+        </button>
+
+        <button class="btn btn-outline" id="btnDryRun" title="Scan without sending notifications or updating seen cache">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Dry Run Check</span>
+        </button>
+
+        <button class="btn btn-primary" id="btnScrapeNow" title="Run live scraper right now and send email alerts for new matching jobs">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span>Scrape Now (Live)</span>
+        </button>
+
+        <button class="btn btn-bb" id="btnSyncBB" title="Scan only Bangladesh Bank e-recruitment portal right now">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 21V11M10 21V11M14 21V11M18 21V11M12 3l9 4H3l9-4z"></path></svg>
+          <span>🏦 Sync BB Now</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Recipient Banner Bar -->
+    <div class="recipient-bar">
+      <div class="recipient-info">
+        <span class="recipient-icon">📧</span>
+        <span class="recipient-label">Alerts will be sent via Titan SMTP to:</span>
+        <span class="recipient-email" id="headerRecipientEmail">taion@razibmarketing.net</span>
+      </div>
+      <button class="btn-link" id="btnChangeRecipient">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        Change Recipient Email
+      </button>
+    </div>
+
+    <!-- Main Container -->
+    <main class="main-content">
+      <!-- Stats Row -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon purple">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          </div>
+          <div class="stat-data">
+            <div class="stat-label">Total Jobs Scraped</div>
+            <div class="stat-value" id="statTotalJobs">130</div>
+            <div class="stat-sub" id="statCircularsSub">24 circulars scanned</div>
+          </div>
+        </div>
+
+        <div class="stat-card highlight-card">
+          <div class="stat-icon green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+          </div>
+          <div class="stat-data">
+            <div class="stat-label">Target CSE/IT Matches</div>
+            <div class="stat-value text-emerald" id="statMatchedJobs">1</div>
+            <div class="stat-sub" id="statMatchedSub">Filtered by keywords</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          </div>
+          <div class="stat-data">
+            <div class="stat-label">Seen Jobs Cache</div>
+            <div class="stat-value text-cyan" id="statSeenJobs">1</div>
+            <div class="stat-sub" id="statSeenSub">Already processed</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon gold">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 21V11M10 21V11M14 21V11M18 21V11M12 3l9 4H3l9-4z"></path></svg>
+          </div>
+          <div class="stat-data">
+            <div class="stat-label">Bangladesh Bank Jobs</div>
+            <div class="stat-value text-gold" id="statBBJobs">0</div>
+            <div class="stat-sub" id="statBBSub">erecruitment.bb.org.bd</div>
+          </div>
+        </div>
+
+        <div class="stat-card" id="cardNoticeBoardStat" style="cursor: pointer;" title="Click to view Bangladesh Bank Notice Board">
+          <div class="stat-icon amber">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </div>
+          <div class="stat-data">
+            <div class="stat-label">BB Notice Board</div>
+            <div class="stat-value text-amber" id="statNoticesCount">0</div>
+            <div class="stat-sub" id="statNoticesSub"><span class="text-emerald" style="font-weight: 700;" id="statNoticesMatchedCount">0</span> IT/Matched notices</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon orange">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </div>
+          <div class="stat-data">
+            <div class="stat-label">Last Scraped</div>
+            <div class="stat-value" id="statLastScrapedTime">Just now</div>
+            <div class="stat-sub" id="statLastScrapedSub">Duration: 160s</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon indigo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          </div>
+          <div class="stat-data">
+            <div class="stat-label">Titan SMTP Status</div>
+            <div class="stat-value text-indigo" id="statSmtpStatus">Ready</div>
+            <div class="stat-sub" id="statSmtpSub">smtp.titan.email:587</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scraper Running Progress Banner (Hidden by default) -->
+      <section class="scraper-banner" id="scraperBanner" style="display: none;">
+        <div class="banner-content">
+          <div class="spinner"></div>
+          <div class="banner-text">
+            <div class="banner-title" id="scraperBannerTitle">Scraper is currently running...</div>
+            <div class="banner-log" id="scraperBannerLog">Scanning Teletalk circulars...</div>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline" id="btnToggleTerminal">View Live Logs</button>
+      </section>
+
+      <!-- Live Terminal Drawer (Collapsible) -->
+      <section class="terminal-card" id="terminalSection" style="display: none;">
+        <div class="terminal-header">
+          <div class="terminal-title">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-label">Live Scraper Console Output</span>
+          </div>
+          <div class="terminal-actions">
+            <label class="auto-scroll-toggle">
+              <input type="checkbox" id="chkAutoScroll" checked> Auto-scroll
+            </label>
+            <button class="btn-icon" id="btnClearTerminal" title="Clear logs">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+            <button class="btn-icon" id="btnCloseTerminal" title="Close console">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+        <div class="terminal-body" id="terminalLogs">
+          <div class="log-entry system">[Console initialized. Ready for scraping events.]</div>
+        </div>
+      </section>
+
+      <!-- Jobs Hub Controls -->
+      <section class="jobs-section">
+        <div class="section-toolbar">
+          <div class="filter-tabs">
+            <button class="tab-btn active" data-filter="matched">
+              🎯 Matching Jobs (<span id="tabCountMatched">0</span>)
+            </button>
+            <button class="tab-btn" data-filter="all">
+              🌐 All Jobs (<span id="tabCountAll">0</span>)
+            </button>
+            <button class="tab-btn" data-filter="unmatched">
+              📁 Other Roles (<span id="tabCountOther">0</span>)
+            </button>
+            <button class="tab-btn tab-bb" data-filter="bb">
+              🏦 BB Jobs (<span id="tabCountBB">0</span>)
+            </button>
+            <button class="tab-btn tab-notices" data-filter="notices">
+              📋 BB Notice Board (<span id="tabCountNotices">0</span>)
+            </button>
+          </div>
+
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="inputSearchJobs" placeholder="Search by title, organization, or job ID...">
+            <button id="btnClearSearch" class="btn-clear" style="display: none;">&times;</button>
+          </div>
+        </div>
+
+        <!-- Jobs Grid Container -->
+        <div class="jobs-grid" id="jobsGrid">
+          <div class="empty-state">
+            <div class="empty-icon">⏳</div>
+            <div class="empty-title">Loading Jobs...</div>
+            <div class="empty-desc">Fetching discovered jobs from local storage.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Autofill Assistant Modal -->
+    <div class="modal-backdrop" id="modalAutofill" style="display: none;">
+      <div class="modal-card modal-lg">
+        <div class="modal-header">
+          <h3>🤖 1-Click Form Autofill Assistant</h3>
+          <button class="btn-close" id="btnCloseAutofill">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="job-preview-box" id="autofillJobPreview" style="margin-bottom: 14px;">
+            <!-- Job title & Org -->
+          </div>
+
+          <!-- Profile Config Indicator -->
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 16px;">
+            <div style="font-size: 12.5px; color: #c7d2fe; display: flex; align-items: center; gap: 8px;">
+              <span>👤</span>
+              <span>Data Source: <strong id="autofillProfileLabel">Loading...</strong></span>
+            </div>
+            <a href="/profile" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 4px;">
+              <span>✏️ Edit Profile Information</span>
+            </a>
+          </div>
+
+          <!-- Method 1: Instant In-Browser Bookmarklet -->
+          <div class="settings-group">
+            <h4 class="group-title">⚡ Method 1: Instant 1-Click Bookmarklet (Works on your current browser!)</h4>
+            <p class="modal-hint">Drag this button to your browser's Bookmarks Bar (or click Copy Script):</p>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 12px 0;">
+              <a id="linkBookmarklet" href="#" class="btn btn-emerald" style="padding: 10px 18px; font-weight: 700; cursor: grab;" title="Drag me to your Bookmarks Bar!">
+                📌 ⚡ Autofill Teletalk Form
+              </a>
+              <button class="btn btn-secondary" id="btnCopyBookmarkletScript">
+                📋 Copy Script for Console
+              </button>
+            </div>
+            <p style="font-size: 12px; color: var(--text-dim); margin-top: 6px;">
+              <strong>How to use:</strong> Open the Teletalk application page in this browser, then click your bookmark — all fields, NID, and SSC/HSC/Graduation will be filled instantly!
+            </p>
+          </div>
+
+          <!-- Method 2: Launch in Headed Browser -->
+          <div class="settings-group">
+            <h4 class="group-title">🖥️ Method 2: Launch Automated Browser / Terminal</h4>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 10px 0;">
+              <button class="btn btn-primary" id="btnLaunchPlaywrightBrowser">
+                🚀 Pop Up Chrome Window Now
+              </button>
+              <button class="btn btn-outline" id="btnOpenApplyInTab">
+                🌐 Open Portal in New Tab
+              </button>
+            </div>
+            <div style="margin-top: 10px;">
+              <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Manual CLI command (run anytime in terminal):</label>
+              <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <input type="text" id="inputAutofillCliCommand" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #a5b4fc; background: rgba(0,0,0,0.5);">
+                <button class="btn btn-secondary btn-sm" id="btnCopyCliCommand">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnDismissAutofill">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send Email Alert Modal -->
+    <div class="modal-backdrop" id="modalSendAlert" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>✉️ Send Job Alert Email (Titan SMTP)</h3>
+          <button class="btn-close" id="btnCloseSendAlert">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">Send a formatted HTML job notification email for this position immediately:</p>
+          <div class="job-preview-box" id="sendAlertJobPreview">
+            <!-- Job title & Org -->
+          </div>
+          <div class="form-field" style="margin-top: 16px;">
+            <label>Recipient Email Address</label>
+            <input type="email" id="inputAlertRecipient" placeholder="e.g. taion@razibmarketing.net">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelSendAlert">Cancel</button>
+          <button class="btn btn-primary" id="btnConfirmSendAlert">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            Send Email Now
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Keywords Modal -->
+    <div class="modal-backdrop" id="modalKeywords" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>🎯 Target Job Keywords Management</h3>
+          <button class="btn-close" id="btnCloseKeywords">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">
+            The scraper strictly monitors Teletalk government portals for posts containing any of these keywords (case-insensitive & Bangla supported):
+          </p>
+          <div class="keyword-tags-container" id="keywordTagsList">
+            <!-- Dynamic tags -->
+          </div>
+          <div class="add-keyword-form">
+            <input type="text" id="inputNewKeyword" placeholder="e.g. data engineer, সহকারী প্রোগ্রামার">
+            <button class="btn btn-primary" id="btnAddKeyword">Add Keyword</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnResetKeywords">Reset Defaults</button>
+          <button class="btn btn-primary" id="btnSaveKeywords">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings & SMTP Modal -->
+    <div class="modal-backdrop" id="modalSettings" style="display: none;">
+      <div class="modal-card modal-lg">
+        <div class="modal-header">
+          <h3>⚙️ Notification Settings & Titan SMTP Control</h3>
+          <button class="btn-close" id="btnCloseSettings">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- Recipient Section -->
+          <div class="settings-group">
+            <h4 class="group-title">🎯 Default Email Notification Recipient</h4>
+            <div class="form-field full-width">
+              <label>Recipient Email Address (Where all new job alerts will be delivered)</label>
+              <input type="email" id="cfgNotifyEmail" value="taion@razibmarketing.net" placeholder="taion@razibmarketing.net">
+              <small style="color: var(--text-dim); margin-top: 4px;">You can change this email anytime. All automated alerts from the scraper will go to this address.</small>
+            </div>
+          </div>
+
+          <!-- SMTP Config Section -->
+          <div class="settings-group">
+            <h4 class="group-title">📧 Titan SMTP Outgoing Server Settings</h4>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>SMTP Host</label>
+                <input type="text" id="cfgSmtpHost" value="smtp.titan.email" placeholder="smtp.titan.email">
+              </div>
+              <div class="form-field">
+                <label>SMTP Port</label>
+                <input type="number" id="cfgSmtpPort" value="587" placeholder="587">
+              </div>
+              <div class="form-field">
+                <label>SMTP Username / Sender</label>
+                <input type="text" id="cfgSmtpUser" value="taion@razibmarketing.net" placeholder="taion@razibmarketing.net">
+              </div>
+              <div class="form-field">
+                <label>SMTP Password</label>
+                <input type="password" id="cfgSmtpPass" placeholder="Leave blank to use current .env pass">
+              </div>
+            </div>
+
+            <div class="smtp-test-box">
+              <button class="btn btn-outline" id="btnTestSmtp">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                Send Live Test Email to Recipient
+              </button>
+              <span class="test-result" id="smtpTestResult"></span>
+            </div>
+          </div>
+
+          <!-- Automated Scheduler Section -->
+          <div class="settings-group">
+            <h4 class="group-title">⏱️ Automated Scrape Scheduler</h4>
+            <div class="form-grid">
+              <div class="form-field">
+                <label class="toggle-label">
+                  <input type="checkbox" id="cfgAutoScrapeEnabled">
+                  <span>Enable Background Recurring Scrape</span>
+                </label>
+              </div>
+              <div class="form-field">
+                <label>Scan Interval</label>
+                <select id="cfgAutoScrapeInterval">
+                  <option value="15">Every 15 Minutes</option>
+                  <option value="30">Every 30 Minutes</option>
+                  <option value="60" selected>Every 1 Hour</option>
+                  <option value="180">Every 3 Hours</option>
+                  <option value="360">Every 6 Hours</option>
+                  <option value="720">Every 12 Hours</option>
+                  <option value="1440">Every 24 Hours</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelSettings">Cancel</button>
+          <button class="btn btn-primary" id="btnSaveSettings">Save Configuration</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrape History Modal -->
+    <div class="modal-backdrop" id="modalHistory" style="display: none;">
+      <div class="modal-card modal-lg">
+        <div class="modal-header">
+          <h3>📜 Previous Scrape Cycles & Run History</h3>
+          <button class="btn-close" id="btnCloseHistory">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="history-table-wrapper" id="historyTableContainer">
+            <!-- Dynamic History table -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnDismissHistory">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Providers & Vision Brain Modal -->
+    <div class="modal-backdrop" id="modalAiSettings" style="display: none;">
+      <div class="modal-card modal-lg">
+        <div class="modal-header">
+          <div>
+            <h3>🤖 AI Brain & Multi-Provider Cascade Configuration</h3>
+            <p class="modal-sub">Manages intelligent form-filling, CAPTCHA reading, navigation fallback, and unknown field inference.</p>
+          </div>
+          <button class="btn-close" id="btnCloseAiSettings">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- Cascade Flow Banner -->
+          <div class="ai-cascade-banner">
+            <div class="cascade-title">⚡ Multi-Provider Priority Cascade Order:</div>
+            <div class="cascade-steps">
+              <span class="cascade-pill active">1. Google Gemini</span>
+              <span class="cascade-arrow">➔</span>
+              <span class="cascade-pill active">2. Groq AI</span>
+              <span class="cascade-arrow">➔</span>
+              <span class="cascade-pill active">3. Cloudflare Workers AI</span>
+              <span class="cascade-arrow">➔</span>
+              <span class="cascade-pill active">4. OpenRouter</span>
+            </div>
+            <small class="cascade-note">If provider #1 rate-limits or fails, the next provider takes over automatically in milliseconds.</small>
+          </div>
+
+          <!-- Provider Cards Grid -->
+          <div class="ai-cards-grid">
+            <!-- 1. Google Gemini -->
+            <div class="ai-provider-card" id="cardGemini">
+              <div class="ai-card-header">
+                <div class="ai-provider-info">
+                  <div class="ai-icon gemini-icon">♊</div>
+                  <div>
+                    <div class="ai-provider-name">Google Gemini <span class="badge-tag">Vision + Text</span></div>
+                    <div class="ai-provider-sub">Primary high-accuracy visual model</div>
+                  </div>
+                </div>
+                <div class="ai-status-pill" id="statusPillGemini">
+                  <span class="status-dot green"></span>
+                  <span class="status-text">Active</span>
+                </div>
+              </div>
+              <div class="ai-card-body">
+                <div class="form-field">
+                  <div class="field-label-row">
+                    <label>Gemini API Key</label>
+                    <a href="https://aistudio.google.com/apikey" target="_blank" class="free-key-link">Get Free Key ↗</a>
+                  </div>
+                  <div class="input-with-action">
+                    <input type="password" id="inputGeminiKey" placeholder="AIzaSy... or AQ.Ab8..." autocomplete="off">
+                    <button class="btn-icon-toggle" type="button" data-target="inputGeminiKey" title="Show/Hide">👁️</button>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label>Model ID</label>
+                  <input type="text" id="inputGeminiModel" value="gemini-3.6-flash" placeholder="gemini-3.6-flash">
+                </div>
+              </div>
+              <div class="ai-card-footer">
+                <button class="btn btn-sm btn-outline btn-test-ai" data-provider="gemini">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Test Gemini
+                </button>
+                <span class="ai-test-feedback" id="testResultGemini"></span>
+              </div>
+            </div>
+
+            <!-- 2. Groq AI -->
+            <div class="ai-provider-card" id="cardGroq">
+              <div class="ai-card-header">
+                <div class="ai-provider-info">
+                  <div class="ai-icon groq-icon">⚡</div>
+                  <div>
+                    <div class="ai-provider-name">Groq LPU <span class="badge-tag">Ultra-Fast</span></div>
+                    <div class="ai-provider-sub">Sub-second fallback response</div>
+                  </div>
+                </div>
+                <div class="ai-status-pill" id="statusPillGroq">
+                  <span class="status-dot green"></span>
+                  <span class="status-text">Active</span>
+                </div>
+              </div>
+              <div class="ai-card-body">
+                <div class="form-field">
+                  <div class="field-label-row">
+                    <label>Groq API Key</label>
+                    <a href="https://console.groq.com/keys" target="_blank" class="free-key-link">Get Free Key ↗</a>
+                  </div>
+                  <div class="input-with-action">
+                    <input type="password" id="inputGroqKey" placeholder="gsk_..." autocomplete="off">
+                    <button class="btn-icon-toggle" type="button" data-target="inputGroqKey" title="Show/Hide">👁️</button>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label>Groq Model</label>
+                  <input type="text" id="inputGroqModel" value="llama-3.3-70b-versatile" placeholder="llama-3.3-70b-versatile">
+                </div>
+              </div>
+              <div class="ai-card-footer">
+                <button class="btn btn-sm btn-outline btn-test-ai" data-provider="groq">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Test Groq
+                </button>
+                <span class="ai-test-feedback" id="testResultGroq"></span>
+              </div>
+            </div>
+
+            <!-- 3. Cloudflare Workers AI -->
+            <div class="ai-provider-card" id="cardCloudflare">
+              <div class="ai-card-header">
+                <div class="ai-provider-info">
+                  <div class="ai-icon cf-icon">☁️</div>
+                  <div>
+                    <div class="ai-provider-name">Cloudflare Workers AI <span class="badge-tag">100k/day Free</span></div>
+                    <div class="ai-provider-sub">Edge inference fallback</div>
+                  </div>
+                </div>
+                <div class="ai-status-pill" id="statusPillCloudflare">
+                  <span class="status-dot green"></span>
+                  <span class="status-text">Active</span>
+                </div>
+              </div>
+              <div class="ai-card-body">
+                <div class="form-field">
+                  <div class="field-label-row">
+                    <label>Account ID</label>
+                    <a href="https://dash.cloudflare.com/" target="_blank" class="free-key-link">Cloudflare Dash ↗</a>
+                  </div>
+                  <input type="text" id="inputCfAccountId" placeholder="e.g. bf42e92f496ac5f5e927522c276ef1eb">
+                </div>
+                <div class="form-field">
+                  <label>API Token (Workers AI permission)</label>
+                  <div class="input-with-action">
+                    <input type="password" id="inputCfApiToken" placeholder="cfut_..." autocomplete="off">
+                    <button class="btn-icon-toggle" type="button" data-target="inputCfApiToken" title="Show/Hide">👁️</button>
+                  </div>
+                </div>
+              </div>
+              <div class="ai-card-footer">
+                <button class="btn btn-sm btn-outline btn-test-ai" data-provider="cloudflare">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Test Cloudflare
+                </button>
+                <span class="ai-test-feedback" id="testResultCloudflare"></span>
+              </div>
+            </div>
+
+            <!-- 4. OpenRouter -->
+            <div class="ai-provider-card" id="cardOpenRouter">
+              <div class="ai-card-header">
+                <div class="ai-provider-info">
+                  <div class="ai-icon or-icon">🌐</div>
+                  <div>
+                    <div class="ai-provider-name">OpenRouter <span class="badge-tag">Free Models</span></div>
+                    <div class="ai-provider-sub">Broad catalog fallback</div>
+                  </div>
+                </div>
+                <div class="ai-status-pill" id="statusPillOpenRouter">
+                  <span class="status-dot green"></span>
+                  <span class="status-text">Active</span>
+                </div>
+              </div>
+              <div class="ai-card-body">
+                <div class="form-field">
+                  <div class="field-label-row">
+                    <label>OpenRouter API Key</label>
+                    <a href="https://openrouter.ai/keys" target="_blank" class="free-key-link">Get Free Key ↗</a>
+                  </div>
+                  <div class="input-with-action">
+                    <input type="password" id="inputOpenrouterKey" placeholder="sk-or-v1-..." autocomplete="off">
+                    <button class="btn-icon-toggle" type="button" data-target="inputOpenrouterKey" title="Show/Hide">👁️</button>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label>Model Pool</label>
+                  <input type="text" id="inputOpenrouterModel" value="Free Tier (Auto-Failover)" readonly style="opacity: 0.8;">
+                </div>
+              </div>
+              <div class="ai-card-footer">
+                <button class="btn btn-sm btn-outline btn-test-ai" data-provider="openrouter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Test OpenRouter
+                </button>
+                <span class="ai-test-feedback" id="testResultOpenRouter"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="btnTestAllAi">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Test All Providers Now
+          </button>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" id="btnCancelAiSettings">Cancel</button>
+            <button class="btn btn-primary" id="btnSaveAiSettings">Save AI Configuration</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BB Official Notice Board Modal -->
+    <div class="modal-backdrop" id="modalNoticeBoard" style="display: none;">
+      <div class="modal-card modal-xl">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="modal-icon-badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📋</div>
+            <div>
+              <h3>Bangladesh Bank — Official BSCS Notice Board</h3>
+              <p class="modal-sub">Exam Results, MCQ / Written Schedules, Viva Voce, and Selected Candidates (erecruitment.bb.org.bd)</p>
+            </div>
+          </div>
+          <button class="btn-close" id="btnCloseNoticeBoard">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="notice-board-toolbar">
+            <div class="notice-filter-tabs">
+              <button class="btn btn-sm btn-outline active" id="btnNoticeFilterAll">
+                All Notices (<span id="modalNoticeCountAll">0</span>)
+              </button>
+              <button class="btn btn-sm btn-gold" id="btnNoticeFilterApplied" title="Notices matching your applied bank jobs" style="color: #000000;">
+                ⭐ Applied Notices (<span id="modalNoticeCountApplied">0</span>)
+              </button>
+              <button class="btn btn-sm btn-emerald" id="btnNoticeFilterMatched">
+                🎯 IT / Matched (<span id="modalNoticeCountMatched">0</span>)
+              </button>
+              <button class="btn btn-sm btn-secondary" id="btnNoticeTabManageApplied" title="Manage your applied bank jobs and Job ID codes">
+                💼 Applied Bank Jobs (<span id="modalAppliedJobsCount">0</span>)
+              </button>
+            </div>
+            <div class="search-box" style="max-width: 300px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="inputSearchNotices" placeholder="Search title, phase, or job ID...">
+            </div>
+          </div>
+
+          <!-- Tab 1: Notices List View -->
+          <div id="noticeBoardListContainer">
+            <div class="notice-board-list" id="noticeBoardList">
+              <!-- Dynamic notice items -->
+            </div>
+          </div>
+
+          <!-- Tab 2: Applied Bank Jobs Management Panel -->
+          <div id="appliedJobsPanelContainer" style="display: none;">
+            <div class="applied-jobs-box">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <div>
+                  <h4 style="font-size: 15px; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+                    <span>⭐ Track New Applied Bank Job</span>
+                  </h4>
+                  <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                    Whenever Bangladesh Bank posts a notice (MCQ exam, seat plan, admit card, viva, or results) matching this <strong>Job ID code</strong>, you will receive an instant email alert at <span id="appliedJobAlertRecipientEmail" style="color: #6ee7b7; font-weight: 600;">your email</span>.
+                  </p>
+                </div>
+              </div>
+
+              <form id="formAddAppliedJob" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                <div class="form-field">
+                  <label for="appliedInputJobId">Job ID Code * (e.g. 10225, 10226)</label>
+                  <input type="text" id="appliedInputJobId" placeholder="e.g. 10225" required style="font-weight: 700; color: #fbbf24; border-color: rgba(245, 158, 11, 0.4);">
+                </div>
+                <div class="form-field">
+                  <label for="appliedInputTitle">Post / Position Title *</label>
+                  <input type="text" id="appliedInputTitle" placeholder="e.g. Senior Officer (IT) / Assistant Programmer" required>
+                </div>
+                <div class="form-field">
+                  <label for="appliedInputOrg">Bank / Organization *</label>
+                  <input type="text" id="appliedInputOrg" placeholder="e.g. Bangladesh Bank / Sonali Bank PLC" required>
+                </div>
+                <div class="form-field">
+                  <label for="appliedInputRoll">Your Roll No. (Optional)</label>
+                  <input type="text" id="appliedInputRoll" placeholder="e.g. 153021">
+                </div>
+                <div class="form-field">
+                  <label for="appliedInputTracking">Tracking ID / Serial (Optional)</label>
+                  <input type="text" id="appliedInputTracking" placeholder="e.g. BB-10225-7890">
+                </div>
+                <div class="form-field" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                  <button type="submit" class="btn btn-gold" id="btnAddAppliedJobSubmit" style="height: 38px; font-weight: 700;">
+                    ➕ Save & Start Tracking
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- List of Tracked Applied Jobs -->
+            <div style="margin-top: 18px;">
+              <h4 style="font-size: 13.5px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <span>💼 Currently Monitored Applied Bank Jobs (<span id="trackedAppliedJobsListCount">0</span>)</span>
+                <span style="font-size: 11px; color: var(--text-dim); font-weight: normal;">Matches are checked on every scrape</span>
+              </h4>
+              <div id="trackedAppliedJobsList">
+                <!-- Dynamic applied jobs cards -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: space-between;">
+          <div style="font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px;">
+            <span class="status-dot green"></span>
+            <span>Live Sync with erecruitment.bb.org.bd</span>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-bb btn-sm" id="btnRefreshNotices">
+              🔄 Sync BB Notices Now
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btnDismissNoticeBoard">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Popup -->
+    <div class="toast-container" id="toastContainer"></div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

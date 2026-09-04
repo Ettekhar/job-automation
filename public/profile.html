@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Applicant Profile Manager — Teletalk Job Radar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Profile Manager Dedicated Styles */
+    .profile-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-bottom: 90px;
+    }
+
+    .profile-header-card {
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .profile-title-area h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .profile-title-area p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .profile-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .profile-status-badge.empty {
+      background: rgba(245, 158, 11, 0.12);
+      color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .form-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .form-grid-2, .form-grid-3, .form-grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-card {
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.2s;
+    }
+
+    .section-card:hover {
+      border-color: rgba(99, 102, 241, 0.25);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      font-weight: 600;
+    }
+
+    .optional-toggle-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+    }
+
+    /* Floating Sticky Action Bar */
+    .floating-action-bar {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 48px);
+      max-width: 1200px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      border-radius: var(--radius-lg);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.25);
+      z-index: 100;
+    }
+
+    .banner-alert {
+      padding: 14px 18px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 20px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .banner-alert.info {
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #c7d2fe;
+    }
+
+    .banner-alert.warning {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fde68a;
+    }
+
+    .banner-alert.success {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #a7f3d0;
+    }
+
+    .json-preview-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #a5b4fc;
+      max-height: 250px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .copy-btn-inline {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .copy-btn-inline:hover {
+      border-color: var(--primary);
+      color: var(--text-main);
+      background: rgba(99, 102, 241, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper profile-container">
+    <!-- Top Navigation -->
+    <header class="top-nav">
+      <div class="brand-section">
+        <div class="logo-radar">
+          <div class="radar-circle circle-1"></div>
+          <div class="radar-circle circle-2"></div>
+          <div class="radar-dot"></div>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">Applicant <span class="gradient-text">Profile Manager</span></div>
+          <div class="brand-subtitle">Teletalk Form Automation & Bookmarklet Source (config/profile.json)</div>
+        </div>
+      </div>
+
+      <div class="nav-controls">
+        <a href="/" class="btn btn-secondary" title="Return to Dashboard">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span>Dashboard</span>
+        </a>
+        <button type="button" class="btn btn-secondary" id="btnTopLoadSample" title="Fill form with sample template values for reference">
+          <span>📋 Load Sample</span>
+        </button>
+        <button type="button" class="btn btn-outline" id="btnTopClearEmpty" title="Reset all inputs to empty for a clean slate">
+          <span>🧹 Clear / New</span>
+        </button>
+        <button type="button" class="btn btn-primary" id="btnTopSave" title="Save profile to config/profile.json">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>Save Profile</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Profile Status & Alert Banner -->
+    <div id="profileAlertBanner" class="banner-alert info">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 18px;">💡</span>
+        <span id="profileAlertText">Loading applicant profile from <code>config/profile.json</code>...</span>
+      </div>
+      <div id="profileBadgePill" class="profile-status-badge">
+        <span class="status-dot green"></span>
+        <span id="profileBadgeText">Checking...</span>
+      </div>
+    </div>
+
+    <!-- Main Profile Form -->
+    <form id="profileForm" autocomplete="off">
+      
+      <!-- 1. PERSONAL DETAILS -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>👤 1. Personal Information (ব্যক্তিগত তথ্য)</span>
+            <span class="section-badge">Mandatory</span>
+          </div>
+          <span style="font-size: 12px; color: var(--text-dim);">Teletalk & Bangladesh Bank Standard Format</span>
+        </div>
+
+        <div class="form-grid-2" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="name_en">Applicant's Name (English - BLOCK CAPITAL) *</label>
+            <input type="text" id="name_en" name="name_en" placeholder="e.g. MD. ETTEKHAR RAHMAN TAION" required style="text-transform: uppercase;">
+          </div>
+          <div class="form-field">
+            <label for="name_bn">Applicant's Name (বাংলায়) *</label>
+            <input type="text" id="name_bn" name="name_bn" placeholder="যেমন: মোঃ ইত্তেখার রহমান তায়ন" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="father_en">Father's Name (English - BLOCK CAPITAL) *</label>
+            <input type="text" id="father_en" name="father_en" placeholder="e.g. MD. ATIQUR RAHMAN" required style="text-transform: uppercase;">
+          </div>
+          <div class="form-field">
+            <label for="father_bn">Father's Name (বাংলায়) *</label>
+            <input type="text" id="father_bn" name="father_bn" placeholder="যেমন: মোঃ আতিকুর রহমান" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="mother_en">Mother's Name (English - BLOCK CAPITAL) *</label>
+            <input type="text" id="mother_en" name="mother_en" placeholder="e.g. RASHIDA AKTER" required style="text-transform: uppercase;">
+          </div>
+          <div class="form-field">
+            <label for="mother_bn">Mother's Name (বাংলায়) *</label>
+            <input type="text" id="mother_bn" name="mother_bn" placeholder="যেমন: রাশিদা আক্তার" required>
+          </div>
+        </div>
+
+        <div class="form-grid-4">
+          <div class="form-field">
+            <label for="dob">Date of Birth (YYYY-MM-DD) *</label>
+            <input type="date" id="dob" name="dob" required>
+          </div>
+          <div class="form-field">
+            <label for="gender">Gender *</label>
+            <select id="gender" name="gender" required>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="nationality">Nationality *</label>
+            <input type="text" id="nationality" name="nationality" value="Bangladeshi" required>
+          </div>
+          <div class="form-field">
+            <label for="religion">Religion *</label>
+            <select id="religion" name="religion" required>
+              <option value="Islam">Islam</option>
+              <option value="Hinduism">Hinduism</option>
+              <option value="Buddhism">Buddhism</option>
+              <option value="Christianity">Christianity</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-3" style="margin-top: 14px;">
+          <div class="form-field">
+            <label for="marital_status">Marital Status *</label>
+            <select id="marital_status" name="marital_status" required>
+              <option value="Single">Single / Unmarried</option>
+              <option value="Married">Married</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="quota">Quota *</label>
+            <select id="quota" name="quota" required>
+              <option value="Not Applicable">Not Applicable / Non Quota</option>
+              <option value="Freedom Fighter">Freedom Fighter</option>
+              <option value="Child of Freedom Fighter">Child of Freedom Fighter</option>
+              <option value="Grandchild of Freedom Fighter">Grand Child of Freedom Fighter</option>
+              <option value="Physically Handicapped">Physically Handicapped</option>
+              <option value="Orphan & Ansar-VDP">Orphan & Ansar-VDP</option>
+              <option value="Ethnic Minority">Ethnic Minority</option>
+              <option value="Female">Female Quota</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="departmental_status">Departmental Status *</label>
+            <select id="departmental_status" name="departmental_status" required>
+              <option value="Not Applicable">Not Applicable / None</option>
+              <option value="Govt. Employee">Govt. Employee</option>
+              <option value="Semi Govt. Employee">Semi Govt. Employee</option>
+              <option value="Autonomous">Autonomous</option>
+              <option value="Departmental Candidate">Departmental Candidate</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. IDENTIFICATION & CONTACT -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🆔 2. National Identification & Contact Info</span>
+            <span class="section-badge">Crucial</span>
+          </div>
+          <span style="font-size: 12px; color: var(--text-dim);">At least one ID (NID or Birth Reg) is required</span>
+        </div>
+
+        <div class="form-grid-3" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="national_id">National ID (NID) No.</label>
+            <input type="text" id="national_id" name="national_id" placeholder="10 or 17 digit NID">
+          </div>
+          <div class="form-field">
+            <label for="birth_registration">Birth Registration No.</label>
+            <input type="text" id="birth_registration" name="birth_registration" placeholder="17 digit Birth Registration">
+          </div>
+          <div class="form-field">
+            <label for="passport_id">Passport No. (Optional)</label>
+            <input type="text" id="passport_id" name="passport_id" placeholder="Leave empty if none">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label for="mobile">Mobile Number (11-digit) *</label>
+            <input type="tel" id="mobile" name="mobile" placeholder="e.g. 01700000000" required pattern="01[3-9][0-9]{8}">
+          </div>
+          <div class="form-field">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" placeholder="e.g. taion16240@gmail.com" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. PRESENT ADDRESS -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🏡 3. Present Address (বর্তমান ঠিকানা)</span>
+          </div>
+        </div>
+
+        <div class="form-grid-2" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="pres_care_of">Care Of *</label>
+            <input type="text" id="pres_care_of" name="present_address.care_of" placeholder="e.g. MD. ATIQUR RAHMAN" required>
+          </div>
+          <div class="form-field">
+            <label for="pres_village">Flat, Suite, Road, Village *</label>
+            <input type="text" id="pres_village" name="present_address.village_road_house" placeholder="e.g. Dandabor Noton Para" required>
+          </div>
+        </div>
+
+        <div class="form-grid-4">
+          <div class="form-field">
+            <label for="pres_district">District *</label>
+            <input type="text" id="pres_district" name="present_address.district" placeholder="e.g. Dhaka" required>
+          </div>
+          <div class="form-field">
+            <label for="pres_upazila">Upazila / Thana *</label>
+            <input type="text" id="pres_upazila" name="present_address.upazila" placeholder="e.g. Savar" required>
+          </div>
+          <div class="form-field">
+            <label for="pres_post_office">Post Office *</label>
+            <input type="text" id="pres_post_office" name="present_address.post_office" placeholder="e.g. Nabinagar Cantonment" required>
+          </div>
+          <div class="form-field">
+            <label for="pres_post_code">Post Code *</label>
+            <input type="text" id="pres_post_code" name="present_address.post_code" placeholder="e.g. 1344" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. PERMANENT ADDRESS -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🏛️ 4. Permanent Address (স্থায়ী ঠিকানা)</span>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnCopyAddress" title="Auto-fill permanent address with present address values">
+            📋 Same as Present Address
+          </button>
+        </div>
+
+        <div class="form-grid-2" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="perm_care_of">Care Of *</label>
+            <input type="text" id="perm_care_of" name="permanent_address.care_of" placeholder="e.g. MD. ATIQUR RAHMAN" required>
+          </div>
+          <div class="form-field">
+            <label for="perm_village">Flat, Suite, Road, Village *</label>
+            <input type="text" id="perm_village" name="permanent_address.village_road_house" placeholder="e.g. Ghoydy" required>
+          </div>
+        </div>
+
+        <div class="form-grid-4">
+          <div class="form-field">
+            <label for="perm_district">District *</label>
+            <input type="text" id="perm_district" name="permanent_address.district" placeholder="e.g. Madaripur" required>
+          </div>
+          <div class="form-field">
+            <label for="perm_upazila">Upazila / Thana *</label>
+            <input type="text" id="perm_upazila" name="permanent_address.upazila" placeholder="e.g. Madaripur Sadar" required>
+          </div>
+          <div class="form-field">
+            <label for="perm_post_office">Post Office *</label>
+            <input type="text" id="perm_post_office" name="permanent_address.post_office" placeholder="e.g. Ghatmajhi" required>
+          </div>
+          <div class="form-field">
+            <label for="perm_post_code">Post Code *</label>
+            <input type="text" id="perm_post_code" name="permanent_address.post_code" placeholder="e.g. 7900" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. SSC / EQUIVALENT EDUCATION -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🎓 5. SSC / Equivalent Education (মাধ্যমিক বা সমমান)</span>
+            <span class="section-badge">Required</span>
+          </div>
+        </div>
+
+        <div class="form-grid-4" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="ssc_exam">Examination *</label>
+            <select id="ssc_exam" name="ssc.examination" required>
+              <option value="SSC">S.S.C</option>
+              <option value="Dakhil">Dakhil</option>
+              <option value="SSC Vocational">S.S.C Vocational</option>
+              <option value="O Level">O Level</option>
+              <option value="Equivalent">Equivalent</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="ssc_board">Board *</label>
+            <select id="ssc_board" name="ssc.board" required>
+              <option value="Dhaka">Dhaka</option>
+              <option value="Chattogram">Chattogram</option>
+              <option value="Rajshahi">Rajshahi</option>
+              <option value="Barishal">Barishal</option>
+              <option value="Sylhet">Sylhet</option>
+              <option value="Cumilla">Cumilla</option>
+              <option value="Jashore">Jashore</option>
+              <option value="Dinajpur">Dinajpur</option>
+              <option value="Mymensingh">Mymensingh</option>
+              <option value="Madrasah">Madrasah</option>
+              <option value="Technical">Technical</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="ssc_roll">Roll No. *</label>
+            <input type="text" id="ssc_roll" name="ssc.roll" placeholder="e.g. 113968" required>
+          </div>
+          <div class="form-field">
+            <label for="ssc_group">Group / Major *</label>
+            <select id="ssc_group" name="ssc.group" required>
+              <option value="Science">Science</option>
+              <option value="Humanities">Humanities</option>
+              <option value="Business Studies">Business Studies</option>
+              <option value="Vocational">Vocational</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-4">
+          <div class="form-field">
+            <label for="ssc_result">Result Type *</label>
+            <select id="ssc_result" name="ssc.result" required>
+              <option value="GPA">GPA (Out of 5)</option>
+              <option value="1st Division">1st Division</option>
+              <option value="2nd Division">2nd Division</option>
+              <option value="Passed">Passed</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="ssc_gpa">GPA / Score *</label>
+            <input type="text" id="ssc_gpa" name="ssc.gpa" placeholder="e.g. 4.73" required>
+          </div>
+          <div class="form-field">
+            <label for="ssc_scale">Scale *</label>
+            <input type="text" id="ssc_scale" name="ssc.scale" value="5" required>
+          </div>
+          <div class="form-field">
+            <label for="ssc_year">Passing Year *</label>
+            <input type="text" id="ssc_year" name="ssc.year" placeholder="e.g. 2017" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. HSC / EQUIVALENT EDUCATION -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🎓 6. HSC / Equivalent Education (উচ্চ মাধ্যমিক বা সমমান)</span>
+            <span class="section-badge">Required</span>
+          </div>
+        </div>
+
+        <div class="form-grid-4" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="hsc_exam">Examination *</label>
+            <select id="hsc_exam" name="hsc.examination" required>
+              <option value="HSC">H.S.C</option>
+              <option value="Alim">Alim</option>
+              <option value="HSC Vocational">H.S.C Vocational</option>
+              <option value="Diploma in Engineering">Diploma in Engineering</option>
+              <option value="A Level">A Level</option>
+              <option value="Equivalent">Equivalent</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="hsc_board">Board *</label>
+            <select id="hsc_board" name="hsc.board" required>
+              <option value="Dhaka">Dhaka</option>
+              <option value="Chattogram">Chattogram</option>
+              <option value="Rajshahi">Rajshahi</option>
+              <option value="Barishal">Barishal</option>
+              <option value="Sylhet">Sylhet</option>
+              <option value="Cumilla">Cumilla</option>
+              <option value="Jashore">Jashore</option>
+              <option value="Dinajpur">Dinajpur</option>
+              <option value="Mymensingh">Mymensingh</option>
+              <option value="Madrasah">Madrasah</option>
+              <option value="Technical">Technical</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="hsc_roll">Roll No. *</label>
+            <input type="text" id="hsc_roll" name="hsc.roll" placeholder="e.g. 153030" required>
+          </div>
+          <div class="form-field">
+            <label for="hsc_group">Group / Major *</label>
+            <select id="hsc_group" name="hsc.group" required>
+              <option value="Science">Science</option>
+              <option value="Humanities">Humanities</option>
+              <option value="Business Studies">Business Studies</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-4">
+          <div class="form-field">
+            <label for="hsc_result">Result Type *</label>
+            <select id="hsc_result" name="hsc.result" required>
+              <option value="GPA">GPA (Out of 5)</option>
+              <option value="1st Division">1st Division</option>
+              <option value="2nd Division">2nd Division</option>
+              <option value="Passed">Passed</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="hsc_gpa">GPA / Score *</label>
+            <input type="text" id="hsc_gpa" name="hsc.gpa" placeholder="e.g. 5.00" required>
+          </div>
+          <div class="form-field">
+            <label for="hsc_scale">Scale *</label>
+            <input type="text" id="hsc_scale" name="hsc.scale" value="5" required>
+          </div>
+          <div class="form-field">
+            <label for="hsc_year">Passing Year *</label>
+            <input type="text" id="hsc_year" name="hsc.year" placeholder="e.g. 2020" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. GRADUATION / DEGREE -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🎓 7. Graduation / Degree (স্নাতক বা সমমান)</span>
+            <span class="section-badge">Required for Officer Posts</span>
+          </div>
+        </div>
+
+        <div class="form-grid-3" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="gra_exam">Examination / Degree *</label>
+            <input type="text" id="gra_exam" name="graduation.examination" placeholder="e.g. B.Sc Engineering" required>
+          </div>
+          <div class="form-field">
+            <label for="gra_institute">University / Institute *</label>
+            <input type="text" id="gra_institute" name="graduation.institute" placeholder="e.g. Gono Bishwabidyalay, Savar, Dhaka" required>
+          </div>
+          <div class="form-field">
+            <label for="gra_subject">Subject / Discipline *</label>
+            <input type="text" id="gra_subject" name="graduation.subject" placeholder="e.g. Computer Science & Engineering" required>
+          </div>
+        </div>
+
+        <div class="form-grid-5 form-grid-4">
+          <div class="form-field">
+            <label for="gra_result">Result Type *</label>
+            <select id="gra_result" name="graduation.result" required>
+              <option value="CGPA">CGPA (Out of 4)</option>
+              <option value="First Class">First Class</option>
+              <option value="Second Class">Second Class</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="gra_gpa">CGPA / Score *</label>
+            <input type="text" id="gra_gpa" name="graduation.gpa" placeholder="e.g. 3.63" required>
+          </div>
+          <div class="form-field">
+            <label for="gra_scale">Scale *</label>
+            <input type="text" id="gra_scale" name="graduation.scale" value="4" required>
+          </div>
+          <div class="form-field">
+            <label for="gra_duration">Course Duration *</label>
+            <select id="gra_duration" name="graduation.duration" required>
+              <option value="04">04 Years</option>
+              <option value="03">03 Years</option>
+              <option value="05">05 Years</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="gra_year">Passing Year *</label>
+            <input type="text" id="gra_year" name="graduation.year" placeholder="e.g. 2026" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. OPTIONAL: MASTERS DEGREE -->
+      <div class="section-card">
+        <div class="optional-toggle-banner">
+          <div>
+            <div style="font-weight: 700; font-size: 14px; color: var(--text-main);">➕ 8. Post-Graduation / Masters (স্নাতকোত্তর বা সমমান)</div>
+            <div style="font-size: 12px; color: var(--text-muted);">Check this box if you have a Masters degree you want automatically filled.</div>
+          </div>
+          <label class="toggle-label">
+            <input type="checkbox" id="toggleMasters">
+            <span style="font-weight: 600;">Include Masters</span>
+          </label>
+        </div>
+
+        <div id="mastersFieldsContainer" style="display: none;">
+          <div class="form-grid-3" style="margin-bottom: 14px;">
+            <div class="form-field">
+              <label for="mas_exam">Examination</label>
+              <input type="text" id="mas_exam" name="masters.examination" placeholder="e.g. M.Sc / Masters">
+            </div>
+            <div class="form-field">
+              <label for="mas_institute">University / Institute</label>
+              <input type="text" id="mas_institute" name="masters.institute" placeholder="e.g. University of Dhaka">
+            </div>
+            <div class="form-field">
+              <label for="mas_subject">Subject</label>
+              <input type="text" id="mas_subject" name="masters.subject" placeholder="e.g. Computer Science & Engineering">
+            </div>
+          </div>
+          <div class="form-grid-4">
+            <div class="form-field">
+              <label for="mas_result">Result Type</label>
+              <select id="mas_result" name="masters.result">
+                <option value="CGPA">CGPA (Out of 4)</option>
+                <option value="First Class">First Class</option>
+                <option value="Second Class">Second Class</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="mas_gpa">CGPA</label>
+              <input type="text" id="mas_gpa" name="masters.gpa" placeholder="e.g. 3.75">
+            </div>
+            <div class="form-field">
+              <label for="mas_duration">Duration</label>
+              <input type="text" id="mas_duration" name="masters.duration" placeholder="e.g. 01 / 02">
+            </div>
+            <div class="form-field">
+              <label for="mas_year">Passing Year</label>
+              <input type="text" id="mas_year" name="masters.year" placeholder="e.g. 2027">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 9. COMPUTER SKILLS & ADDITIONAL QUALIFICATIONS -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>💻 9. Computer Skills & Certification (কম্পিউটার দক্ষতা)</span>
+            <span class="section-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">Recommended for IT/CSE</span>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+          <label class="toggle-label">
+            <input type="checkbox" id="chkComputerLiteracy" checked>
+            <span>Auto-answer "Yes" to Computer Literacy / MS Office / IT Proficiency questions on circular forms</span>
+          </label>
+          <p style="font-size: 12px; color: var(--text-dim); margin-left: 26px;">
+            Teletalk circulars frequently have mandatory dropdowns asking: <em>"Do you have computer typing/literacy skills?"</em>. When checked, the autofill engine and bookmarklet will automatically select "Yes".
+          </p>
+        </div>
+      </div>
+
+      <!-- 10. RAW JSON & BOOKMARKLET GENERATOR -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>⚡ 10. Instant In-Browser Bookmarklet & JSON Source</span>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="copy-btn-inline" id="btnCopyJson">
+              📋 Copy JSON
+            </button>
+            <button type="button" class="copy-btn-inline" id="btnDownloadJson">
+              💾 Download profile.json
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+            Drag this bookmarklet button to your browser bookmarks bar. Then, whenever you open any Teletalk job application form in any browser tab, click the bookmark to fill your entire form in 1 second!
+          </p>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <a id="profileBookmarkletLink" href="#" class="btn btn-emerald" style="cursor: grab; font-weight: 700; padding: 10px 18px;" title="Drag me to your Bookmarks Bar!">
+              📌 ⚡ Autofill Teletalk Form
+            </a>
+            <button type="button" class="btn btn-secondary" id="btnCopyBookmarklet">
+              📋 Copy Bookmarklet Script
+            </button>
+          </div>
+        </div>
+
+        <label style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">
+          Live Raw JSON Representation (written to config/profile.json on Save):
+        </label>
+        <div class="json-preview-box" id="jsonPreviewDisplay">{/* Live JSON will appear here */}</div>
+      </div>
+
+    </form>
+
+    <!-- Floating Sticky Action Bar -->
+    <div class="floating-action-bar">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 13px; font-weight: 700; color: var(--text-main);" id="stickyApplicantName">Applicant Profile</span>
+        <span style="font-size: 11.5px; color: var(--text-muted); display: inline-block;" id="stickyStatusNote">Saved in config/profile.json</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" class="btn btn-outline btn-sm" id="btnDeleteProfile" style="border-color: rgba(244, 63, 94, 0.4); color: #f43f5e;" title="Permanently delete config/profile.json">
+          🗑️ Delete Profile
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnClearForm" title="Clear all fields">
+          🧹 Reset
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnSaveBottom" style="padding: 9px 20px; font-weight: 700;">
+          💾 Save Profile
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="profile.js"></script>
+</body>
+</html>

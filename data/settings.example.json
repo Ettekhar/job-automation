@@ -1,0 +1,9 @@
+{
+  "autoScrapeEnabled": false,
+  "autoScrapeIntervalMinutes": 1440,
+  "notifyEmail": "",
+  "smtpHost": "",
+  "smtpPort": 587,
+  "smtpUser": "",
+  "hasSmtpPass": false
+}

@@ -1,0 +1,67 @@
+{
+  "_comment": "Copy this file to profile.json and fill in YOUR real details. profile.json is gitignored -- never commit your real NID, birth registration number, or other personal info to GitHub, even in a private repo.",
+  "name_en": "MD. YOUR NAME",
+  "name_bn": "আপনার নাম",
+  "father_en": "MD. FATHER NAME",
+  "father_bn": "পিতার নাম",
+  "mother_en": "MOTHER NAME",
+  "mother_bn": "মাতার নাম",
+  "dob": "2001-07-01",
+  "nationality": "Bangladeshi",
+  "religion": "Islam",
+  "gender": "Male",
+  "marital_status": "Unmarried",
+  "national_id": "0000000000",
+  "birth_registration": "00000000000000000",
+  "passport_id": "",
+  "mobile": "01700000000",
+  "email": "you@example.com",
+  "quota": "Non Quota",
+  "departmental_status": "No",
+  "present_address": {
+    "care_of": "MD. FATHER NAME",
+    "village_road_house": "Your present address line",
+    "district": "Dhaka",
+    "upazila": "Savar",
+    "post_office": "Your post office",
+    "post_code": "1344"
+  },
+  "permanent_address": {
+    "care_of": "MD. FATHER NAME",
+    "village_road_house": "Your permanent address line",
+    "district": "Madaripur",
+    "upazila": "Madaripur Sadar",
+    "post_office": "Your post office",
+    "post_code": "7900"
+  },
+  "ssc": {
+    "examination": "SSC",
+    "board": "Dhaka",
+    "roll": "000000",
+    "result": "GPA",
+    "gpa": "5.00",
+    "group": "Science",
+    "year": "2017",
+    "scale": "5"
+  },
+  "hsc": {
+    "examination": "HSC",
+    "board": "Dhaka",
+    "roll": "000000",
+    "result": "GPA",
+    "gpa": "5.00",
+    "group": "Science",
+    "year": "2020",
+    "scale": "5"
+  },
+  "graduation": {
+    "examination": "B.Sc Engineering",
+    "institute": "Your University",
+    "subject": "Computer Science & Engineering",
+    "result": "CGPA",
+    "gpa": "3.63",
+    "year": "2026",
+    "duration": "04",
+    "scale": "4"
+  }
+}

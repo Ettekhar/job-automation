@@ -1,0 +1,21 @@
+{
+  "name": "teletalk-job-notifier",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dashboard": "node server.mjs",
+    "check": "node scripts/scrape.mjs",
+    "check:dry": "node scripts/scrape.mjs --dry-run",
+    "check:dry-all": "node scripts/scrape.mjs --dry-run --ignore-seen",
+    "check:verbose": "node scripts/scrape.mjs --dry-run --ignore-seen --verbose",
+    "autofill": "node scripts/autofill.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "nodemailer": "^6.9.16",
+    "playwright": "^1.47.0"
+  }
+}

@@ -1,0 +1,9 @@
+node_modules/
+config/profile.json
+.env
+data/downloads/
+data/settings.json
+application/*.jpg
+application/*.jpeg
+application/*.png
+*.log

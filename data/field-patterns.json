@@ -1,0 +1,78 @@
+{
+  "bhtpa.teletalk.com.bd": {
+    "learned_values": {},
+    "post_submit_flow": {
+      "/bhtpa2026/preview.php": [
+        {
+          "action": "image_upload",
+          "fields": [
+            {
+              "selector": "#photo",
+              "label": "Photo"
+            },
+            {
+              "selector": "#signature",
+              "label": "Signature"
+            }
+          ]
+        },
+        {
+          "action": "tick_checkboxes"
+        },
+        {
+          "action": "click",
+          "selector": "#submit"
+        }
+      ],
+      "/bhtpa2026/appcopy.php": [
+        {
+          "action": "image_upload",
+          "fields": [
+            {
+              "selector": "#photo",
+              "label": "Photo"
+            },
+            {
+              "selector": "#signature",
+              "label": "Signature"
+            }
+          ]
+        },
+        {
+          "action": "tick_checkboxes"
+        },
+        {
+          "action": "click",
+          "selector": "#submit"
+        }
+      ]
+    }
+  },
+  "policekishoreganj.teletalk.com.bd": {
+    "#permanent_district": {
+      "action": "select",
+      "selector": "#permanent_district",
+      "option": "Kishoreganj"
+    }
+  },
+  "__nav": {
+    "nav_pattern::bhtpa.teletalk.com.bd::Research Officer": [
+      {
+        "action": "click_text",
+        "value": "Circular: 56.02.0000.000.023.11.0004.26-150, Dated: 29 August 2026"
+      }
+    ],
+    "nav_pattern::bhtpa.teletalk.com.bd::Public Relations Officer": [
+      {
+        "action": "click_text",
+        "value": "Circular: 56.02.0000.000.023.11.0004.26-150, Dated: 29 August 2026"
+      }
+    ],
+    "nav_pattern::bhtpa.teletalk.com.bd::Assistant Director": [
+      {
+        "action": "click_text",
+        "value": "Circular: 56.02.0000.000.023.11.0004.26-150, Dated: 29 August 2026"
+      }
+    ]
+  }
+}
