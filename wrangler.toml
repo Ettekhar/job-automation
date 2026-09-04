@@ -1,7 +1,11 @@
-name = "teletalk-job-notifier"
+name = "job-automation"
+main = "worker.js"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "dist"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
 
 [browser]
 binding = "MYBROWSER"
