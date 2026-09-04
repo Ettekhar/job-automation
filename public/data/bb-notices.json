@@ -10,10 +10,9 @@
     "closeDate": "01/10/2026",
     "isMatch": true,
     "matchedKeywords": [
-      "senior officer (it)",
-      "officer (it)"
+      "IT"
     ],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10233-selected-candidate",
@@ -26,7 +25,7 @@
     "closeDate": "29/09/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10226-selected-candidate",
@@ -42,7 +41,7 @@
       "programmer",
       "assistant programmer"
     ],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-25102-viva",
@@ -55,7 +54,7 @@
     "closeDate": "18/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-25104-viva",
@@ -68,10 +67,9 @@
     "closeDate": "18/09/2026",
     "isMatch": true,
     "matchedKeywords": [
-      "senior officer (it)",
-      "officer (it)"
+      "IT"
     ],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10209-selected-candidate",
@@ -84,9 +82,9 @@
     "closeDate": "24/09/2026",
     "isMatch": true,
     "matchedKeywords": [
-      "officer (it)"
+      "IT"
     ],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10205-selected-candidate",
@@ -99,10 +97,9 @@
     "closeDate": "24/09/2026",
     "isMatch": true,
     "matchedKeywords": [
-      "senior officer (it)",
-      "officer (it)"
+      "IT"
     ],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10228-selected-candidate",
@@ -117,7 +114,7 @@
     "matchedKeywords": [
       "database administrator"
     ],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10235-selected-candidate",
@@ -130,7 +127,7 @@
     "closeDate": "17/09/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10224-selected-candidate",
@@ -145,7 +142,7 @@
     "matchedKeywords": [
       "programmer"
     ],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10206-selected-candidate",
@@ -161,7 +158,7 @@
       "programmer",
       "assistant programmer"
     ],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10231-selected-candidate",
@@ -174,7 +171,7 @@
     "closeDate": "09/09/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10234-selected-candidate",
@@ -187,7 +184,7 @@
     "closeDate": "10/09/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-10223-selected-candidate",
@@ -200,7 +197,7 @@
     "closeDate": "10/09/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -213,7 +210,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -226,7 +223,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -239,6 +236,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T13:52:52.946Z"
+    "scrapedAt": "2026-09-04T13:55:52.813Z"
   }
 ]
