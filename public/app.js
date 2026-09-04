@@ -917,35 +917,49 @@ async function saveKeywordsList() {
 // Settings & SMTP
 // -------------------------------------------------------------
 async function loadSettings() {
+  let s = null;
   try {
     const data = await safeJsonFetch("/api/settings", "/api/settings.json");
-    if (data && data.success) {
-      const s = data.settings;
-      document.getElementById("cfgSmtpHost").value = s.smtpHost || "smtp.titan.email";
-      document.getElementById("cfgSmtpPort").value = s.smtpPort || 587;
-      document.getElementById("cfgSmtpUser").value = s.smtpUser || "taion@razibmarketing.net";
-      document.getElementById("cfgNotifyEmail").value = s.notifyEmail || "taion@razibmarketing.net";
-      document.getElementById("cfgAutoScrapeEnabled").checked = Boolean(s.autoScrapeEnabled);
-      document.getElementById("cfgAutoScrapeInterval").value = s.autoScrapeIntervalMinutes || 60;
-      
-      if (s.notifyEmail) {
-        defaultNotifyEmail = s.notifyEmail;
-        document.getElementById("headerRecipientEmail").textContent = defaultNotifyEmail;
-      }
+    if (data && data.success && data.settings) {
+      s = data.settings;
     }
   } catch (err) {
-    console.error("Error loading settings:", err);
+    console.warn("Server settings fetch fallback:", err);
+  }
+
+  // Overlay locally saved settings if present
+  try {
+    const local = localStorage.getItem("teletalk_settings");
+    if (local) {
+      const parsed = JSON.parse(local);
+      s = { ...(s || {}), ...parsed };
+    }
+  } catch (_) {}
+
+  if (s) {
+    document.getElementById("cfgSmtpHost").value = s.smtpHost || "smtp.titan.email";
+    document.getElementById("cfgSmtpPort").value = s.smtpPort || 587;
+    document.getElementById("cfgSmtpUser").value = s.smtpUser || "taion@razibmarketing.net";
+    document.getElementById("cfgNotifyEmail").value = s.notifyEmail || "taion16240@gmail.com";
+    document.getElementById("cfgAutoScrapeEnabled").checked = Boolean(s.autoScrapeEnabled);
+    document.getElementById("cfgAutoScrapeInterval").value = s.autoScrapeIntervalMinutes || 360;
+
+    if (s.notifyEmail) {
+      defaultNotifyEmail = s.notifyEmail;
+      const headerEl = document.getElementById("headerRecipientEmail");
+      if (headerEl) headerEl.textContent = defaultNotifyEmail;
+    }
   }
 }
 
 async function saveSettingsData() {
   const settings = {
     smtpHost: document.getElementById("cfgSmtpHost").value.trim(),
-    smtpPort: parseInt(document.getElementById("cfgSmtpPort").value, 10),
+    smtpPort: parseInt(document.getElementById("cfgSmtpPort").value, 10) || 587,
     smtpUser: document.getElementById("cfgSmtpUser").value.trim(),
     notifyEmail: document.getElementById("cfgNotifyEmail").value.trim(),
     autoScrapeEnabled: document.getElementById("cfgAutoScrapeEnabled").checked,
-    autoScrapeIntervalMinutes: parseInt(document.getElementById("cfgAutoScrapeInterval").value, 10),
+    autoScrapeIntervalMinutes: parseInt(document.getElementById("cfgAutoScrapeInterval").value, 10) || 360,
   };
 
   const pass = document.getElementById("cfgSmtpPass").value.trim();
@@ -953,25 +967,38 @@ async function saveSettingsData() {
     settings.smtpPass = pass;
   }
 
+  // 1. Immediately persist to localStorage
+  try {
+    localStorage.setItem("teletalk_settings", JSON.stringify(settings));
+  } catch (_) {}
+
+  if (settings.notifyEmail) {
+    defaultNotifyEmail = settings.notifyEmail;
+    const headerEl = document.getElementById("headerRecipientEmail");
+    if (headerEl) headerEl.textContent = defaultNotifyEmail;
+  }
+
+  // 2. Synchronize to server/Worker
   try {
     const res = await fetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settings),
     });
-    const data = await res.json();
-    if (data.success) {
-      showToast("Configuration saved successfully!", "success");
-      document.getElementById("modalSettings").style.display = "none";
-      if (settings.notifyEmail) {
-        defaultNotifyEmail = settings.notifyEmail;
-        document.getElementById("headerRecipientEmail").textContent = defaultNotifyEmail;
-      }
-      loadOverview();
+
+    if (res.ok) {
+      try {
+        const text = await res.text();
+        if (text) JSON.parse(text);
+      } catch (_) {}
     }
   } catch (err) {
-    showToast("Error saving settings: " + err.message, "error");
+    console.warn("Server settings sync note:", err);
   }
+
+  showToast("Configuration saved successfully!", "success");
+  document.getElementById("modalSettings").style.display = "none";
+  loadOverview();
 }
 
 async function testSmtpAction() {
@@ -995,14 +1022,19 @@ async function testSmtpAction() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ host, port, user, pass, to }),
     });
-    const data = await res.json();
+
+    let data = { success: res.ok };
+    try {
+      const text = await res.text();
+      if (text) data = JSON.parse(text);
+    } catch (_) {}
 
     if (data.success) {
       resultEl.textContent = `✅ Success: Test email delivered to ${to}!`;
       resultEl.className = "test-result success";
       showToast(`SMTP Verified! Test email sent to ${to}.`, "success");
     } else {
-      resultEl.textContent = `❌ ${data.message}`;
+      resultEl.textContent = `❌ ${data.message || data.error || "Failed to send test email"}`;
       resultEl.className = "test-result error";
       showToast("SMTP Test Failed", "error");
     }

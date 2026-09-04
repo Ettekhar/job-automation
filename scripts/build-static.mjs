@@ -136,6 +136,7 @@ async function build() {
   await writeJsonSafe(path.join(publicDataDir, "overview.json"), overviewData);
   await writeJsonSafe(path.join(publicDataDir, "profile.json"), profile);
   await writeJsonSafe(path.join(publicDataDir, "profile.example.json"), profileExample);
+  await writeJsonSafe(path.join(publicDataDir, "settings.json"), settingsData.settings);
   await writeJsonSafe(path.join(publicDataDir, "status.json"), status);
 
   // 3. Create public/api endpoints for direct static serving

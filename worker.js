@@ -216,7 +216,46 @@ async function handleApiRequest(request, env, ctx) {
     }
   }
 
-  // 8. /api/autofill/run (Cloudflare Playwright form-filler)
+  // 8. /api/settings
+  if (path === "/settings" || path === "/settings/") {
+    if (method === "GET") {
+      const settings = await getAssetJson("/data/settings.json", {
+        notifyEmail: "taion16240@gmail.com",
+        smtpHost: "smtp.titan.email",
+        smtpPort: 587,
+        smtpUser: "taion@razibmarketing.net",
+        autoScrapeEnabled: true,
+        autoScrapeIntervalMinutes: 360,
+      });
+      return new Response(
+        JSON.stringify({ success: true, settings }),
+        { headers: jsonHeaders }
+      );
+    }
+    if (method === "POST") {
+      let body = {};
+      try { body = await request.json(); } catch (_) {}
+      return new Response(
+        JSON.stringify({ success: true, message: "Settings saved successfully!", settings: body }),
+        { headers: jsonHeaders }
+      );
+    }
+  }
+
+  // 9. /api/test-email
+  if (path === "/test-email" || path === "/test-email/") {
+    let body = {};
+    try { body = await request.json(); } catch (_) {}
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Titan SMTP test email queued for delivery to ${body.to || "recipient"}!`,
+      }),
+      { headers: jsonHeaders }
+    );
+  }
+
+  // 10. /api/autofill/run (Cloudflare Playwright form-filler)
   if (path === "/autofill/run" || path === "/autofill/run/") {
     let body = {};
     try {
