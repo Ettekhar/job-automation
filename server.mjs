@@ -179,12 +179,22 @@ app.get("/api/auth/status", async (req, res) => {
   res.json({ googleConfigured, user: user ? { email: user.email, name: user.name, picture: user.picture } : null });
 });
 
+// Helper to get Google OAuth callback URL
+function getCallbackUrl(req) {
+  if (process.env.GOOGLE_CALLBACK_URL) {
+    return process.env.GOOGLE_CALLBACK_URL;
+  }
+  const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
+  const rawHost = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3000";
+  // Normalize 127.0.0.1 to localhost for local dev matching Google credentials
+  const host = rawHost.replace(/^127\.0\.0\.1/, "localhost");
+  return `${proto}://${host}/api/auth/google/callback`;
+}
+
 // Google OAuth redirect
 app.get("/api/auth/google", (req, res) => {
   try {
-    const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
-    const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3000";
-    const callbackUrl = `${proto}://${host}/api/auth/google/callback`;
+    const callbackUrl = getCallbackUrl(req);
     const url = getGoogleAuthUrl(null, callbackUrl);
     res.redirect(url);
   } catch (err) {
@@ -200,9 +210,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
     return res.redirect("/login?error=oauth_failed");
   }
   try {
-    const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
-    const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3000";
-    const callbackUrl = `${proto}://${host}/api/auth/google/callback`;
+    const callbackUrl = getCallbackUrl(req);
     const userInfo = await exchangeGoogleCode(code, callbackUrl);
     if (!isEmailAllowed(userInfo.email)) {
       console.warn(`[Auth] Blocked login for non-allowed email: ${userInfo.email}`);
