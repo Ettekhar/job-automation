@@ -7,3 +7,4 @@ application/*.jpg
 application/*.jpeg
 application/*.png
 *.log
+dist/

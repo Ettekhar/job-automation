@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "settings": {
+    "autoScrapeEnabled": true,
+    "autoScrapeIntervalMinutes": 360,
+    "notifyEmail": "taion@razibmarketing.net",
+    "smtpReady": true,
+    "deployment": "Cloudflare Pages + GitHub Actions"
+  }
+}

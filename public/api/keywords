@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "keywords": {
+    "_comment": "Keywords are matched as whole words/phrases against the post title (case-insensitive, Bangla included) -- 'programmer' won't match inside another word, and 'it officer' won't match inside 'audit officer'. This list is intentionally narrow: genuine programming/CSE roles only. It deliberately EXCLUDES 'computer operator', 'data entry operator', 'steno-typist', etc. -- those are clerical/typing posts that happen to mention 'computer' but aren't programming jobs. Add more terms here if you want to broaden it (e.g. 'network engineer', 'system analyst').",
+    "keywords": [
+      "programmer",
+      "প্রোগ্রামার",
+      "software engineer",
+      "সফটওয়্যার প্রকৌশলী",
+      "software developer",
+      "web developer",
+      "system analyst",
+      "সিস্টেম এনালিস্ট",
+      "database administrator",
+      "programming officer",
+      "assistant programmer",
+      "সহকারী প্রোগ্রামার",
+      "senior officer (it)",
+      "officer (it)",
+      "it officer",
+      "information technology"
+    ]
+  }
+}

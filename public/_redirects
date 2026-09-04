@@ -1,0 +1,9 @@
+# Cloudflare Pages Redirects
+/api/overview /data/overview.json 200
+/api/jobs* /data/jobs.json 200
+/api/bb/notices /data/bb-notices.json 200
+/api/keywords /data/keywords.json 200
+/api/scrape/history /data/scrape-history.json 200
+/api/auth/me /api/auth/me.json 200
+/api/auth/status /api/auth/status.json 200
+/api/settings /api/settings.json 200

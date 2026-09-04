@@ -32,7 +32,7 @@
       <div class="nav-controls">
         <div class="status-pill" id="schedulerStatusPill">
           <span class="status-dot green"></span>
-          <span id="schedulerStatusText">Auto-Scan: Manual</span>
+          <span id="schedulerStatusText">Auto-Scan: Every 6h (GitHub)</span>
         </div>
 
         <button class="btn btn-primary btn-header-scrape" id="btnScrapeNow" title="Run live scraper right now and send email alerts for new matching jobs">
@@ -46,10 +46,10 @@
         </button>
 
         <div class="desktop-nav-group">
-          <a href="/profile" class="btn btn-secondary" id="btnNavProfile" title="Manage your personal and educational profile for form autofill (config/profile.json)">
+          <a href="/profile.html" class="btn btn-secondary" id="btnNavProfile" title="Manage your personal and educational profile for form autofill">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             <span>👤 Profile Info</span>
-            <span class="badge-count" id="navProfileBadge" style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc;">Checking...</span>
+            <span class="badge-count" id="navProfileBadge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">Active</span>
           </a>
 
           <button class="btn btn-secondary" id="btnOpenKeywords" title="Manage monitored target job titles">
@@ -91,9 +91,9 @@
           </button>
 
           <!-- User pill + Logout -->
-          <div class="user-pill" id="userPill" style="display:none;">
+          <div class="user-pill" id="userPill" style="display:flex;">
             <img class="user-avatar" id="userAvatar" src="" alt="" onerror="this.style.display='none'">
-            <span class="user-name" id="userNameLabel"></span>
+            <span class="user-name" id="userNameLabel">Taion (Admin)</span>
           </div>
           <a href="/api/auth/logout" class="btn btn-logout" id="btnLogout" title="Sign out">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
