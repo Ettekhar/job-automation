@@ -65,7 +65,7 @@ async function handleApiRequest(request, env, ctx) {
       if (res.ok) {
         return await res.json();
       }
-    } catch (e) {}
+    } catch (e) { }
     return fallback;
   }
 
@@ -160,24 +160,7 @@ async function handleApiRequest(request, env, ctx) {
     return new Response(JSON.stringify({ success: true, keywords }), { headers: jsonHeaders });
   }
 
-  // 5. /api/settings
-  if (path === "/settings" || path === "/settings/") {
-    return new Response(
-      JSON.stringify({
-        success: true,
-        settings: {
-          autoScrapeEnabled: true,
-          autoScrapeIntervalMinutes: 360,
-          notifyEmail: "taion@razibmarketing.net",
-          smtpReady: true,
-          mode: "Cloudflare Worker",
-        },
-      }),
-      { headers: jsonHeaders }
-    );
-  }
-
-  // 6. /api/auth/me & /api/auth/status
+  // 5. /api/auth/me & /api/auth/status
   if (path === "/auth/me" || path === "/auth/me/" || path === "/auth/status" || path === "/auth/status/") {
     const cfEmail = request.headers.get("Cf-Access-Authenticated-User-Email") || "taion16240@gmail.com";
     return new Response(
@@ -190,7 +173,7 @@ async function handleApiRequest(request, env, ctx) {
     );
   }
 
-  // 7. /api/profile
+  // 6. /api/profile
   if (path === "/profile" || path === "/profile/") {
     if (method === "GET") {
       const profile = await getAssetJson("/data/profile.json", null);
@@ -208,7 +191,7 @@ async function handleApiRequest(request, env, ctx) {
     }
     if (method === "POST") {
       let body = {};
-      try { body = await request.json(); } catch (_) {}
+      try { body = await request.json(); } catch (_) { }
       return new Response(
         JSON.stringify({ success: true, message: "Profile saved successfully!", profile: body }),
         { headers: jsonHeaders }
@@ -216,7 +199,11 @@ async function handleApiRequest(request, env, ctx) {
     }
   }
 
-  // 8. /api/settings
+  // 7. /api/settings
+  // NOTE: previously this route was defined TWICE. The first (earlier) definition
+  // returned unconditionally for both GET and POST, which meant the POST/save
+  // handler further down the file was unreachable dead code and settings saves
+  // silently did nothing. Merged into a single handler below.
   if (path === "/settings" || path === "/settings/") {
     if (method === "GET") {
       const settings = await getAssetJson("/data/settings.json", {
@@ -226,15 +213,17 @@ async function handleApiRequest(request, env, ctx) {
         smtpUser: "taion@razibmarketing.net",
         autoScrapeEnabled: true,
         autoScrapeIntervalMinutes: 360,
+        mode: "Cloudflare Worker",
       });
-      return new Response(
-        JSON.stringify({ success: true, settings }),
-        { headers: jsonHeaders }
-      );
+      return new Response(JSON.stringify({ success: true, settings }), { headers: jsonHeaders });
     }
     if (method === "POST") {
       let body = {};
-      try { body = await request.json(); } catch (_) {}
+      try { body = await request.json(); } catch (_) { }
+      // NOTE: this still doesn't persist anywhere (no KV/D1 write) -- it just
+      // echoes back what was posted, same as before. If you want saves to
+      // actually stick between requests, bind a KV namespace (env.SETTINGS_KV)
+      // and write here: await env.SETTINGS_KV.put('settings', JSON.stringify(body));
       return new Response(
         JSON.stringify({ success: true, message: "Settings saved successfully!", settings: body }),
         { headers: jsonHeaders }
@@ -242,10 +231,10 @@ async function handleApiRequest(request, env, ctx) {
     }
   }
 
-  // 9. /api/test-email
+  // 8. /api/test-email
   if (path === "/test-email" || path === "/test-email/") {
     let body = {};
-    try { body = await request.json(); } catch (_) {}
+    try { body = await request.json(); } catch (_) { }
     return new Response(
       JSON.stringify({
         success: true,
@@ -255,7 +244,7 @@ async function handleApiRequest(request, env, ctx) {
     );
   }
 
-  // 10. /api/autofill/launch (not supported in cloud edge)
+  // 9. /api/autofill/launch (not supported in cloud edge)
   if (path === "/autofill/launch" || path === "/autofill/launch/") {
     return new Response(
       JSON.stringify({
@@ -267,7 +256,7 @@ async function handleApiRequest(request, env, ctx) {
     );
   }
 
-  // 11. /api/autofill/bookmarklet
+  // 10. /api/autofill/bookmarklet
   if (path === "/autofill/bookmarklet" || path === "/autofill/bookmarklet/") {
     const profile = await getAssetJson("/data/profile.json", await getAssetJson("/data/profile.example.json", {}));
     const jsCode = `(function(){
@@ -331,7 +320,7 @@ async function handleApiRequest(request, env, ctx) {
     let body = {};
     try {
       body = await request.json();
-    } catch (e) {}
+    } catch (e) { }
 
     const { url: targetUrl, postTitle } = body;
     let profile = body.profile;
@@ -347,6 +336,40 @@ async function handleApiRequest(request, env, ctx) {
           browserNotConfigured: true,
           message:
             "Cloudflare Browser Run (MYBROWSER) is not enabled on this Worker yet. Enable Browser Rendering in Cloudflare Dashboard under Settings > Bindings, or use Method 1 (1-Click Bookmarklet)!",
+        }),
+        { headers: jsonHeaders }
+      );
+    }
+
+    // --- Preflight reachability check ---------------------------------
+    // Teletalk / BD govt portals frequently firewall off entire cloud-provider
+    // IP ranges (AWS/GCP/Azure/Cloudflare) to cut down on bot traffic. When that
+    // happens, spinning up a full headless browser just to hit ERR_CONNECTION_RESET
+    // wastes 5-10s of Browser Rendering time on every run. A plain `fetch()` from
+    // the Worker (not the browser binding) uses the same edge network and fails
+    // the same way if we're IP-blocked, but it fails in ~1s instead of ~10s, so we
+    // can short-circuit straight to the "use your own browser" fallback.
+    try {
+      const preflight = await fetch(targetUrl, {
+        method: "GET",
+        redirect: "follow",
+        cf: { cacheTtl: 0 },
+      });
+      // Some firewalls return a 200 with a block page rather than resetting the
+      // connection outright -- we don't try to detect that here, just confirm the
+      // TCP/TLS handshake itself succeeds.
+      void preflight.status;
+    } catch (preflightErr) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          networkBlocked: true,
+          message:
+            `Teletalk's server is refusing connections from Cloudflare's network (${preflightErr.message}). ` +
+            `This isn't something the Worker can retry past -- Teletalk firewalls off cloud-provider IP ranges, ` +
+            `and Cloudflare Browser Rendering shares that same pool. Use the 1-Click Bookmarklet (runs in your own ` +
+            `browser on your own IP) or your local autofill.mjs Playwright script instead, both of which connect fine.`,
+          logs: [`[preflight] ${preflightErr.message}`],
         }),
         { headers: jsonHeaders }
       );
@@ -377,23 +400,43 @@ async function handleApiRequest(request, env, ctx) {
       });
 
       log(`🌐 Navigating to ${targetUrl}...`);
+
+      // Retry with backoff -- helps with transient timeouts, but will NOT help
+      // if the failure is a firewall-level connection reset (same IP every time).
       let navigated = false;
-      try {
-        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
-        navigated = true;
-      } catch (e1) {
-        log(`⚠️ Primary load warning: ${e1.message}. Trying protocol fallback...`);
-        const altUrl = targetUrl.startsWith("https://")
-          ? targetUrl.replace("https://", "http://")
-          : targetUrl.replace("http://", "https://");
+      let lastErr = null;
+      const attempts = [targetUrl, targetUrl.startsWith("https://") ? targetUrl.replace("https://", "http://") : targetUrl.replace("http://", "https://")];
+
+      for (let i = 0; i < attempts.length && !navigated; i++) {
         try {
-          await page.goto(altUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
+          if (i > 0) {
+            log(`⚠️ Previous attempt failed: ${lastErr?.message}. Retrying via ${attempts[i]}...`);
+            await new Promise((r) => setTimeout(r, 800 * i)); // small backoff
+          }
+          await page.goto(attempts[i], { waitUntil: "domcontentloaded", timeout: 25000 });
           navigated = true;
-          log(`🌐 Connected via fallback: ${altUrl}`);
-        } catch (e2) {
-          throw new Error(`Portal connection reset (${e1.message})`);
+        } catch (e) {
+          lastErr = e;
         }
       }
+
+      if (!navigated) {
+        const isFirewallReset = /ERR_CONNECTION_RESET|ERR_CONNECTION_REFUSED|ERR_CONNECTION_TIMED_OUT/.test(lastErr?.message || "");
+        await browser.close();
+        return new Response(
+          JSON.stringify({
+            success: false,
+            networkBlocked: isFirewallReset,
+            error: `Portal connection reset (${lastErr?.message})`,
+            message: isFirewallReset
+              ? "Teletalk is rejecting connections from Cloudflare's IP range at the network level, not something a retry can fix. Use the 1-Click Bookmarklet or your local autofill.mjs script instead."
+              : `Navigation failed: ${lastErr?.message}`,
+            logs: executionLogs,
+          }),
+          { headers: jsonHeaders }
+        );
+      }
+
       log(`📄 Loaded page: "${await page.title().catch(() => "")}"`);
 
       // 1. Smart Post Navigation: If on an index / post-selection page
@@ -420,8 +463,8 @@ async function handleApiRequest(request, env, ctx) {
             const nextBtn = await page.$("input[type=submit], button[type=submit], input[value*='Next' i], input[value*='Submit' i]");
             if (nextBtn) {
               await Promise.all([
-                page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
-                nextBtn.click().catch(() => {}),
+                page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => { }),
+                nextBtn.click().catch(() => { }),
               ]);
             }
           }
@@ -573,7 +616,7 @@ async function handleApiRequest(request, env, ctx) {
             captchaSolved = true;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       const screenshotBuffer = await page.screenshot({ type: "jpeg", quality: 75 });
       const screenshot = `data:image/jpeg;base64,${screenshotBuffer.toString("base64")}`;
@@ -594,11 +637,11 @@ async function handleApiRequest(request, env, ctx) {
         { headers: jsonHeaders }
       );
     } catch (err) {
-      if (browser) try { await browser.close(); } catch (_) {}
+      if (browser) try { await browser.close(); } catch (_) { }
       return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: jsonHeaders });
     }
   }
 
-  // 8. Fallback
+  // 12. Fallback
   return new Response(JSON.stringify({ success: true, message: "OK" }), { headers: jsonHeaders });
 }
