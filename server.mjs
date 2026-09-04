@@ -182,7 +182,10 @@ app.get("/api/auth/status", async (req, res) => {
 // Google OAuth redirect
 app.get("/api/auth/google", (req, res) => {
   try {
-    const url = getGoogleAuthUrl();
+    const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
+    const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3000";
+    const callbackUrl = `${proto}://${host}/api/auth/google/callback`;
+    const url = getGoogleAuthUrl(null, callbackUrl);
     res.redirect(url);
   } catch (err) {
     console.error("[Auth] Google redirect error:", err.message);
@@ -197,7 +200,10 @@ app.get("/api/auth/google/callback", async (req, res) => {
     return res.redirect("/login?error=oauth_failed");
   }
   try {
-    const userInfo = await exchangeGoogleCode(code);
+    const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
+    const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3000";
+    const callbackUrl = `${proto}://${host}/api/auth/google/callback`;
+    const userInfo = await exchangeGoogleCode(code, callbackUrl);
     if (!isEmailAllowed(userInfo.email)) {
       console.warn(`[Auth] Blocked login for non-allowed email: ${userInfo.email}`);
       return res.redirect("/login?error=not_allowed");
@@ -995,11 +1001,12 @@ app.get("/profile", (req, res) => {
 // Get current profile (or null if empty/new) + example schema
 app.get("/api/profile", async (req, res) => {
   try {
-    const profile = await getProfile();
+    const userEmail = req.user?.email || req.query?.email || null;
+    const profile = await getProfile(userEmail);
     const example = await getProfileExample();
     res.json({
       success: true,
-      exists: Boolean(profile),
+      exists: Boolean(profile && profile.name_en),
       profile: profile || null,
       example: example || null,
     });
@@ -1017,15 +1024,16 @@ app.post("/api/profile", async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid profile payload. Expected a JSON object." });
     }
 
-    const saved = await saveProfile(profileData);
+    const userEmail = req.user?.email || profileData.email || null;
+    const saved = await saveProfile(profileData, userEmail);
     if (!saved) {
-      return res.status(500).json({ success: false, error: "Failed to write profile.json to disk." });
+      return res.status(500).json({ success: false, error: "Failed to write profile to disk." });
     }
 
-    console.log(`[Profile] Successfully saved profile for: ${profileData.name_en || "Anonymous"}`);
+    console.log(`[Profile] Successfully saved profile for: ${profileData.name_en || "Anonymous"} (${userEmail || "no email"})`);
     res.json({
       success: true,
-      message: "Profile saved successfully to config/profile.json!",
+      message: "Profile saved successfully!",
       profile: profileData,
     });
   } catch (err) {
@@ -1034,14 +1042,15 @@ app.post("/api/profile", async (req, res) => {
   }
 });
 
-// Delete / Clear profile.json
+// Delete / Clear profile
 app.delete("/api/profile", async (req, res) => {
   try {
-    await deleteProfile();
-    console.log("[Profile] profile.json deleted by user request.");
+    const userEmail = req.user?.email || null;
+    await deleteProfile(userEmail);
+    console.log(`[Profile] profile deleted by user request (${userEmail || "default"}).`);
     res.json({
       success: true,
-      message: "Profile deleted successfully. config/profile.json is now removed.",
+      message: "Profile deleted successfully.",
     });
   } catch (err) {
     console.error("[Delete Profile Error]:", err);

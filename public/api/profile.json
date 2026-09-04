@@ -1,72 +1,7 @@
 {
   "success": true,
-  "exists": true,
-  "profile": {
-    "name_en": "MD.ETTEKHAR RAHMAN TAION",
-    "name_bn": "মোঃ ইত্তেখার রহমান তায়ন",
-    "father_en": "MD. ATIQUR RAHMAN",
-    "father_bn": "মোঃ আতিকুর রহমান",
-    "mother_en": "RASHIDA AKTER",
-    "mother_bn": "রাশিদা আক্তার",
-    "dob": "2001-07-01",
-    "nationality": "Bangladeshi",
-    "religion": "Islam",
-    "gender": "Male",
-    "marital_status": "Single",
-    "national_id": "4661882367",
-    "birth_registration": "20012647239057382",
-    "passport_id": "",
-    "mobile": "01571116672",
-    "email": "taion16240@gmail.com",
-    "quota": "Not Applicable",
-    "departmental_status": "Not Applicable",
-    "present_address": {
-      "care_of": "MD. ATIQUR RAHMAN",
-      "village_road_house": "Dandabor Noton Para",
-      "district": "Dhaka",
-      "upazila": "Savar",
-      "post_office": "Nabinagar Cantonment",
-      "post_code": "1344"
-    },
-    "permanent_address": {
-      "care_of": "MD. ATIQUR RAHMAN",
-      "village_road_house": "Ghoydy",
-      "district": "Madaripur",
-      "upazila": "Madaripur Sadar",
-      "post_office": "Ghatmajhi",
-      "post_code": "7900"
-    },
-    "ssc": {
-      "examination": "SSC",
-      "board": "Dhaka",
-      "roll": "113968",
-      "result": "GPA",
-      "gpa": "4.73",
-      "group": "Science",
-      "year": "2017",
-      "scale": "5"
-    },
-    "hsc": {
-      "examination": "HSC",
-      "board": "Dhaka",
-      "roll": "153030",
-      "result": "GPA",
-      "gpa": "5.00",
-      "group": "Science",
-      "year": "2020",
-      "scale": "5"
-    },
-    "graduation": {
-      "examination": "B.Sc Engineering",
-      "institute": "Gono Bishwabidyalay, Savar, Dhaka",
-      "subject": "Computer Science & Engineering",
-      "result": "CGPA",
-      "gpa": "3.63",
-      "year": "2026",
-      "duration": "04",
-      "scale": "4"
-    }
-  },
+  "exists": false,
+  "profile": null,
   "example": {
     "_comment": "Copy this file to profile.json and fill in YOUR real details. profile.json is gitignored -- never commit your real NID, birth registration number, or other personal info to GitHub, even in a private repo.",
     "name_en": "MD. YOUR NAME",
@@ -91,17 +26,17 @@
       "care_of": "MD. FATHER NAME",
       "village_road_house": "Your present address line",
       "district": "Dhaka",
-      "upazila": "Savar",
-      "post_office": "Your post office",
-      "post_code": "1344"
+      "upazila": "Dhanmondi",
+      "post_office": "Dhanmondi",
+      "post_code": "1205"
     },
     "permanent_address": {
-      "care_of": "MD. FATHER NAME",
+      "care_of": "FATHER NAME",
       "village_road_house": "Your permanent address line",
-      "district": "Madaripur",
-      "upazila": "Madaripur Sadar",
-      "post_office": "Your post office",
-      "post_code": "7900"
+      "district": "Chittagong",
+      "upazila": "Kotwali",
+      "post_office": "Chittagong GPO",
+      "post_code": "4000"
     },
     "ssc": {
       "examination": "SSC",
@@ -110,7 +45,7 @@
       "result": "GPA",
       "gpa": "5.00",
       "group": "Science",
-      "year": "2017",
+      "year": "2018",
       "scale": "5"
     },
     "hsc": {
@@ -128,8 +63,8 @@
       "institute": "Your University",
       "subject": "Computer Science & Engineering",
       "result": "CGPA",
-      "gpa": "3.63",
-      "year": "2026",
+      "gpa": "3.50",
+      "year": "2024",
       "duration": "04",
       "scale": "4"
     }

@@ -78,15 +78,10 @@ export function authMiddleware(req, res, next) {
 }
 
 function handleLocalOrUnauthorized(req, res, next) {
-  const host = req.hostname || "";
-  const ip = req.ip || "";
-  const isLocal = host === "localhost" || host === "127.0.0.1" || ip === "127.0.0.1" || ip === "::1" || ip.endsWith("127.0.0.1");
-
-  // If accessing from local machine, automatically permit as Admin
-  if (isLocal) {
+  if (process.env.LOCAL_DEV_BYPASS === "true") {
     req.user = {
-      email: (process.env.ALLOWED_EMAILS || "taion16240@gmail.com").split(",")[0].trim(),
-      name: "Taion (Admin)",
+      email: (process.env.ALLOWED_EMAILS || "admin@localhost").split(",")[0].trim(),
+      name: "Local Dev User",
     };
     return next();
   }
@@ -104,7 +99,7 @@ function _unauthorized(req, res) {
 
 export function isEmailAllowed(email) {
   const allowed = process.env.ALLOWED_EMAILS;
-  if (!allowed || !allowed.trim()) return true;
+  if (!allowed || !allowed.trim()) return true; // Allow all emails if not restricted
   return allowed.split(",").map((e) => e.trim().toLowerCase()).includes(email.toLowerCase());
 }
 
@@ -112,9 +107,9 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
-export function getGoogleAuthUrl(state) {
+export function getGoogleAuthUrl(state, callbackUrlOverride) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const callbackUrl = process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
+  const callbackUrl = callbackUrlOverride || process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
   if (!clientId) throw new Error("GOOGLE_CLIENT_ID is not configured in .env");
   const params = new URLSearchParams({
     client_id: clientId,
@@ -128,10 +123,10 @@ export function getGoogleAuthUrl(state) {
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 }
 
-export async function exchangeGoogleCode(code) {
+export async function exchangeGoogleCode(code, callbackUrlOverride) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const callbackUrl = process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
+  const callbackUrl = callbackUrlOverride || process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
   if (!clientId || !clientSecret) throw new Error("GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not configured in .env");
 
   const tokenRes = await fetch(GOOGLE_TOKEN_URL, {

@@ -60,60 +60,75 @@ function showToast(message, type = "info") {
   }, 3000);
 }
 
+let activeEmail = null;
+
+async function getActiveUser() {
+  try {
+    const res = await fetch("/api/auth/me");
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.user && data.user.email) {
+        activeEmail = data.user.email.toLowerCase().trim();
+        localStorage.setItem("teletalk_active_email", activeEmail);
+        return data.user;
+      }
+    }
+  } catch (_) {}
+  activeEmail = localStorage.getItem("teletalk_active_email") || null;
+  return null;
+}
+
+window.handleLogoutClick = async function(e) {
+  if (e) e.preventDefault();
+  try { localStorage.removeItem("teletalk_active_email"); } catch(_) {}
+  try { await fetch("/api/auth/logout", { method: "POST" }); } catch(_) {}
+  window.location.href = "/api/auth/logout";
+};
+
 // Fetch Profile from Server or Static Assets
 async function fetchProfile() {
   try {
+    const user = await getActiveUser();
     let profileData = null;
     let exampleData = null;
     let exists = false;
 
-    // 1. Try fetching from /api/profile
+    // Load example template schema for sample reference
     try {
-      const res = await fetch("/api/profile");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.example) exampleData = data.example;
-        if (data.profile && (data.exists || data.profile.name_en)) {
-          profileData = data.profile;
-          exists = true;
-        }
-      }
+      const exRes = await fetch("/data/profile.example.json");
+      if (exRes.ok) exampleData = await exRes.json();
     } catch (_) {}
+    if (exampleData) exampleProfileData = exampleData;
 
-    // 2. Fallback to /data/profile.json (static pre-indexed asset)
-    if (!profileData) {
+    // 1. Check user-specific localStorage first
+    if (activeEmail) {
       try {
-        const staticRes = await fetch("/data/profile.json");
-        if (staticRes.ok) {
-          const sData = await staticRes.json();
-          if (sData && sData.name_en) {
-            profileData = sData;
+        const localUser = localStorage.getItem("teletalk_profile_" + activeEmail);
+        if (localUser) {
+          const parsed = JSON.parse(localUser);
+          if (parsed && parsed.name_en) {
+            profileData = parsed;
             exists = true;
           }
         }
       } catch (_) {}
     }
 
-    // 3. Fallback to /data/profile.example.json
-    if (!exampleData) {
-      try {
-        const exRes = await fetch("/data/profile.example.json");
-        if (exRes.ok) exampleData = await exRes.json();
-      } catch (_) {}
-    }
-
-    // 4. Fallback to localStorage
+    // 2. If not found in localStorage, fetch from /api/profile
     if (!profileData) {
       try {
-        const local = localStorage.getItem("teletalk_profile");
-        if (local) {
-          profileData = JSON.parse(local);
-          exists = true;
+        const res = await fetch("/api/profile");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.exists && data.profile && data.profile.name_en) {
+            if (!activeEmail || !data.profile.email || data.profile.email.toLowerCase() === activeEmail) {
+              profileData = data.profile;
+              exists = true;
+            }
+          }
         }
       } catch (_) {}
     }
-
-    if (exampleData) exampleProfileData = exampleData;
 
     if (exists && profileData) {
       currentProfileData = profileData;
@@ -122,6 +137,9 @@ async function fetchProfile() {
     } else {
       currentProfileData = null;
       clearFormFields();
+      if (activeEmail) {
+        setVal("email", activeEmail);
+      }
       setProfileStatus(false);
     }
     updateLiveJsonAndBookmarklet();
@@ -135,20 +153,20 @@ async function fetchProfile() {
 function setProfileStatus(hasProfile, name = "") {
   if (hasProfile) {
     alertBanner.className = "banner-alert success";
-    alertText.innerHTML = `Active profile loaded for <strong>${escapeHtml(name)}</strong> from <code>config/profile.json</code>. You can edit any details, add qualifications, or save changes anytime.`;
+    alertText.innerHTML = `Active profile loaded for <strong>${escapeHtml(name)}</strong>. You can edit any details, add qualifications, or save changes anytime.`;
     badgePill.className = "profile-status-badge";
     badgePill.querySelector(".status-dot").className = "status-dot green";
     badgeText.textContent = "Profile Active";
     stickyName.textContent = name || "Applicant Profile";
-    stickyNote.textContent = "Saved in config/profile.json";
+    stickyNote.textContent = activeEmail ? `Linked to ${activeEmail}` : "Active Profile";
   } else {
     alertBanner.className = "banner-alert warning";
-    alertText.innerHTML = `No profile detected in <code>config/profile.json</code>. If you are a new applicant, fill in your details below and click <strong>Save Profile</strong> (or click <strong>Load Sample</strong> for reference).`;
+    alertText.innerHTML = `No profile saved yet${activeEmail ? ` for <strong>${escapeHtml(activeEmail)}</strong>` : ""}. Fill in your details below and click <strong>Save Profile</strong> (or click <strong>Load Sample</strong> for reference).`;
     badgePill.className = "profile-status-badge empty";
     badgePill.querySelector(".status-dot").className = "status-dot amber";
     badgeText.textContent = "Empty / New";
     stickyName.textContent = "New Applicant Profile";
-    stickyNote.textContent = "Unsaved (New)";
+    stickyNote.textContent = "Ready for your details";
   }
 }
 
@@ -566,8 +584,12 @@ async function handleSaveProfile() {
   btnSaveBottom.textContent = "Saving...";
 
   try {
-    // Persist to local storage immediately
+    // Persist to email-scoped local storage immediately
     try {
+      if (activeEmail) {
+        localStorage.setItem("teletalk_profile_" + activeEmail, JSON.stringify(profile));
+        localStorage.setItem("teletalk_active_email", activeEmail);
+      }
       localStorage.setItem("teletalk_profile", JSON.stringify(profile));
     } catch (_) {}
 

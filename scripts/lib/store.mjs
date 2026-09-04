@@ -171,9 +171,19 @@ export async function saveNotices(noticesList) {
   return sorted;
 }
 
-// Profile API
-export async function getProfile() {
+// Profile API (scoped per user email for multi-account isolation)
+export async function getProfile(email = null) {
   try {
+    if (email) {
+      const safeKey = String(email).toLowerCase().replace(/[^a-z0-9]/g, "_");
+      const userProfilePath = path.join(CONFIG_DIR, `profile_${safeKey}.json`);
+      try {
+        const raw = await fs.readFile(userProfilePath, "utf-8");
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
     const raw = await fs.readFile(PROFILE_PATH, "utf-8");
     return JSON.parse(raw);
   } catch {
@@ -190,12 +200,23 @@ export async function getProfileExample() {
   }
 }
 
-export async function saveProfile(profileData) {
+export async function saveProfile(profileData, email = null) {
+  const targetEmail = email || profileData.email;
+  if (targetEmail) {
+    const safeKey = String(targetEmail).toLowerCase().replace(/[^a-z0-9]/g, "_");
+    const userProfilePath = path.join(CONFIG_DIR, `profile_${safeKey}.json`);
+    await writeJson(userProfilePath, profileData);
+  }
   return await writeJson(PROFILE_PATH, profileData);
 }
 
-export async function deleteProfile() {
+export async function deleteProfile(email = null) {
   try {
+    if (email) {
+      const safeKey = String(email).toLowerCase().replace(/[^a-z0-9]/g, "_");
+      const userProfilePath = path.join(CONFIG_DIR, `profile_${safeKey}.json`);
+      try { await fs.unlink(userProfilePath); } catch (_) {}
+    }
     await fs.unlink(PROFILE_PATH);
     return true;
   } catch (err) {

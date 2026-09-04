@@ -7,7 +7,7 @@ let noticeFilterMode = "all";
 let targetKeywords = [];
 let sseSource = null;
 let currentAlertJob = null;
-let defaultNotifyEmail = "taion@razibmarketing.net";
+let defaultNotifyEmail = "";
 
 let rawAllJobsCache = [];
 let rawAllNoticesCache = [];
@@ -43,11 +43,18 @@ async function safeJsonFetch(primaryUrl, fallbackUrl) {
 async function apiFetch(url, options = {}) {
   const res = await fetch(url, options);
   if (res.status === 401) {
-    window.location.href = "/login";
+    window.location.href = "/login.html";
     return null;
   }
   return res;
 }
+
+window.handleLogoutClick = async function (e) {
+  if (e) e.preventDefault();
+  try { localStorage.removeItem("teletalk_active_email"); } catch (_) {}
+  try { await fetch("/api/auth/logout", { method: "POST" }); } catch (_) {}
+  window.location.href = "/api/auth/logout";
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
@@ -70,25 +77,36 @@ async function initApp() {
 async function loadCurrentUser() {
   try {
     const data = await safeJsonFetch("/api/auth/me", "/api/auth/me.json");
-    const user = data && data.user ? data.user : { name: "Admin", email: "taion16240@gmail.com" };
+    const user = data && data.user ? data.user : null;
     const pill = document.getElementById("userPill");
     const avatar = document.getElementById("userAvatar");
     const nameLabel = document.getElementById("userNameLabel");
-    if (pill) {
-      pill.style.display = "flex";
-      if (avatar && user.picture) {
-        avatar.src = user.picture;
-        avatar.style.display = "block";
+
+    if (user && user.email) {
+      localStorage.setItem("teletalk_active_email", user.email.toLowerCase().trim());
+      if (pill) pill.style.display = "flex";
+      if (avatar) {
+        if (user.picture) {
+          avatar.src = user.picture;
+          avatar.style.display = "block";
+        } else {
+          avatar.style.display = "none";
+        }
       }
       if (nameLabel) {
-        nameLabel.textContent = user.name || user.email || "Admin";
+        nameLabel.textContent = user.name || user.email;
       }
+      if (!defaultNotifyEmail) {
+        defaultNotifyEmail = user.email;
+        const headerEl = document.getElementById("headerRecipientEmail");
+        if (headerEl) headerEl.textContent = defaultNotifyEmail;
+      }
+    } else {
+      if (nameLabel) nameLabel.textContent = "Account";
     }
   } catch (e) {
-    const pill = document.getElementById("userPill");
     const nameLabel = document.getElementById("userNameLabel");
-    if (pill) pill.style.display = "flex";
-    if (nameLabel) nameLabel.textContent = "Admin";
+    if (nameLabel) nameLabel.textContent = "Account";
   }
 }
 
@@ -957,15 +975,16 @@ async function loadSettings() {
   } catch (_) {}
 
   if (s) {
+    const activeEmail = localStorage.getItem("teletalk_active_email") || "";
     document.getElementById("cfgSmtpHost").value = s.smtpHost || "smtp.titan.email";
     document.getElementById("cfgSmtpPort").value = s.smtpPort || 587;
-    document.getElementById("cfgSmtpUser").value = s.smtpUser || "taion@razibmarketing.net";
-    document.getElementById("cfgNotifyEmail").value = s.notifyEmail || "taion16240@gmail.com";
+    document.getElementById("cfgSmtpUser").value = s.smtpUser || "";
+    document.getElementById("cfgNotifyEmail").value = s.notifyEmail || activeEmail;
     document.getElementById("cfgAutoScrapeEnabled").checked = Boolean(s.autoScrapeEnabled);
     document.getElementById("cfgAutoScrapeInterval").value = s.autoScrapeIntervalMinutes || 360;
 
-    if (s.notifyEmail) {
-      defaultNotifyEmail = s.notifyEmail;
+    if (s.notifyEmail || activeEmail) {
+      defaultNotifyEmail = s.notifyEmail || activeEmail;
       const headerEl = document.getElementById("headerRecipientEmail");
       if (headerEl) headerEl.textContent = defaultNotifyEmail;
     }

@@ -22,17 +22,17 @@
     "care_of": "MD. FATHER NAME",
     "village_road_house": "Your present address line",
     "district": "Dhaka",
-    "upazila": "Savar",
-    "post_office": "Your post office",
-    "post_code": "1344"
+    "upazila": "Dhanmondi",
+    "post_office": "Dhanmondi",
+    "post_code": "1205"
   },
   "permanent_address": {
-    "care_of": "MD. FATHER NAME",
+    "care_of": "FATHER NAME",
     "village_road_house": "Your permanent address line",
-    "district": "Madaripur",
-    "upazila": "Madaripur Sadar",
-    "post_office": "Your post office",
-    "post_code": "7900"
+    "district": "Chittagong",
+    "upazila": "Kotwali",
+    "post_office": "Chittagong GPO",
+    "post_code": "4000"
   },
   "ssc": {
     "examination": "SSC",
@@ -41,7 +41,7 @@
     "result": "GPA",
     "gpa": "5.00",
     "group": "Science",
-    "year": "2017",
+    "year": "2018",
     "scale": "5"
   },
   "hsc": {
@@ -59,8 +59,8 @@
     "institute": "Your University",
     "subject": "Computer Science & Engineering",
     "result": "CGPA",
-    "gpa": "3.63",
-    "year": "2026",
+    "gpa": "3.50",
+    "year": "2024",
     "duration": "04",
     "scale": "4"
   }

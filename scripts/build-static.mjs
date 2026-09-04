@@ -102,17 +102,13 @@ async function build() {
 
   const authMeData = {
     success: true,
-    user: {
-      name: "Admin (Cloudflare)",
-      email: "taion16240@gmail.com",
-      picture: null,
-    },
+    user: null,
   };
 
   const authStatusData = {
     success: true,
     googleConfigured: true,
-    user: authMeData.user,
+    user: null,
   };
 
   const settingsData = {
@@ -120,7 +116,7 @@ async function build() {
     settings: {
       autoScrapeEnabled: true,
       autoScrapeIntervalMinutes: 360,
-      notifyEmail: "taion@razibmarketing.net",
+      notifyEmail: "",
       smtpReady: true,
       deployment: "Cloudflare Pages + GitHub Actions",
     },
@@ -134,7 +130,7 @@ async function build() {
   await writeJsonSafe(path.join(publicDataDir, "scrape-history.json"), history);
   await writeJsonSafe(path.join(publicDataDir, "keywords.json"), keywords);
   await writeJsonSafe(path.join(publicDataDir, "overview.json"), overviewData);
-  await writeJsonSafe(path.join(publicDataDir, "profile.json"), profile);
+  await writeJsonSafe(path.join(publicDataDir, "profile.json"), { name_en: "", email: "" });
   await writeJsonSafe(path.join(publicDataDir, "profile.example.json"), profileExample);
   await writeJsonSafe(path.join(publicDataDir, "settings.json"), settingsData.settings);
   await writeJsonSafe(path.join(publicDataDir, "status.json"), status);
@@ -158,17 +154,26 @@ async function build() {
 
   const profileApiData = {
     success: true,
-    exists: Boolean(profile && profile.name_en),
-    profile: profile,
+    exists: false,
+    profile: null,
     example: profileExample,
   };
   await writeJsonSafe(path.join(publicApiDir, "profile"), profileApiData);
   await writeJsonSafe(path.join(publicApiDir, "profile.json"), profileApiData);
 
-  // Bookmarklet API
-  const activeProfile = profile || profileExample;
+  // Bookmarklet API - dynamically reads profile from browser localStorage
   const jsCode = `(function(){
-    var p = ${JSON.stringify(activeProfile)};
+    var p = null;
+    try {
+      var actEmail = localStorage.getItem('teletalk_active_email');
+      var raw = actEmail ? localStorage.getItem('teletalk_profile_' + actEmail.toLowerCase()) : null;
+      if (!raw) raw = localStorage.getItem('teletalk_profile');
+      if (raw) p = JSON.parse(raw);
+    } catch(e){}
+    if (!p || !p.name_en) {
+      alert('⚠️ No active profile found in your browser! Please open your Teletalk Job Radar Profile page and save your details first.');
+      return;
+    }
     function setVal(sel, val) {
       if (val === undefined || val === null || val === '') return;
       var el = document.querySelector(sel);

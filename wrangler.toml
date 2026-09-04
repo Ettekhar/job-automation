@@ -12,3 +12,6 @@ binding = "MYBROWSER"
 
 [ai]
 binding = "AI"
+
+[vars]
+ALLOWED_EMAILS = ""

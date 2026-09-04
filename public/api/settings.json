@@ -3,7 +3,7 @@
   "settings": {
     "autoScrapeEnabled": true,
     "autoScrapeIntervalMinutes": 360,
-    "notifyEmail": "taion@razibmarketing.net",
+    "notifyEmail": "",
     "smtpReady": true,
     "deployment": "Cloudflare Pages + GitHub Actions"
   }

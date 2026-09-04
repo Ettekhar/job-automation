@@ -10,6 +10,76 @@
  * before assuming edits here take effect -- see your deploy command / CI config.
  */
 
+function parseCookies(header) {
+  const map = {};
+  if (!header) return map;
+  header.split(";").forEach((pair) => {
+    const [k, ...v] = pair.trim().split("=");
+    if (k) map[k] = decodeURIComponent(v.join("="));
+  });
+  return map;
+}
+
+function setCookieHeader(token, maxAge = 7 * 24 * 3600) {
+  return `__session=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
+}
+
+function clearCookieHeader() {
+  return `__session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
+
+async function signSession(user, secretStr) {
+  const enc = new TextEncoder();
+  const payload = btoa(unescape(encodeURIComponent(JSON.stringify({
+    email: user.email,
+    name: user.name || user.email,
+    picture: user.picture || null,
+    exp: Date.now() + 7 * 24 * 3600 * 1000,
+  })))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secretStr || "default-secret-change-in-env-32-chars!"),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sigBuffer = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+  const sig = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `${payload}.${sig}`;
+}
+
+async function verifySession(token, secretStr) {
+  if (!token || typeof token !== "string" || !token.includes(".")) return null;
+  const [payloadStr, sigStr] = token.split(".");
+  if (!payloadStr || !sigStr) return null;
+  try {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(secretStr || "default-secret-change-in-env-32-chars!"),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+    let base64 = sigStr.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    const sigBytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const valid = await crypto.subtle.verify("HMAC", key, sigBytes, enc.encode(payloadStr));
+    if (!valid) return null;
+
+    let pBase64 = payloadStr.replace(/-/g, "+").replace(/_/g, "/");
+    while (pBase64.length % 4) pBase64 += "=";
+    const jsonStr = decodeURIComponent(escape(atob(pBase64)));
+    const data = JSON.parse(jsonStr);
+    if (data.exp && Date.now() > data.exp) return null;
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -156,17 +226,25 @@ export async function onRequest(context) {
         { headers: jsonHeaders }
       );
     }
-    const settings = await getAssetJson("/data/settings.json", {
-      autoScrapeEnabled: true,
-      autoScrapeIntervalMinutes: 360,
-      notifyEmail: "taion@razibmarketing.net",
-      smtpHost: "smtp.titan.email",
-      smtpPort: 587,
-      smtpUser: "taion@razibmarketing.net",
-      smtpReady: true,
-      mode: "Cloudflare Pages",
-    });
-    return new Response(JSON.stringify({ success: true, settings }), { headers: jsonHeaders });
+    const cookies = parseCookies(request.headers.get("Cookie"));
+    const secret = env.AUTH_SECRET || "5709877fea4f743560f2feba3fd25c56043452031e2beba205acba81cbf55b7a";
+    const user = cookies["__session"] ? await verifySession(cookies["__session"], secret) : null;
+    return new Response(
+      JSON.stringify({
+        success: true,
+        settings: {
+          notifyEmail: user ? user.email : "",
+          smtpHost: "smtp.titan.email",
+          smtpPort: 587,
+          smtpUser: "",
+          autoScrapeEnabled: true,
+          autoScrapeIntervalMinutes: 360,
+          smtpReady: true,
+          mode: "Cloudflare Pages",
+        },
+      }),
+      { headers: jsonHeaders }
+    );
   }
 
   // 6. /api/scrape/history
@@ -175,32 +253,129 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ success: true, history }), { headers: jsonHeaders });
   }
 
-  // 7. /api/auth/me and /api/auth/status
-  if (path === "/auth/me" || path === "/auth/me/") {
-    // Cloudflare Access integration: Cloudflare passes Cf-Access-Authenticated-User-Email
-    const cfEmail = request.headers.get("Cf-Access-Authenticated-User-Email") || "taion16240@gmail.com";
+  // 7. Google OAuth redirect
+  if (path === "/auth/google" || path === "/auth/google/") {
+    const clientId = env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      return Response.redirect(`${url.origin}/login.html?error=oauth_unconfigured`, 302);
+    }
+    const redirectUri = `${url.origin}/api/auth/google/callback`;
+    const googleUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    googleUrl.searchParams.set("client_id", clientId);
+    googleUrl.searchParams.set("redirect_uri", redirectUri);
+    googleUrl.searchParams.set("response_type", "code");
+    googleUrl.searchParams.set("scope", "openid email profile");
+    googleUrl.searchParams.set("prompt", "select_account");
+    return Response.redirect(googleUrl.toString(), 302);
+  }
+
+  // 7b. Google OAuth callback
+  if (path === "/auth/google/callback" || path === "/auth/google/callback/") {
+    const code = url.searchParams.get("code");
+    const error = url.searchParams.get("error");
+    if (error || !code) {
+      return Response.redirect(`${url.origin}/login.html?error=oauth_failed`, 302);
+    }
+    try {
+      const clientId = env.GOOGLE_CLIENT_ID;
+      const clientSecret = env.GOOGLE_CLIENT_SECRET;
+      if (!clientId || !clientSecret) {
+        return Response.redirect(`${url.origin}/login.html?error=oauth_unconfigured`, 302);
+      }
+      const redirectUri = `${url.origin}/api/auth/google/callback`;
+
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }).toString(),
+      });
+
+      if (!tokenRes.ok) {
+        console.error("Google token error:", await tokenRes.text());
+        return Response.redirect(`${url.origin}/login.html?error=oauth_failed`, 302);
+      }
+
+      const tokenData = await tokenRes.json();
+      const profileRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+
+      if (!profileRes.ok) {
+        return Response.redirect(`${url.origin}/login.html?error=oauth_failed`, 302);
+      }
+
+      const profile = await profileRes.json();
+      const allowedEmails = (env.ALLOWED_EMAILS || "").trim();
+      if (allowedEmails) {
+        const allowedList = allowedEmails.split(",").map((e) => e.trim().toLowerCase());
+        if (!allowedList.includes(profile.email.toLowerCase())) {
+          return Response.redirect(`${url.origin}/login.html?error=not_allowed`, 302);
+        }
+      }
+
+      const user = {
+        email: profile.email,
+        name: profile.name || profile.email,
+        picture: profile.picture || null,
+      };
+
+      const secret = env.AUTH_SECRET || "default-session-secret-key-32-bytes";
+      const sessionToken = await signSession(user, secret);
+
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/",
+          "Set-Cookie": setCookieHeader(sessionToken),
+        },
+      });
+    } catch (err) {
+      console.error("OAuth callback exception:", err);
+      return Response.redirect(`${url.origin}/login.html?error=oauth_failed`, 302);
+    }
+  }
+
+  // 7c. Logout
+  if (path === "/auth/logout" || path === "/auth/logout/") {
+    if (method === "POST") {
+      return new Response(JSON.stringify({ success: true }), {
+        headers: {
+          ...jsonHeaders,
+          "Set-Cookie": clearCookieHeader(),
+        },
+      });
+    }
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: "/login.html",
+        "Set-Cookie": clearCookieHeader(),
+      },
+    });
+  }
+
+  // 7d. /api/auth/me & /api/auth/status
+  if (path === "/auth/me" || path === "/auth/me/" || path === "/auth/status" || path === "/auth/status/") {
+    const cookies = parseCookies(request.headers.get("Cookie"));
+    const secret = env.AUTH_SECRET || "default-session-secret-key-32-bytes";
+    let user = cookies["__session"] ? await verifySession(cookies["__session"], secret) : null;
+    if (!user) {
+      const cfEmail = request.headers.get("Cf-Access-Authenticated-User-Email");
+      if (cfEmail) {
+        user = { email: cfEmail, name: cfEmail.split("@")[0], picture: null };
+      }
+    }
     return new Response(
       JSON.stringify({
         success: true,
-        user: {
-          name: "Taion (Admin)",
-          email: cfEmail,
-          picture: null,
-        },
-      }),
-      { headers: jsonHeaders }
-    );
-  }
-
-  if (path === "/auth/status" || path === "/auth/status/") {
-    return new Response(
-      JSON.stringify({
         googleConfigured: true,
-        user: {
-          name: "Taion (Admin)",
-          email: "taion16240@gmail.com",
-          picture: null,
-        },
+        user: user ? { email: user.email, name: user.name, picture: user.picture } : null,
       }),
       { headers: jsonHeaders }
     );
@@ -219,8 +394,6 @@ export async function onRequest(context) {
   }
 
   // 9. /api/profile
-  // Previously always returned exists:false and never read /data/profile.json,
-  // and had no POST handler -- saving a profile through this path was impossible.
   if (path === "/profile" || path === "/profile/") {
     if (method === "POST") {
       let body = {};
@@ -230,14 +403,12 @@ export async function onRequest(context) {
         { headers: jsonHeaders }
       );
     }
-    const profile = await getAssetJson("/data/profile.json", null);
     const example = await getAssetJson("/data/profile.example.json", {});
-    const hasRealProfile = Boolean(profile && profile.name_en);
     return new Response(
       JSON.stringify({
         success: true,
-        exists: hasRealProfile,
-        profile: profile || example,
+        exists: false,
+        profile: null,
         example,
       }),
       { headers: jsonHeaders }
