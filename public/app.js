@@ -9,6 +9,16 @@ let sseSource = null;
 let currentAlertJob = null;
 let defaultNotifyEmail = "taion@razibmarketing.net";
 
+// Redirect to /login if API returns 401
+async function apiFetch(url, options = {}) {
+  const res = await fetch(url, options);
+  if (res.status === 401) {
+    window.location.href = "/login";
+    return null;
+  }
+  return res;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
 });
@@ -16,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function initApp() {
   setupEventListeners();
   connectLiveLogEvents();
+  loadCurrentUser(); // non-blocking
   await loadOverview();
   await loadJobs();
   await loadKeywords();
@@ -25,6 +36,32 @@ async function initApp() {
   // Auto-refresh overview every 20 seconds
   setInterval(loadOverview, 20000);
 }
+
+async function loadCurrentUser() {
+  try {
+    const res = await fetch("/api/auth/me");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success && data.user) {
+      const pill = document.getElementById("userPill");
+      const avatar = document.getElementById("userAvatar");
+      const nameLabel = document.getElementById("userNameLabel");
+      if (pill) {
+        pill.style.display = "flex";
+        if (avatar && data.user.picture) {
+          avatar.src = data.user.picture;
+          avatar.style.display = "block";
+        }
+        if (nameLabel) {
+          nameLabel.textContent = data.user.name || data.user.email || "User";
+        }
+      }
+    }
+  } catch (e) {
+    // silently ignore
+  }
+}
+
 
 // -------------------------------------------------------------
 // Data Fetching
@@ -58,6 +95,10 @@ async function loadOverview() {
     if (noticesMatchedEl) noticesMatchedEl.textContent = matchedNoticesCount.toLocaleString();
     const navNoticesEl = document.getElementById("navNoticesCount");
     if (navNoticesEl) navNoticesEl.textContent = noticesCount.toLocaleString();
+    const mNavNoticesBadge = document.getElementById("mNavNoticesBadge");
+    if (mNavNoticesBadge) mNavNoticesBadge.textContent = noticesCount.toLocaleString();
+    const mDrawerNoticesCount = document.getElementById("mDrawerNoticesCount");
+    if (mDrawerNoticesCount) mDrawerNoticesCount.textContent = noticesCount.toLocaleString();
 
     if (data.lastScrape) {
       const timeStr = formatRelativeTime(data.lastScrape.timestamp);
@@ -354,34 +395,34 @@ function createNoticeCardHtml(notice) {
 
         <div class="job-org">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 21V11M10 21V11M14 21V11M18 21V11M12 3l9 4H3l9-4z"></path></svg>
-          <span>Bangladesh Bank — Banker's Selection Committee Secretariat (BSCS)</span>
+          <span>Bangladesh Bank (BSCS)</span>
         </div>
 
         ${kwBadges ? `<div class="keywords-list">${kwBadges}</div>` : ""}
 
         <div class="notice-meta-grid">
           <div class="notice-date-item">
-            <span class="notice-date-label">Published Date</span>
+            <span class="notice-date-label">Published</span>
             <strong class="notice-date-val">${escapeHtml(notice.publishDate || "N/A")}</strong>
           </div>
           <div class="notice-date-item">
-            <span class="notice-date-label">Close / Exam Date</span>
+            <span class="notice-date-label">Exam / Deadline</span>
             <strong class="notice-date-val ${isMatch ? 'text-gold' : ''}">${escapeHtml(notice.closeDate || "N/A")}</strong>
           </div>
         </div>
       </div>
 
-      <div class="card-actions">
+      <div class="card-actions notice-card-actions">
         ${notice.pdfUrl ? `
           <a href="${escapeHtml(notice.pdfUrl)}" target="_blank" rel="noreferrer" class="btn btn-primary btn-sm" title="View Official PDF Circular / Results">
-            📄 View Details & Results
+            📄 Details
           </a>
           <a href="${escapeHtml(notice.pdfUrl)}" download target="_blank" rel="noreferrer" class="btn btn-secondary btn-sm" title="Download Official PDF">
-            ⬇️ Download PDF
+            ⬇️ PDF
           </a>
         ` : `
           <button class="btn btn-secondary btn-sm" disabled style="opacity: 0.5;">
-            📄 No PDF Available
+            📄 No PDF
           </button>
         `}
       </div>
@@ -529,36 +570,38 @@ function renderModalNotices() {
         <div class="modal-notice-row ${isApplied ? 'applied-match-row' : isMatch ? 'matched-row' : ''}">
           <div class="modal-notice-left">
             <div class="modal-notice-top">
-              <span class="job-id-badge" style="${isApplied ? 'background: #f59e0b; color: #000; font-weight:800;' : ''}">Job ID: ${escapeHtml(n.jobId || "N/A")}</span>
+              <span class="job-id-badge ${isApplied ? 'badge-gold-bg' : ''}">Job ID: ${escapeHtml(n.jobId || "N/A")}</span>
               <span class="badge-circular-for ${circClass}">${escapeHtml(n.circularFor || "Notice")}</span>
-              ${isApplied ? `<span class="badge-applied-job">⭐ APPLIED POST (${escapeHtml(n.appliedJobTitle || n.appliedJobId)})</span>` : ""}
+              ${isApplied ? `<span class="badge-applied-job">⭐ APPLIED POST</span>` : ""}
               ${isMatch && !isApplied ? `<span class="match-badge">🎯 IT / CSE MATCH</span>` : ""}
             </div>
-            <div class="modal-notice-title" style="${isApplied ? 'color: #fef3c7; font-weight:700;' : isMatch ? 'color: #6ee7b7;' : ''}">
+            <div class="modal-notice-title ${isApplied ? 'applied-title' : isMatch ? 'matched-title' : ''}">
               ${escapeHtml(n.title)}
             </div>
             <div class="modal-notice-meta">
-              <span>Published: <strong>${escapeHtml(n.publishDate || "N/A")}</strong></span>
-              <span>Deadline/Exam: <strong>${escapeHtml(n.closeDate || "N/A")}</strong></span>
-              ${n.appliedJobRoll ? `<span>Your Roll: <strong style="color: #fbbf24;">${escapeHtml(n.appliedJobRoll)}</strong></span>` : ""}
-              ${kwBadges ? `<div style="display:inline-flex; gap:4px; margin-left:8px;">${kwBadges}</div>` : ""}
+              <div class="notice-meta-dates">
+                <span>📅 <strong>${escapeHtml(n.publishDate || "N/A")}</strong></span>
+                <span>⏰ Exam: <strong>${escapeHtml(n.closeDate || "N/A")}</strong></span>
+                ${n.appliedJobRoll ? `<span>Roll: <strong style="color: #fbbf24;">${escapeHtml(n.appliedJobRoll)}</strong></span>` : ""}
+              </div>
+              ${kwBadges ? `<div class="notice-kw-row">${kwBadges}</div>` : ""}
             </div>
           </div>
           <div class="modal-notice-actions">
             ${isApplied ? `
-              <button class="btn btn-gold btn-sm" onclick="sendNoticeAlertEmail('${escapeHtml(n.id || n.jobId)}', '${escapeHtml(n.jobId)}')" title="Send urgent alert email for this notice now">
+              <button class="btn btn-gold btn-sm btn-notice-action" onclick="sendNoticeAlertEmail('${escapeHtml(n.id || n.jobId)}', '${escapeHtml(n.jobId)}')" title="Send urgent alert email for this notice now">
                 ✉️ Email Alert
               </button>
             ` : ""}
             ${n.pdfUrl ? `
-              <a href="${escapeHtml(n.pdfUrl)}" target="_blank" rel="noreferrer" class="btn btn-primary btn-sm">
+              <a href="${escapeHtml(n.pdfUrl)}" target="_blank" rel="noreferrer" class="btn btn-primary btn-sm btn-notice-action">
                 📄 View Details
               </a>
-              <a href="${escapeHtml(n.pdfUrl)}" download target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">
+              <a href="${escapeHtml(n.pdfUrl)}" download target="_blank" rel="noreferrer" class="btn btn-outline btn-sm btn-notice-action">
                 ⬇️ PDF
               </a>
             ` : `
-              <span style="font-size:12px; color:var(--text-dim);">No PDF</span>
+              <span class="no-pdf-tag">No PDF</span>
             `}
           </div>
         </div>
@@ -1069,6 +1112,94 @@ async function executeDesktopAutofill() {
 // UI Event Handlers
 // -------------------------------------------------------------
 function setupEventListeners() {
+  // Mobile Quick Drawer & Mobile Menu Trigger
+  const btnToggleMobileMenu = document.getElementById("btnToggleMobileMenu");
+  const drawerBackdrop = document.getElementById("mobileDrawerBackdrop");
+  const btnCloseDrawer = document.getElementById("btnCloseMobileDrawer");
+
+  const openDrawer = () => {
+    if (drawerBackdrop) {
+      const mDrawerKeywords = document.getElementById("mDrawerKeywordsCount");
+      if (mDrawerKeywords && targetKeywords) mDrawerKeywords.textContent = targetKeywords.length;
+      drawerBackdrop.style.display = "flex";
+    }
+  };
+
+  const closeDrawer = () => {
+    if (drawerBackdrop) drawerBackdrop.style.display = "none";
+  };
+
+  if (btnToggleMobileMenu) btnToggleMobileMenu.addEventListener("click", openDrawer);
+  if (btnCloseDrawer) btnCloseDrawer.addEventListener("click", closeDrawer);
+  if (drawerBackdrop) {
+    drawerBackdrop.addEventListener("click", (e) => {
+      if (e.target === drawerBackdrop) closeDrawer();
+    });
+  }
+
+  // Mobile Drawer Tiles
+  const bindTile = (id, action) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("click", () => {
+        closeDrawer();
+        action();
+      });
+    }
+  };
+
+  bindTile("mDrawerBtnNotices", openNoticeBoardModal);
+  bindTile("mDrawerBtnKeywords", () => {
+    document.getElementById("modalKeywords").style.display = "flex";
+  });
+  bindTile("mDrawerBtnAi", () => {
+    loadAiSettings();
+    document.getElementById("modalAiSettings").style.display = "flex";
+  });
+  bindTile("mDrawerBtnSettings", () => {
+    document.getElementById("modalSettings").style.display = "flex";
+  });
+  bindTile("mDrawerBtnHistory", openHistoryModal);
+  bindTile("mDrawerBtnSyncBB", () => {
+    const syncBtn = document.getElementById("btnSyncBB");
+    if (syncBtn) syncBtn.click();
+  });
+  bindTile("mDrawerBtnDryRun", () => {
+    triggerScrape(true);
+  });
+
+  // Mobile Bottom Navigation Bar Items
+  const mNavJobs = document.getElementById("mNavJobs");
+  if (mNavJobs) {
+    mNavJobs.addEventListener("click", () => {
+      document.querySelectorAll(".m-nav-item").forEach(item => item.classList.remove("active"));
+      mNavJobs.classList.add("active");
+      const section = document.querySelector(".jobs-section");
+      if (section) section.scrollIntoView({ behavior: "smooth" });
+    });
+  }
+
+  const mNavNotices = document.getElementById("mNavNotices");
+  if (mNavNotices) {
+    mNavNotices.addEventListener("click", () => {
+      openNoticeBoardModal();
+    });
+  }
+
+  const mNavScrape = document.getElementById("mNavScrape");
+  if (mNavScrape) {
+    mNavScrape.addEventListener("click", () => {
+      triggerScrape(false);
+    });
+  }
+
+  const mNavMenu = document.getElementById("mNavMenu");
+  if (mNavMenu) {
+    mNavMenu.addEventListener("click", () => {
+      openDrawer();
+    });
+  }
+
   // Scraper buttons
   document.getElementById("btnScrapeNow").addEventListener("click", () => triggerScrape(false));
   document.getElementById("btnDryRun").addEventListener("click", () => triggerScrape(true));

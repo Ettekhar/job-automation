@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import cookieParser from "cookie-parser";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -32,13 +33,29 @@ import { testSmtpConnection, notifyJob, notifyBankNotice } from "./scripts/notif
 import { getAIConfig, saveAIConfig, testAIProvider } from "./scripts/lib/aiService.mjs";
 import { scrapeBBJobs, scrapeBSCSNotices } from "./scripts/lib/bbScraper.mjs";
 import { chromium } from "playwright";
+import {
+  generateToken,
+  verifyToken,
+  setSessionCookie,
+  clearSessionCookie,
+  authMiddleware,
+  isEmailAllowed,
+  getGoogleAuthUrl,
+  exchangeGoogleCode,
+} from "./scripts/lib/auth.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+
+// Serve login page at /login (also available as /login.html via static)
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
 
 // State in-memory for active scrape and SSE subscribers
 let isScraping = false;
@@ -70,21 +87,49 @@ async function initScheduler() {
 
   if (settings.autoScrapeEnabled && settings.autoScrapeIntervalMinutes > 0) {
     const intervalMs = settings.autoScrapeIntervalMinutes * 60 * 1000;
-    nextScheduledRunTime = new Date(Date.now() + intervalMs).toISOString();
-    console.log(`[Scheduler] Auto-scrape enabled: runs every ${settings.autoScrapeIntervalMinutes}m. Next run at: ${nextScheduledRunTime}`);
 
+    // Check when the last scrape occurred to determine true next run
+    const history = await getScrapeHistory(1);
+    const lastRunTimestamp = history[0]?.timestamp ? new Date(history[0].timestamp).getTime() : 0;
+    const elapsedSinceLastRun = Date.now() - lastRunTimestamp;
+
+    if (lastRunTimestamp > 0 && elapsedSinceLastRun < intervalMs) {
+      nextScheduledRunTime = new Date(lastRunTimestamp + intervalMs).toISOString();
+    } else {
+      // Overdue or initial run: schedule shortly (15s) after server boot
+      nextScheduledRunTime = new Date(Date.now() + 15 * 1000).toISOString();
+    }
+
+    console.log(`[Scheduler] Auto-scrape enabled: runs every ${settings.autoScrapeIntervalMinutes}m (${(settings.autoScrapeIntervalMinutes / 60).toFixed(1)}h).`);
+    console.log(`[Scheduler] Next run at: ${nextScheduledRunTime}`);
+
+    // Heartbeat check every 60s: protects against Windows sleep, hibernate, and clock drift
     schedulerTimer = setInterval(async () => {
-      console.log("[Scheduler] Triggering scheduled job scrape...");
-      try {
-        await executeScrape({ dryRun: false, ignoreSeen: false, trigger: "scheduler" });
-      } catch (err) {
-        console.error("[Scheduler] Scrape execution error:", err);
+      if (isScraping) return;
+
+      const currentSettings = await getSettings();
+      if (!currentSettings.autoScrapeEnabled || !currentSettings.autoScrapeIntervalMinutes) {
+        return;
       }
-      const updatedSettings = await getSettings();
-      if (updatedSettings.autoScrapeEnabled) {
-        nextScheduledRunTime = new Date(Date.now() + updatedSettings.autoScrapeIntervalMinutes * 60 * 1000).toISOString();
+
+      const checkHistory = await getScrapeHistory(1);
+      const lastScrapeTime = checkHistory[0]?.timestamp ? new Date(checkHistory[0].timestamp).getTime() : 0;
+      const targetInterval = currentSettings.autoScrapeIntervalMinutes * 60 * 1000;
+
+      if (Date.now() - lastScrapeTime >= targetInterval) {
+        console.log("[Scheduler] Interval elapsed. Triggering automatic scheduled job scrape...");
+        try {
+          await executeScrape({ dryRun: false, ignoreSeen: false, trigger: "scheduler" });
+        } catch (err) {
+          console.error("[Scheduler] Scrape execution error:", err);
+        }
       }
-    }, intervalMs);
+
+      // Update next scheduled run display time for dashboard
+      const freshHistory = await getScrapeHistory(1);
+      const latestTime = freshHistory[0]?.timestamp ? new Date(freshHistory[0].timestamp).getTime() : Date.now();
+      nextScheduledRunTime = new Date(latestTime + targetInterval).toISOString();
+    }, 60 * 1000);
   } else {
     nextScheduledRunTime = null;
     console.log("[Scheduler] Auto-scrape is disabled.");
@@ -121,6 +166,92 @@ async function executeScrape(options = {}) {
 
   return currentScrapePromise;
 }
+
+// -------------------------------------------------------------
+// AUTH Routes (public — no authMiddleware here)
+// -------------------------------------------------------------
+
+// Status: Is Google configured? Is the user logged in?
+app.get("/api/auth/status", async (req, res) => {
+  const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  const token = req.cookies?.["__session"];
+  const user = token ? await verifyToken(token) : null;
+  res.json({ googleConfigured, user: user ? { email: user.email, name: user.name, picture: user.picture } : null });
+});
+
+// Google OAuth redirect
+app.get("/api/auth/google", (req, res) => {
+  try {
+    const url = getGoogleAuthUrl();
+    res.redirect(url);
+  } catch (err) {
+    console.error("[Auth] Google redirect error:", err.message);
+    res.redirect("/login?error=oauth_failed");
+  }
+});
+
+// Google OAuth callback
+app.get("/api/auth/google/callback", async (req, res) => {
+  const { code, error } = req.query;
+  if (error || !code) {
+    return res.redirect("/login?error=oauth_failed");
+  }
+  try {
+    const userInfo = await exchangeGoogleCode(code);
+    if (!isEmailAllowed(userInfo.email)) {
+      console.warn(`[Auth] Blocked login for non-allowed email: ${userInfo.email}`);
+      return res.redirect("/login?error=not_allowed");
+    }
+    const token = await generateToken(userInfo);
+    setSessionCookie(res, token);
+    console.log(`[Auth] Google login: ${userInfo.email}`);
+    res.redirect("/");
+  } catch (err) {
+    console.error("[Auth] Google callback error:", err.message);
+    res.redirect("/login?error=oauth_failed");
+  }
+});
+
+// Local password login
+app.post("/api/auth/login", async (req, res) => {
+  const { username, password } = req.body || {};
+  const expectedUser = process.env.DASHBOARD_USER || "admin";
+  const expectedPass = process.env.DASHBOARD_PASS;
+
+  if (!expectedPass) {
+    return res.status(503).json({ success: false, error: "Local login is not configured. Set DASHBOARD_PASS in .env" });
+  }
+
+  if (username !== expectedUser || password !== expectedPass) {
+    return res.status(401).json({ success: false, error: "Invalid username or password." });
+  }
+
+  const token = await generateToken({ email: `${username}@local`, name: username, picture: null });
+  setSessionCookie(res, token);
+  console.log(`[Auth] Local login: ${username}`);
+  res.json({ success: true, user: { email: `${username}@local`, name: username } });
+});
+
+// Logout
+app.get("/api/auth/logout", (req, res) => {
+  clearSessionCookie(res);
+  res.redirect("/login");
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  clearSessionCookie(res);
+  res.json({ success: true });
+});
+
+// Current user info
+app.get("/api/auth/me", authMiddleware, (req, res) => {
+  res.json({ success: true, user: req.user });
+});
+
+// -------------------------------------------------------------
+// Protect all remaining /api/* routes with authMiddleware
+// -------------------------------------------------------------
+app.use("/api", authMiddleware);
 
 // -------------------------------------------------------------
 // REST API Endpoints

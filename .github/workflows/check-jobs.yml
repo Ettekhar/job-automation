@@ -2,9 +2,9 @@ name: Check Teletalk Jobs
 
 on:
   schedule:
-    # Every 3 hours. GitHub's cron scheduling isn't second-exact and can be
-    # delayed a bit during high load, which is fine for this use case.
-    - cron: "0 */3 * * *"
+    # Every 6 hours — stays well inside GitHub Actions free tier (2,000 min/month)
+    # Runs at: 00:00, 06:00, 12:00, 18:00 UTC
+    - cron: "0 0,6,12,18 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -30,19 +30,32 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
-      - run: npm run check
+      - name: Run job scraper
+        run: npm run check
         env:
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # SMTP — set these in: GitHub repo → Settings → Secrets → Actions
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          # Optional Resend / Telegram
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
-      - name: Commit updated seen-jobs.json
+      - name: Write status.json (last run metadata)
+        if: always()
+        run: |
+          echo '{"lastRun":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","trigger":"${{ github.event_name }}"}' > data/status.json
+
+      - name: Commit updated data files
         if: ${{ !inputs.dry_run }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/seen-jobs.json
+          git add data/seen-jobs.json data/status.json
           git diff --staged --quiet || git commit -m "chore: update seen jobs [skip ci]"
           git push
