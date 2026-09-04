@@ -200,10 +200,6 @@ async function handleApiRequest(request, env, ctx) {
   }
 
   // 7. /api/settings
-  // NOTE: previously this route was defined TWICE. The first (earlier) definition
-  // returned unconditionally for both GET and POST, which meant the POST/save
-  // handler further down the file was unreachable dead code and settings saves
-  // silently did nothing. Merged into a single handler below.
   if (path === "/settings" || path === "/settings/") {
     if (method === "GET") {
       const settings = await getAssetJson("/data/settings.json", {
@@ -220,10 +216,6 @@ async function handleApiRequest(request, env, ctx) {
     if (method === "POST") {
       let body = {};
       try { body = await request.json(); } catch (_) { }
-      // NOTE: this still doesn't persist anywhere (no KV/D1 write) -- it just
-      // echoes back what was posted, same as before. If you want saves to
-      // actually stick between requests, bind a KV namespace (env.SETTINGS_KV)
-      // and write here: await env.SETTINGS_KV.put('settings', JSON.stringify(body));
       return new Response(
         JSON.stringify({ success: true, message: "Settings saved successfully!", settings: body }),
         { headers: jsonHeaders }
@@ -315,7 +307,18 @@ async function handleApiRequest(request, env, ctx) {
     );
   }
 
-  // 11. /api/autofill/run (Cloudflare Playwright form-filler)
+  // 11. /api/autofill/run
+  //
+  // NEW BEHAVIOR: if env.AUTOFILL_RELAY_URL is configured, this route now
+  // forwards the job to a self-hosted relay server (a small Node/Playwright
+  // service you run on a normal VPS, NOT on Cloudflare's network). That VPS's
+  // own outbound IP talks to Teletalk directly, so it isn't subject to the
+  // Cloudflare-ASN block that Cloudflare Browser Rendering hits.
+  //
+  // If AUTOFILL_RELAY_URL is not set, this falls back to the original
+  // Cloudflare Browser Rendering path (which will still hit the network
+  // block for teletalk.com.bd domains, but is left intact for any other
+  // portal that doesn't block Cloudflare's ranges).
   if (path === "/autofill/run" || path === "/autofill/run/") {
     let body = {};
     try {
@@ -329,35 +332,76 @@ async function handleApiRequest(request, env, ctx) {
       profile = await getAssetJson("/data/profile.json", await getAssetJson("/data/profile.example.json", {}));
     }
 
+    // ---- NEW: relay path -------------------------------------------------
+    if (env.AUTOFILL_RELAY_URL) {
+      try {
+        const relayController = new AbortController();
+        const relayTimeout = setTimeout(() => relayController.abort(), 90000); // 90s budget
+
+        const relayRes = await fetch(env.AUTOFILL_RELAY_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(env.AUTOFILL_RELAY_TOKEN
+              ? { Authorization: `Bearer ${env.AUTOFILL_RELAY_TOKEN}` }
+              : {}),
+          },
+          body: JSON.stringify({ url: targetUrl, postTitle, profile }),
+          signal: relayController.signal,
+        });
+        clearTimeout(relayTimeout);
+
+        const relayText = await relayRes.text();
+        let relayJson;
+        try {
+          relayJson = JSON.parse(relayText);
+        } catch (_) {
+          relayJson = {
+            success: false,
+            message: `Relay returned a non-JSON response (status ${relayRes.status}).`,
+            raw: relayText.slice(0, 500),
+          };
+        }
+
+        // Pass the relay's response straight through -- it's already shaped
+        // like { success, message, captchaSolved, logs, screenshot }.
+        return new Response(JSON.stringify(relayJson), {
+          status: relayRes.ok ? 200 : relayRes.status,
+          headers: jsonHeaders,
+        });
+      } catch (relayErr) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            relayError: true,
+            message: `Could not reach the autofill relay server: ${relayErr.message}. Check that AUTOFILL_RELAY_URL is correct and the VPS relay is running.`,
+          }),
+          { headers: jsonHeaders }
+        );
+      }
+    }
+
+    // ---- Fallback: original Cloudflare Browser Rendering path ------------
+
     if (!env.MYBROWSER) {
       return new Response(
         JSON.stringify({
           success: false,
           browserNotConfigured: true,
           message:
-            "Cloudflare Browser Run (MYBROWSER) is not enabled on this Worker yet. Enable Browser Rendering in Cloudflare Dashboard under Settings > Bindings, or use Method 1 (1-Click Bookmarklet)!",
+            "Cloudflare Browser Run (MYBROWSER) is not enabled on this Worker, and no AUTOFILL_RELAY_URL is configured. Enable Browser Rendering, or set AUTOFILL_RELAY_URL to point at your VPS relay, or use Method 1 (1-Click Bookmarklet)!",
         }),
         { headers: jsonHeaders }
       );
     }
 
     // --- Preflight reachability check ---------------------------------
-    // Teletalk / BD govt portals frequently firewall off entire cloud-provider
-    // IP ranges (AWS/GCP/Azure/Cloudflare) to cut down on bot traffic. When that
-    // happens, spinning up a full headless browser just to hit ERR_CONNECTION_RESET
-    // wastes 5-10s of Browser Rendering time on every run. A plain `fetch()` from
-    // the Worker (not the browser binding) uses the same edge network and fails
-    // the same way if we're IP-blocked, but it fails in ~1s instead of ~10s, so we
-    // can short-circuit straight to the "use your own browser" fallback.
     try {
       const preflight = await fetch(targetUrl, {
         method: "GET",
         redirect: "follow",
         cf: { cacheTtl: 0 },
       });
-      // Some firewalls return a 200 with a block page rather than resetting the
-      // connection outright -- we don't try to detect that here, just confirm the
-      // TCP/TLS handshake itself succeeds.
       void preflight.status;
     } catch (preflightErr) {
       return new Response(
@@ -367,8 +411,8 @@ async function handleApiRequest(request, env, ctx) {
           message:
             `Teletalk's server is refusing connections from Cloudflare's network (${preflightErr.message}). ` +
             `This isn't something the Worker can retry past -- Teletalk firewalls off cloud-provider IP ranges, ` +
-            `and Cloudflare Browser Rendering shares that same pool. Use the 1-Click Bookmarklet (runs in your own ` +
-            `browser on your own IP) or your local autofill.mjs Playwright script instead, both of which connect fine.`,
+            `and Cloudflare Browser Rendering shares that same pool. Configure AUTOFILL_RELAY_URL to route this ` +
+            `through your VPS relay, use the 1-Click Bookmarklet, or run your local autofill.mjs Playwright script.`,
           logs: [`[preflight] ${preflightErr.message}`],
         }),
         { headers: jsonHeaders }
@@ -401,8 +445,6 @@ async function handleApiRequest(request, env, ctx) {
 
       log(`🌐 Navigating to ${targetUrl}...`);
 
-      // Retry with backoff -- helps with transient timeouts, but will NOT help
-      // if the failure is a firewall-level connection reset (same IP every time).
       let navigated = false;
       let lastErr = null;
       const attempts = [targetUrl, targetUrl.startsWith("https://") ? targetUrl.replace("https://", "http://") : targetUrl.replace("http://", "https://")];
@@ -411,7 +453,7 @@ async function handleApiRequest(request, env, ctx) {
         try {
           if (i > 0) {
             log(`⚠️ Previous attempt failed: ${lastErr?.message}. Retrying via ${attempts[i]}...`);
-            await new Promise((r) => setTimeout(r, 800 * i)); // small backoff
+            await new Promise((r) => setTimeout(r, 800 * i));
           }
           await page.goto(attempts[i], { waitUntil: "domcontentloaded", timeout: 25000 });
           navigated = true;
@@ -429,7 +471,7 @@ async function handleApiRequest(request, env, ctx) {
             networkBlocked: isFirewallReset,
             error: `Portal connection reset (${lastErr?.message})`,
             message: isFirewallReset
-              ? "Teletalk is rejecting connections from Cloudflare's IP range at the network level, not something a retry can fix. Use the 1-Click Bookmarklet or your local autofill.mjs script instead."
+              ? "Teletalk is rejecting connections from Cloudflare's IP range at the network level, not something a retry can fix. Configure AUTOFILL_RELAY_URL, use the 1-Click Bookmarklet, or run your local autofill.mjs script instead."
               : `Navigation failed: ${lastErr?.message}`,
             logs: executionLogs,
           }),
@@ -439,7 +481,6 @@ async function handleApiRequest(request, env, ctx) {
 
       log(`📄 Loaded page: "${await page.title().catch(() => "")}"`);
 
-      // 1. Smart Post Navigation: If on an index / post-selection page
       if (postTitle) {
         log(`🔍 Checking for post selection radio matching "${postTitle}"...`);
         const isForm = await page.$("#name, input[name='name']");
@@ -471,7 +512,6 @@ async function handleApiRequest(request, env, ctx) {
         }
       }
 
-      // 2. In-page form filling with full synonym support matching autofill.mjs
       const fillResult = await page.evaluate((p) => {
         let count = 0;
         function setVal(sel, val) {
@@ -536,7 +576,6 @@ async function handleApiRequest(request, env, ctx) {
         setVal("#re_mobile, input[name='confirm_mobile']", p.mobile);
         setVal("#email, input[name='email']", p.email);
 
-        // Addresses
         setVal("#present_care_of", p.present_care_of || p.father_en);
         setVal("#present_village", p.present_village);
         selectFuzzy("#present_district", p.present_district);
@@ -549,7 +588,6 @@ async function handleApiRequest(request, env, ctx) {
         selectFuzzy("#permanent_thana", p.permanent_thana);
         setVal("#permanent_post_code", p.permanent_post_code);
 
-        // Education
         if (p.ssc) {
           selectFuzzy("#ssc_exam", p.ssc.examination);
           selectFuzzy("#ssc_board", p.ssc.board);
@@ -575,7 +613,6 @@ async function handleApiRequest(request, env, ctx) {
           setVal("#gra_year", p.graduation.passing_year);
         }
 
-        // Skills & Checkbox
         const allSelects = Array.from(document.querySelectorAll("select"));
         allSelects.forEach((sel) => {
           const text = (sel.closest("tr")?.textContent || "").toLowerCase();
