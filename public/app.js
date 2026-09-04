@@ -335,11 +335,30 @@ function createJobCardHtml(job) {
       ${job.educationalReq ? `<div class="bb-meta-item full-width"><span class="bb-meta-label">Education</span><span class="bb-meta-value bb-edu">${escapeHtml(job.educationalReq.slice(0, 120))}${job.educationalReq.length > 120 ? '...' : ''}</span></div>` : ""}
     </div>` : "";
 
-  // Action buttons — no Autofill for BB jobs (different portal)
+  const safeId = String(job.id || Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g, "_");
+
+  // Action buttons — inline terminal before autofill button
   const autofillBtn = isBB ? `` : `
-    <button class="btn btn-autofill btn-sm" onclick="launchAutofillForJob('${escapeHtml(job.applyUrl)}', '${escapeHtml(job.title)}')" title="Launch automated form filler in headed Chromium browser">
-      🤖 Autofill
-    </button>`;
+    <div class="inline-terminal-wrap" id="wrap-term-${safeId}" style="display: none; width: 100%; margin: 8px 0;">
+      <div style="background: #020617; border: 1px solid #1e293b; border-left: 3px solid #38bdf8; border-radius: 6px; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 3px;">
+          <span style="color: #38bdf8; font-weight: 700; font-size: 10px; display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+            <span>LIVE TERMINAL OUTPUT</span>
+          </span>
+          <span id="term-status-${safeId}" style="color: #64748b; font-size: 9.5px; font-weight: 700;">ACTIVE</span>
+        </div>
+        <div id="term-text-${safeId}" style="color: #cbd5e1; font-size: 11px; line-height: 1.5; max-height: 85px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Ready...</div>
+      </div>
+    </div>
+    <div style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <span class="inline-term-pill" id="term-pill-${safeId}" style="display: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        ⏳ Connecting...
+      </span>
+      <button class="btn btn-autofill btn-sm" id="btn-autofill-${safeId}" onclick="runInlineAutofill('${safeId}', '${escapeHtml(job.applyUrl)}', '${escapeHtml(job.title)}')" title="Run autofill with live terminal output">
+        🤖 Autofill
+      </button>
+    </div>`;
 
   return `
     <div class="job-card ${isMatch ? 'is-matched' : ''} ${isBB ? 'is-bb' : ''}">
@@ -1142,6 +1161,139 @@ async function loadBookmarklet() {
     console.error("Failed to load bookmarklet:", e);
   }
 }
+
+window.runInlineAutofill = async function (safeId, url, postTitle) {
+  const pill = document.getElementById(`term-pill-${safeId}`);
+  const wrap = document.getElementById(`wrap-term-${safeId}`);
+  const textEl = document.getElementById(`term-text-${safeId}`);
+  const statusEl = document.getElementById(`term-status-${safeId}`);
+  const btn = document.getElementById(`btn-autofill-${safeId}`);
+
+  if (pill) {
+    pill.style.display = "inline-flex";
+    pill.textContent = "⏳ Launching...";
+    pill.style.color = "#38bdf8";
+    pill.style.borderColor = "rgba(56, 189, 248, 0.4)";
+    pill.style.background = "rgba(56, 189, 248, 0.1)";
+  }
+  if (wrap) {
+    wrap.style.display = "block";
+  }
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `⏳ Filling...`;
+  }
+  if (textEl) {
+    textEl.innerHTML = "";
+  }
+
+  function appendInlineTerm(msg, isDone = false, isError = false) {
+    const time = new Date().toLocaleTimeString();
+    if (pill) {
+      pill.textContent = msg;
+      if (isError) {
+        pill.style.color = "#f87171";
+        pill.style.borderColor = "rgba(248, 113, 113, 0.4)";
+        pill.style.background = "rgba(239, 68, 68, 0.1)";
+      } else if (isDone) {
+        pill.style.color = "#34d399";
+        pill.style.borderColor = "rgba(52, 211, 153, 0.4)";
+        pill.style.background = "rgba(16, 185, 129, 0.1)";
+      }
+    }
+    if (textEl) {
+      const line = document.createElement("div");
+      line.textContent = `[${time}] ${msg}`;
+      if (isError) line.style.color = "#f87171";
+      else if (isDone) line.style.color = "#34d399";
+      textEl.appendChild(line);
+      textEl.scrollTop = textEl.scrollHeight;
+    }
+    if (statusEl) {
+      statusEl.textContent = isError ? "FAILED" : isDone ? "COMPLETED" : "RUNNING";
+      statusEl.style.color = isError ? "#f87171" : isDone ? "#34d399" : "#38bdf8";
+    }
+  }
+
+  appendInlineTerm(`🚀 Starting autofill for "${postTitle || "Job"}"...`);
+  appendInlineTerm(`🌐 Target: ${url}`);
+
+  let handledLocal = false;
+  try {
+    const res = await fetch("/api/autofill/launch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, postTitle }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) {
+        handledLocal = true;
+        appendInlineTerm("🖥️ Playwright window opened! Streaming terminal stdout...");
+        showToast("Playwright browser window popped up on your desktop!", "success");
+
+        try {
+          const sse = new EventSource("/api/autofill/events");
+          sse.onmessage = (e) => {
+            try {
+              const payload = JSON.parse(e.data);
+              if (payload.line) appendInlineTerm(payload.line, payload.done, payload.type === "error");
+              if (payload.done) {
+                sse.close();
+                if (btn) {
+                  btn.disabled = false;
+                  btn.innerHTML = `✅ Filled`;
+                }
+              }
+            } catch (_) {
+              appendInlineTerm(e.data);
+            }
+          };
+          sse.onerror = () => {
+            sse.close();
+          };
+        } catch (_) {}
+      }
+    }
+  } catch (_) {}
+
+  // If local server launch wasn't available (e.g. running on Cloudflare), run Cloudflare Edge autofill
+  if (!handledLocal) {
+    appendInlineTerm("☁️ Running on Cloudflare Playwright edge isolate...");
+    try {
+      const cfRes = await fetch("/api/autofill/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, postTitle }),
+      });
+      const cfData = await cfRes.json();
+      if (cfData.logs && Array.isArray(cfData.logs)) {
+        cfData.logs.forEach((l) => appendInlineTerm(l));
+      }
+      if (cfData.success) {
+        appendInlineTerm(`✅ ${cfData.message}`, true);
+        showToast("Cloudflare Playwright filled the form successfully!", "success");
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `✅ Filled`;
+        }
+      } else {
+        appendInlineTerm(`❌ ${cfData.error || cfData.message || "Failed"}`, false, true);
+        showToast("Autofill error: " + (cfData.error || cfData.message), "error");
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `🤖 Autofill`;
+        }
+      }
+    } catch (err) {
+      appendInlineTerm(`❌ Network error: ${err.message}`, false, true);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `🤖 Autofill`;
+      }
+    }
+  }
+};
 
 window.launchAutofillForJob = async function (url, postTitle) {
   currentAutofillJob = { url, postTitle };
