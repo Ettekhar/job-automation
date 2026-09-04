@@ -9,33 +9,29 @@
     "matchedNoticesCount": 8,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1788530152829",
-      "timestamp": "2026-09-04T13:55:52.829Z",
+      "id": "scrape_1788536681883",
+      "timestamp": "2026-09-04T15:44:41.883Z",
       "status": "completed",
-      "dryRun": true,
-      "durationSeconds": 34,
+      "dryRun": false,
+      "durationSeconds": 245,
       "circularsScanned": 20,
-      "totalPostsFound": 102,
+      "totalPostsFound": 100,
       "matchedPosts": 1,
-      "newMatchingPosts": 1,
+      "newMatchingPosts": 0,
       "notificationsSent": 0,
-      "bbJobsFound": 2,
+      "bbJobsFound": 0,
       "bbMatchedPosts": 0,
       "bbNewMatches": 0,
       "errors": [],
-      "bscsNotices": 17,
-      "bscsMatched": 8,
-      "matchedJobTitles": [
-        "Assistant Programmer"
-      ],
-      "matchedJobPdfUrls": [
-        "https://alljobs.teletalk.com.bd/media/public/uploads/governments/jobs/advertisement-1788079602214.pdf"
-      ]
+      "bscsNotices": 0,
+      "bscsMatched": 0,
+      "matchedJobTitles": [],
+      "matchedJobPdfUrls": []
     },
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-09-04T20:02:23.172Z",
+      "nextRun": "2026-09-04T21:44:42.373Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }
