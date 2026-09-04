@@ -225,7 +225,38 @@ async function handleApiRequest(request, env, ctx) {
 
       await page.goto(targetUrl, { waitUntil: "networkidle0", timeout: 30000 });
 
-      // In-page form filling
+      // 1. Smart Post Navigation: If on an index / post-selection page
+      if (postTitle) {
+        const isForm = await page.$("#name, input[name='name']");
+        if (!isForm) {
+          const radioSelected = await page.evaluate((target) => {
+            const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+            const needle = norm(target);
+            const radios = Array.from(document.querySelectorAll("input[type='radio']"));
+            for (const r of radios) {
+              const rowText = norm(r.closest("tr, label, td, div")?.textContent || "");
+              if (rowText.includes(needle) || needle.includes(rowText)) {
+                r.checked = true;
+                r.click();
+                return true;
+              }
+            }
+            return false;
+          }, postTitle);
+
+          if (radioSelected) {
+            const nextBtn = await page.$("input[type=submit], button[type=submit], input[value*='Next' i], input[value*='Submit' i]");
+            if (nextBtn) {
+              await Promise.all([
+                page.waitForNavigation({ waitUntil: "networkidle0", timeout: 15000 }).catch(() => {}),
+                nextBtn.click().catch(() => {}),
+              ]);
+            }
+          }
+        }
+      }
+
+      // 2. In-page form filling with full synonym support matching autofill.mjs
       const fillResult = await page.evaluate((p) => {
         let count = 0;
         function setVal(sel, val) {
@@ -240,19 +271,39 @@ async function handleApiRequest(request, env, ctx) {
         }
         function selectFuzzy(sel, wanted) {
           if (!wanted) return;
-          const el = document.querySelector(sel);
+          const el = typeof sel === "string" ? document.querySelector(sel) : sel;
           if (!el || !el.options) return;
-          const target = String(wanted).toLowerCase().replace(/[^a-z0-9]/g, "");
-          for (let i = 0; i < el.options.length; i++) {
-            const opt = el.options[i].text.toLowerCase().replace(/[^a-z0-9]/g, "");
-            if (opt === target || opt.includes(target) || target.includes(opt)) {
-              el.selectedIndex = i;
-              el.dispatchEvent(new Event("change", { bubbles: true }));
-              el.style.backgroundColor = "#dcfce7";
-              count++;
-              break;
+          const normalize = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+          const target = normalize(wanted);
+
+          const synonyms = {
+            notapplicable: ["nonquota", "none", "no", "general", "na", "nil"],
+            nonquota: ["general", "none", "notapplicable", "no", "na", "nil"],
+            none: ["no", "notapplicable", "na", "nil", "nonquota", "general"],
+            single: ["unmarried"],
+            unmarried: ["single"],
+            married: ["married"],
+            male: ["m"],
+            female: ["f"],
+            islam: ["muslim", "islamic"],
+            bangladeshi: ["bangladesh", "bd"],
+          };
+
+          const targetsToTry = [target, ...(synonyms[target] || [])];
+          for (const t of targetsToTry) {
+            for (let i = 0; i < el.options.length; i++) {
+              const opt = normalize(el.options[i].text);
+              if (opt === t || opt.includes(t) || (t.length > 2 && t.includes(opt))) {
+                el.selectedIndex = i;
+                el.dispatchEvent(new Event("change", { bubbles: true }));
+                el.dispatchEvent(new Event("input", { bubbles: true }));
+                el.style.backgroundColor = "#dcfce7";
+                count++;
+                return true;
+              }
             }
           }
+          return false;
         }
 
         setVal("#name, input[name='name']", p.name_en);

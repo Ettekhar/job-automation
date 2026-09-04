@@ -79,11 +79,12 @@ async function loadProfile() {
 async function main() {
   const profile = await loadProfile();
 
-  // Use Playwright's own bundled Chromium — it ALWAYS opens a fresh,
-  // independent window (never hidden behind your existing Chrome windows).
-  console.log("🚀 Launching Playwright Chromium browser window...");
+  // Use Playwright's Chromium in headless mode by default for cloud/background runners.
+  // Pass --headed if you explicitly want to watch the window locally.
+  const isHeadless = !process.argv.includes("--headed");
+  console.log(`🚀 Launching Playwright Chromium (headless: ${isHeadless})...`);
   const browser = await chromium.launch({
-    headless: true,
+    headless: isHeadless,
     args: [
       "--start-maximized",
       "--no-sandbox",
@@ -155,6 +156,19 @@ async function main() {
     console.log("  \u2192 Review in the browser, then click Submit.");
     console.log("  \u2192 Type 'r' in terminal to re-read CAPTCHA if needed.");
     console.log("-------------------------------------------------------\n");
+  }
+
+  // --- Save verification screenshot (especially helpful in headless / cloud runs) ---
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const dir = path.join(process.cwd(), "public", "screenshots");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const shotPath = path.join(dir, "autofill-preview.png");
+    await formPage.screenshot({ path: shotPath, fullPage: true }).catch(() => {});
+    console.log(`📸 Form verification screenshot saved to: ${shotPath}`);
+  } catch (err) {
+    // ignore screenshot failure
   }
 
   // --- Post-submit agent: handles every page AFTER submission ---
@@ -392,6 +406,18 @@ function keepAlive(browser, page) {
       } catch (e) {
         // ignore
       }
+    } else {
+      // Non-interactive (e.g. GitHub Actions cloud runner, headless execution)
+      // Allow up to 3 minutes for any post-submit flows, then cleanly exit
+      const timer = setTimeout(async () => {
+        console.log("⏱️ Headless session finished. Closing browser.");
+        await browser.close().catch(() => {});
+        resolve();
+      }, 180000);
+      browser.on("disconnected", () => {
+        clearTimeout(timer);
+        resolve();
+      });
     }
   });
 }
