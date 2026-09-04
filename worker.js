@@ -255,7 +255,19 @@ async function handleApiRequest(request, env, ctx) {
     );
   }
 
-  // 10. /api/autofill/bookmarklet
+  // 10. /api/autofill/launch (not supported in cloud edge)
+  if (path === "/autofill/launch" || path === "/autofill/launch/") {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        isCloud: true,
+        message: "Desktop browser window cannot be spawned in Cloudflare cloud. Use /api/autofill/run.",
+      }),
+      { headers: jsonHeaders }
+    );
+  }
+
+  // 11. /api/autofill/bookmarklet
   if (path === "/autofill/bookmarklet" || path === "/autofill/bookmarklet/") {
     const profile = await getAssetJson("/data/profile.json", await getAssetJson("/data/profile.example.json", {}));
     const jsCode = `(function(){

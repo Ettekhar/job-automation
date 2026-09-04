@@ -1244,6 +1244,26 @@ window.openAndAutofillInUserBrowser = async function (safeId, url, postTitle) {
     showToast("Opening portal in new tab...", "info");
   }
 
+  const textEl = document.getElementById(`term-text-${safeId}`);
+  if (textEl) {
+    const time = new Date().toLocaleTimeString();
+    const l1 = document.createElement("div");
+    l1.textContent = `[${time}] 📋 Copied 1-click autofill script to clipboard!`;
+    l1.style.color = "#34d399";
+    textEl.appendChild(l1);
+
+    const l2 = document.createElement("div");
+    l2.textContent = `[${time}] 🌐 Opening Teletalk portal in a new tab...`;
+    l2.style.color = "#38bdf8";
+    textEl.appendChild(l2);
+
+    const l3 = document.createElement("div");
+    l3.textContent = `[${time}] 💡 Tip: On the application form, press F12 -> Console -> Paste (Ctrl+V) -> Enter to fill instantly!`;
+    l3.style.color = "#fbbf24";
+    textEl.appendChild(l3);
+    textEl.scrollTop = textEl.scrollHeight;
+  }
+
   const w = window.open(url, "_blank");
   if (!w) {
     window.location.href = url;
@@ -1332,44 +1352,48 @@ window.runInlineAutofill = async function (safeId, url, postTitle) {
   appendInlineTerm(`🚀 Starting autofill for "${postTitle || "Job"}"...`);
   appendInlineTerm(`🌐 Target Portal: ${url}`);
 
+  const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let handledLocal = false;
-  try {
-    const res = await fetch("/api/autofill/launch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, postTitle }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success) {
-        handledLocal = true;
-        appendInlineTerm("🖥️ Playwright window opened! Streaming terminal stdout...");
-        showToast("Playwright browser window popped up on your desktop!", "success");
 
-        try {
-          const sse = new EventSource("/api/autofill/events");
-          sse.onmessage = (e) => {
-            try {
-              const payload = JSON.parse(e.data);
-              if (payload.line) appendInlineTerm(payload.line, payload.done, payload.type === "error");
-              if (payload.done) {
-                sse.close();
-                if (btn) {
-                  btn.disabled = false;
-                  btn.innerHTML = `✅ Filled`;
+  if (isLocalHost) {
+    try {
+      const res = await fetch("/api/autofill/launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, postTitle }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success && !data.isCloud) {
+          handledLocal = true;
+          appendInlineTerm("🖥️ Local Playwright Chrome window opened! Streaming stdout...");
+          showToast("Playwright browser window popped up on your desktop!", "success");
+
+          try {
+            const sse = new EventSource("/api/autofill/events");
+            sse.onmessage = (e) => {
+              try {
+                const payload = JSON.parse(e.data);
+                if (payload.line) appendInlineTerm(payload.line, payload.done, payload.type === "error");
+                if (payload.done) {
+                  sse.close();
+                  if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `✅ Filled`;
+                  }
                 }
+              } catch (_) {
+                appendInlineTerm(e.data);
               }
-            } catch (_) {
-              appendInlineTerm(e.data);
-            }
-          };
-          sse.onerror = () => {
-            sse.close();
-          };
-        } catch (_) {}
+            };
+            sse.onerror = () => {
+              sse.close();
+            };
+          } catch (_) {}
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
 
   // If local server launch wasn't available (e.g. running on Cloudflare), run Cloudflare Edge autofill
   if (!handledLocal) {

@@ -212,6 +212,18 @@ export async function onRequest(context) {
     );
   }
 
+  // 10. /api/autofill/launch (desktop only, not supported in cloud edge)
+  if (path === "/autofill/launch" || path === "/autofill/launch/") {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        isCloud: true,
+        message: "Desktop browser window is only available on local environment. Use /api/autofill/run in cloud.",
+      }),
+      { headers: jsonHeaders }
+    );
+  }
+
   // Fallback for any other /api endpoint: pass to static asset or return 200 empty json
   try {
     const fallbackRes = await env.ASSETS.fetch(request);
