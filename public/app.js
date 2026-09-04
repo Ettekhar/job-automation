@@ -1152,6 +1152,61 @@ async function executeDesktopAutofill() {
   }
 }
 
+async function executeCloudflarePlaywright() {
+  const { url, postTitle } = currentAutofillJob;
+  const btn = document.getElementById("btnRunCloudflarePlaywright");
+  const statusEl = document.getElementById("cfPlaywrightStatus");
+  const container = document.getElementById("cfPlaywrightScreenshotContainer");
+  const img = document.getElementById("cfPlaywrightScreenshotImg");
+
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = "⏳ Running in Cloud...";
+  statusEl.style.display = "block";
+  statusEl.style.color = "#38bdf8";
+  statusEl.style.background = "rgba(56, 189, 248, 0.1)";
+  statusEl.style.borderColor = "rgba(56, 189, 248, 0.2)";
+  statusEl.textContent = "Launching Cloudflare Playwright in edge cloud... (takes ~15-25s)";
+  container.style.display = "none";
+
+  try {
+    const res = await fetch("/api/autofill/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, postTitle }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      statusEl.style.color = "#34d399";
+      statusEl.style.background = "rgba(16, 185, 129, 0.1)";
+      statusEl.style.borderColor = "rgba(16, 185, 129, 0.2)";
+      statusEl.innerHTML = `✅ ${data.message} ${data.captchaSolved ? "• 🤖 AI CAPTCHA solved!" : ""}`;
+      if (data.screenshot) {
+        img.src = data.screenshot;
+        container.style.display = "block";
+      }
+      showToast("Cloudflare Playwright filled the form successfully!", "success");
+    } else if (data.browserNotConfigured) {
+      statusEl.style.color = "#fbbf24";
+      statusEl.style.background = "rgba(245, 158, 11, 0.1)";
+      statusEl.style.borderColor = "rgba(245, 158, 11, 0.2)";
+      statusEl.innerHTML = `⚠️ <strong>Browser Run not enabled yet:</strong> ${data.message}`;
+    } else {
+      statusEl.style.color = "#f87171";
+      statusEl.style.background = "rgba(239, 68, 68, 0.1)";
+      statusEl.style.borderColor = "rgba(239, 68, 68, 0.2)";
+      statusEl.textContent = "Error: " + (data.error || data.message || "Failed to run Cloudflare Playwright");
+    }
+  } catch (err) {
+    statusEl.style.color = "#f87171";
+    statusEl.textContent = "Network error: " + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "☁️ Run Cloudflare Playwright Fill";
+  }
+}
+
 // -------------------------------------------------------------
 // UI Event Handlers
 // -------------------------------------------------------------
@@ -1394,6 +1449,7 @@ function setupEventListeners() {
     document.getElementById("modalAutofill").style.display = "none";
   });
   document.getElementById("btnLaunchPlaywrightBrowser").addEventListener("click", executeDesktopAutofill);
+  document.getElementById("btnRunCloudflarePlaywright")?.addEventListener("click", executeCloudflarePlaywright);
   document.getElementById("btnOpenApplyInTab").addEventListener("click", () => {
     if (currentAutofillJob.url) window.open(currentAutofillJob.url, "_blank");
   });

@@ -1,0 +1,10 @@
+name = "teletalk-job-notifier"
+compatibility_date = "2024-09-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+[browser]
+binding = "MYBROWSER"
+
+[ai]
+binding = "AI"

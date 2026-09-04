@@ -336,6 +336,22 @@
               </div>
             </div>
           </div>
+
+          <!-- Method 3: Cloudflare Playwright Cloud Auto-Apply -->
+          <div class="settings-group">
+            <h4 class="group-title">☁️ Method 3: Cloudflare Playwright (Headless in Cloud)</h4>
+            <p class="modal-hint">Spins up Cloudflare Playwright in the cloud, fills the application form, and captures a verified screenshot:</p>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 10px 0;">
+              <button class="btn btn-emerald" id="btnRunCloudflarePlaywright">
+                ☁️ Run Cloudflare Playwright Fill
+              </button>
+            </div>
+            <div id="cfPlaywrightStatus" style="display: none; margin-top: 8px; font-size: 12px; padding: 10px 14px; border-radius: 6px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399;"></div>
+            <div id="cfPlaywrightScreenshotContainer" style="display: none; margin-top: 12px;">
+              <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">📸 Cloud Form Screenshot Result:</p>
+              <img id="cfPlaywrightScreenshotImg" src="" alt="Cloudflare Playwright Screenshot" style="width: 100%; max-height: 400px; object-fit: contain; background: #000; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="btnDismissAutofill">Close</button>

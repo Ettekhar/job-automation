@@ -31,7 +31,7 @@
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-09-04T16:12:14.738Z",
+      "nextRun": "2026-09-04T17:09:40.773Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }
