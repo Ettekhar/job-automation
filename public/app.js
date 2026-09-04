@@ -1154,6 +1154,14 @@ window.launchAutofillForJob = async function (url, postTitle) {
 
   document.getElementById("inputAutofillCliCommand").value = `npm run autofill -- --url "${url}" --post "${postTitle}"`;
   document.getElementById("modalAutofill").style.display = "flex";
+
+  // Initialize and display live console immediately
+  clearAutofillLogs();
+  appendAutofillLog(`🎯 Target Post: "${postTitle}"`, "info");
+  appendAutofillLog(`🌐 Portal URL: ${url}`, "info");
+  appendAutofillLog(`👤 Profile: MD.ETTEKHAR RAHMAN TAION (Loaded)`, "info");
+  appendAutofillLog(`⚡ Ready: Click "Pop Up Chrome Window Now" (desktop) or "Run Cloudflare Edge Fill" (cloud) below!`, "warn");
+
   await loadBookmarklet();
 };
 

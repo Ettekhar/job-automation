@@ -300,72 +300,70 @@
             </a>
           </div>
 
-          <!-- Method 1: Instant In-Browser Bookmarklet -->
-          <div class="settings-group">
-            <h4 class="group-title">⚡ Method 1: Instant 1-Click Bookmarklet (Works on your current browser!)</h4>
-            <p class="modal-hint">Drag this button to your browser's Bookmarks Bar (or click Copy Script):</p>
-            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 12px 0;">
-              <a id="linkBookmarklet" href="#" class="btn btn-emerald" style="padding: 10px 18px; font-weight: 700; cursor: grab;" title="Drag me to your Bookmarks Bar!">
-                📌 ⚡ Autofill Teletalk Form
-              </a>
-              <button class="btn btn-secondary" id="btnCopyBookmarkletScript">
-                📋 Copy Script for Console
-              </button>
-            </div>
-            <p style="font-size: 12px; color: var(--text-dim); margin-top: 6px;">
-              <strong>How to use:</strong> Open the Teletalk application page in this browser, then click your bookmark — all fields, NID, and SSC/HSC/Graduation will be filled instantly!
-            </p>
           </div>
 
-          <!-- Method 2: Launch in Headed Browser -->
-          <div class="settings-group">
-            <h4 class="group-title">🖥️ Method 2: Launch Automated Browser / Terminal</h4>
-            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 10px 0;">
-              <button class="btn btn-primary" id="btnLaunchPlaywrightBrowser">
+          <!-- PRIMARY: Live Execution Terminal / Console Output (Always Visible) -->
+          <div class="settings-group" style="border: 1px solid #38bdf8; background: rgba(15, 23, 42, 0.95); border-radius: 10px; padding: 16px; margin-bottom: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="autofillPulseDot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 800; color: #38bdf8; letter-spacing: 0.5px;">⚡ LIVE AUTOFILL & PLAYWRIGHT CONSOLE</span>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span id="autofillConsoleStatus" style="font-size: 11px; color: #34d399; font-family: monospace; font-weight: 700; background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 4px;">READY</span>
+                <button id="btnClearAutofillLogs" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: pointer;">Clear Console</button>
+              </div>
+            </div>
+
+            <!-- Action Triggers Directly Above Console -->
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+              <button class="btn btn-primary" id="btnLaunchPlaywrightBrowser" style="font-weight: 700; padding: 9px 16px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
                 🚀 Pop Up Chrome Window Now
               </button>
-              <button class="btn btn-outline" id="btnOpenApplyInTab">
-                🌐 Open Portal in New Tab
+              <button class="btn btn-emerald" id="btnRunCloudflarePlaywright" style="font-weight: 700; padding: 9px 16px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                ☁️ Run Cloudflare Edge Fill
+              </button>
+              <button class="btn btn-outline" id="btnOpenApplyInTab" style="font-size: 12px; padding: 9px 14px;">
+                🌐 Open Portal in Browser
               </button>
             </div>
-            <div style="margin-top: 10px;">
-              <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Manual CLI command (run anytime in terminal):</label>
-              <div style="display: flex; gap: 8px; margin-top: 4px;">
-                <input type="text" id="inputAutofillCliCommand" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #a5b4fc; background: rgba(0,0,0,0.5);">
-                <button class="btn btn-secondary btn-sm" id="btnCopyCliCommand">Copy</button>
+
+            <div id="cfPlaywrightStatus" style="display: none; margin-bottom: 10px; font-size: 12px; padding: 8px 12px; border-radius: 6px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399;"></div>
+
+            <!-- Terminal Box -->
+            <div id="autofillLiveConsole" style="background: #020617; border: 1px solid #1e293b; border-radius: 6px; overflow: hidden;">
+              <div style="background: #0f172a; padding: 6px 12px; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 10px; color: #64748b; font-family: monospace;">bash — 1280x900 chromium</span>
+                <span style="font-size: 10px; color: #475569; font-family: monospace;">output stream</span>
               </div>
+              <div id="autofillLogStream" style="padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 11.5px; line-height: 1.6; min-height: 140px; max-height: 260px; overflow-y: auto; color: #cbd5e1; white-space: pre-wrap; word-break: break-word;"></div>
+            </div>
+
+            <!-- Screenshot Result Container -->
+            <div id="cfPlaywrightScreenshotContainer" style="display: none; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+              <p style="font-size: 11px; color: #38bdf8; font-weight: 700; margin-bottom: 8px;">📸 Verified Form Fill Screenshot:</p>
+              <img id="cfPlaywrightScreenshotImg" src="" alt="Cloudflare Playwright Screenshot" style="width: 100%; max-height: 420px; object-fit: contain; background: #000; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
             </div>
           </div>
 
-          <!-- Method 3: Cloudflare Playwright Cloud Auto-Apply -->
-          <div class="settings-group">
-            <h4 class="group-title">☁️ Method 3: Cloudflare Playwright (Headless in Cloud)</h4>
-            <p class="modal-hint">Spins up Cloudflare Playwright in the cloud, fills the application form, and captures a verified screenshot:</p>
-            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 10px 0;">
-              <button class="btn btn-emerald" id="btnRunCloudflarePlaywright">
-                ☁️ Run Cloudflare Playwright Fill
-              </button>
-            </div>
-            <div id="cfPlaywrightStatus" style="display: none; margin-top: 8px; font-size: 12px; padding: 10px 14px; border-radius: 6px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399;"></div>
-
-            <!-- Live Execution Terminal / Console Output -->
-            <div id="autofillLiveConsole" style="display: none; margin-top: 14px; background: #0b0f19; border: 1px solid #1e293b; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
-              <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 8px 12px; border-bottom: 1px solid #1e293b;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span id="autofillPulseDot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
-                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #38bdf8;">🖥️ Live Console Stream</span>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <span id="autofillConsoleStatus" style="font-size: 10px; color: #38bdf8; font-family: monospace; font-weight: 600;">ACTIVE</span>
-                  <button id="btnClearAutofillLogs" style="background: none; border: none; color: #64748b; font-size: 11px; cursor: pointer;">Clear</button>
-                </div>
+          <!-- Secondary Alternative: Bookmarklet & CLI Command -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 8px;">
+            <div class="settings-group" style="margin-bottom: 0;">
+              <h5 style="font-size: 12px; color: #a5b4fc; margin-bottom: 8px; font-weight: 700;">📌 Alternative: Browser Bookmarklet</h5>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <a id="linkBookmarklet" href="#" class="btn btn-secondary btn-sm" style="font-weight: 700;" title="Drag to Bookmarks Bar">
+                  📌 Autofill Bookmarklet
+                </a>
+                <button class="btn btn-secondary btn-sm" id="btnCopyBookmarkletScript">Copy Script</button>
               </div>
-              <div id="autofillLogStream" style="padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; max-height: 220px; overflow-y: auto; color: #cbd5e1; white-space: pre-wrap; word-break: break-word;"></div>
             </div>
 
-            <div id="cfPlaywrightScreenshotContainer" style="display: none; margin-top: 12px;">
-              <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">📸 Cloud Form Screenshot Result:</p>
-              <img id="cfPlaywrightScreenshotImg" src="" alt="Cloudflare Playwright Screenshot" style="width: 100%; max-height: 400px; object-fit: contain; background: #000; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
+            <div class="settings-group" style="margin-bottom: 0;">
+              <h5 style="font-size: 12px; color: #a5b4fc; margin-bottom: 8px; font-weight: 700;">💻 Alternative: Manual Terminal CLI</h5>
+              <div style="display: flex; gap: 6px;">
+                <input type="text" id="inputAutofillCliCommand" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #a5b4fc; background: rgba(0,0,0,0.5); padding: 4px 8px; flex: 1;">
+                <button class="btn btn-secondary btn-sm" id="btnCopyCliCommand">Copy</button>
+              </div>
             </div>
           </div>
         </div>
