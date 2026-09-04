@@ -1,0 +1,41 @@
+name: Auto-Apply Teletalk Form
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Teletalk Portal URL (e.g. http://bhtpa.teletalk.com.bd)"
+        required: true
+      post:
+        description: "Post Title to Apply For (e.g. Assistant Director)"
+        required: false
+        default: ""
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Run autofill.mjs (Headless)
+        run: node scripts/autofill.mjs --url "${{ inputs.url }}" --post "${{ inputs.post }}"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          HEADLESS: "true"
+
+      - name: Upload Screenshot Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-screenshot
+          path: application/*.png
+          if-no-files-found: ignore

@@ -83,7 +83,7 @@ async function main() {
   // independent window (never hidden behind your existing Chrome windows).
   console.log("🚀 Launching Playwright Chromium browser window...");
   const browser = await chromium.launch({
-    headless: false,
+    headless: true,
     args: [
       "--start-maximized",
       "--no-sandbox",
@@ -92,7 +92,9 @@ async function main() {
     ],
   });
 
-  const context = await browser.newContext({ viewport: null });
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+  });
   const page = await context.newPage();
 
   if (startUrl) {
