@@ -9,11 +9,11 @@
     "matchedNoticesCount": 8,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1789181850728",
-      "timestamp": "2026-09-12T02:57:30.728Z",
+      "id": "scrape_1789207411058",
+      "timestamp": "2026-09-12T10:03:31.058Z",
       "status": "completed",
       "dryRun": false,
-      "durationSeconds": 254,
+      "durationSeconds": 245,
       "circularsScanned": 20,
       "totalPostsFound": 123,
       "matchedPosts": 1,
@@ -31,7 +31,7 @@
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-09-12T08:57:31.267Z",
+      "nextRun": "2026-09-12T16:03:31.581Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }
