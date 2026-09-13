@@ -865,18 +865,24 @@ async function deterministicNavigate(page, context, targetPost) {
         if (targetPost) {
           const targetNorm = targetPost.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-          // Exact normalized substring match
+          // Pass 1 (safest): the label contains the FULL requested title.
+          // NOTE: deliberately NOT "targetNorm.includes(labelNorm)" — a short
+          // generic label like "Assistant" or "Assistant Director (IT)"
+          // subset-matches the full title "assistantprogrammer" and clicks
+          // the WRONG radio while the console claims it's the requested one.
           radios.forEach((r, i) => {
             if (matchedRadio) return;
             const labelNorm = allLabels[i].toLowerCase().replace(/[^a-z0-9]/g, "");
-            if (labelNorm && (labelNorm.includes(targetNorm) || targetNorm.includes(labelNorm))) {
+            if (labelNorm && labelNorm.includes(targetNorm)) {
               matchedRadio = r;
-              console.log(`[⚡ Standard Navigation] 👉 Step: Selecting post "${allLabels[i].slice(0, 60)}" (exact match for requested "${targetPost}")...`);
+              console.log(`[⚡ Standard Navigation] 👉 Step: Selecting post "${allLabels[i].slice(0, 60)}" (full-title match for requested "${targetPost}")...`);
             }
           });
 
-          // Token match: every significant word of the requested title must
-          // appear in the label (labels often carry extra grade/dept text).
+          // Pass 2: every significant word of the requested title appears in
+          // the label (labels often carry extra grade/dept text like
+          // "Assistant Programmer — Grade 5"). All words must match, so
+          // "Assistant Director" never matches "Assistant Programmer".
           if (!matchedRadio) {
             const words = targetPost.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 3);
             radios.forEach((r, i) => {
@@ -884,7 +890,7 @@ async function deterministicNavigate(page, context, targetPost) {
               const labelLower = allLabels[i].toLowerCase();
               if (labelLower && words.every(w => labelLower.includes(w))) {
                 matchedRadio = r;
-                console.log(`[⚡ Standard Navigation] 👉 Step: Selecting post "${allLabels[i].slice(0, 60)}" (token match for requested "${targetPost}")...`);
+                console.log(`[⚡ Standard Navigation] 👉 Step: Selecting post "${allLabels[i].slice(0, 60)}" (all-words match for requested "${targetPost}")...`);
               }
             });
           }
@@ -899,8 +905,6 @@ async function deterministicNavigate(page, context, targetPost) {
             console.log(`   ➔ Aborting standard navigation — the AI Vision agent may take over, but no wrong post will be submitted blindly.`);
             return null;
           }
-
-          selectedPostLabel = allLabels[radios.indexOf(matchedRadio)].slice(0, 100);
         } else {
           // Caller launched without --post: choosing the first active
           // option is then the user's explicit choice.
@@ -911,8 +915,31 @@ async function deterministicNavigate(page, context, targetPost) {
           }
         }
 
+        // ── THE CLICK + VERIFICATION ────────────────────────────────────────
+        // Never trust a silent check(). A swallowed click failure or a
+        // portal script resetting the selection means "Next" submits the
+        // portal's DEFAULT post — so verify the exact radio is checked
+        // before ever clicking Next.
         if (matchedRadio) {
+          const wantedIdx = radios.indexOf(matchedRadio);
           await matchedRadio.check({ force: true }).catch(() => { });
+          await page.waitForTimeout(400);
+
+          let checkedIdx = -1;
+          for (let i = 0; i < radios.length; i++) {
+            if (await radios[i].isChecked().catch(() => false)) { checkedIdx = i; break; }
+          }
+
+          if (checkedIdx !== wantedIdx) {
+            console.log(`[⚠️ Standard Navigation] ❌ POST SELECTION FAILED VERIFICATION!`);
+            console.log(`   Requested: "${allLabels[wantedIdx] || "(unknown)"}"`);
+            console.log(`   Actually checked: ${checkedIdx >= 0 ? `"${allLabels[checkedIdx]}"` : "(nothing — the click did not register)"}`);
+            console.log(`   ➔ Aborting — will NOT click Next with the wrong/unchecked post. Wrong-post submission prevented.`);
+            return null;
+          }
+
+          console.log(`[⚡ Standard Navigation] ✅ Verified: the radio actually checked is "${allLabels[wantedIdx].slice(0, 60)}"`);
+          if (targetPost) selectedPostLabel = allLabels[wantedIdx].slice(0, 100);
         }
       }
 
