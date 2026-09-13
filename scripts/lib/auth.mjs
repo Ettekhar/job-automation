@@ -47,10 +47,16 @@ export async function verifyToken(token) {
   }
 }
 
-export function setSessionCookie(res, token) {
+export function setSessionCookie(res, token, isSecure) {
+  // Only set secure=true if request is actually over HTTPS
+  const req = res.req;
+  const isHttps = typeof isSecure === "boolean" 
+    ? isSecure 
+    : Boolean(req && (req.secure || req.headers?.["x-forwarded-proto"] === "https"));
+
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     sameSite: "lax",
     maxAge: 24 * 60 * 60 * 1000,
     path: "/",
@@ -92,10 +98,36 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
-export function getGoogleAuthUrl(state) {
+export function getCallbackUrl(req) {
+  if (req) {
+    const proto = req.headers?.["x-forwarded-proto"] || req.protocol || "http";
+    const host = req.headers?.["x-forwarded-host"] || req.get?.("host") || req.headers?.host;
+    if (host) {
+      return `${proto}://${host}/api/auth/google/callback`;
+    }
+  }
+  return process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
+}
+
+export function getGoogleAuthUrl(reqOrState, maybeState) {
+  let req = null;
+  let state = null;
+  if (reqOrState && typeof reqOrState === "object" && (reqOrState.headers || reqOrState.protocol)) {
+    req = reqOrState;
+    state = maybeState;
+  } else if (typeof reqOrState === "string") {
+    state = reqOrState;
+  }
+
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const callbackUrl = process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
+  const callbackUrl = getCallbackUrl(req);
   if (!clientId) throw new Error("GOOGLE_CLIENT_ID is not configured in .env");
+
+  // Encode redirect_uri into state so callback knows the exact URL to use
+  const rawNonce = state || createHash("sha256").update(Date.now().toString()).digest("hex").slice(0, 16);
+  const stateObj = { cb: callbackUrl, n: rawNonce };
+  const encodedState = Buffer.from(JSON.stringify(stateObj)).toString("base64url");
+
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: callbackUrl,
@@ -103,15 +135,15 @@ export function getGoogleAuthUrl(state) {
     scope: "openid email profile",
     access_type: "offline",
     prompt: "select_account",
-    state: state || createHash("sha256").update(Date.now().toString()).digest("hex").slice(0, 16),
+    state: encodedState,
   });
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 }
 
-export async function exchangeGoogleCode(code) {
+export async function exchangeGoogleCode(code, callbackUrl) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const callbackUrl = process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
+  const redirectUri = callbackUrl || process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
   if (!clientId || !clientSecret) throw new Error("GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not configured in .env");
 
   const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
@@ -121,7 +153,7 @@ export async function exchangeGoogleCode(code) {
       code,
       client_id: clientId,
       client_secret: clientSecret,
-      redirect_uri: callbackUrl,
+      redirect_uri: redirectUri,
       grant_type: "authorization_code",
     }).toString(),
   });

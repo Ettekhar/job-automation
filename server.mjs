@@ -42,10 +42,12 @@ import {
   isEmailAllowed,
   getGoogleAuthUrl,
   exchangeGoogleCode,
+  getCallbackUrl,
 } from "./scripts/lib/auth.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -71,7 +73,10 @@ function broadcastLog(logEntry) {
 
   const data = JSON.stringify(logEntry);
   sseClients.forEach((res) => {
-    res.write(`data: ${data}\n\n`);
+    try {
+      res.write(`data: ${data}\n\n`);
+      if (typeof res.flush === "function") res.flush();
+    } catch (_) {}
   });
 }
 
@@ -182,7 +187,7 @@ app.get("/api/auth/status", async (req, res) => {
 // Google OAuth redirect
 app.get("/api/auth/google", (req, res) => {
   try {
-    const url = getGoogleAuthUrl();
+    const url = getGoogleAuthUrl(req);
     res.redirect(url);
   } catch (err) {
     console.error("[Auth] Google redirect error:", err.message);
@@ -192,12 +197,21 @@ app.get("/api/auth/google", (req, res) => {
 
 // Google OAuth callback
 app.get("/api/auth/google/callback", async (req, res) => {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
   if (error || !code) {
     return res.redirect("/login?error=oauth_failed");
   }
   try {
-    const userInfo = await exchangeGoogleCode(code);
+    let callbackUrl = getCallbackUrl(req);
+    if (state) {
+      try {
+        const decoded = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
+        if (decoded && decoded.cb) {
+          callbackUrl = decoded.cb;
+        }
+      } catch (_) {}
+    }
+    const userInfo = await exchangeGoogleCode(code, callbackUrl);
     if (!isEmailAllowed(userInfo.email)) {
       console.warn(`[Auth] Blocked login for non-allowed email: ${userInfo.email}`);
       return res.redirect("/login?error=not_allowed");
@@ -249,6 +263,47 @@ app.get("/api/auth/me", authMiddleware, (req, res) => {
 });
 
 // -------------------------------------------------------------
+// Scrape status & SSE events are public (EventSource cannot send auth headers reliably)
+// 4. Scrape status & live logs
+app.get("/api/scrape/status", (req, res) => {
+  res.json({
+    success: true,
+    isScraping,
+    logs: liveLogs,
+  });
+});
+
+// 5. SSE stream for real-time log output
+app.get("/api/scrape/events", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(": keep-alive\n\n");
+      if (typeof res.flush === "function") res.flush();
+    } catch (_) {
+      clearInterval(heartbeat);
+    }
+  }, 15000);
+
+  // Send current backlog of logs
+  liveLogs.forEach((entry) => {
+    res.write(`data: ${JSON.stringify(entry)}\n\n`);
+  });
+
+  sseClients.push(res);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    sseClients = sseClients.filter((client) => client !== res);
+  });
+});
+
+
 // Protect all remaining /api/* routes with authMiddleware
 // -------------------------------------------------------------
 app.use("/api", authMiddleware);
@@ -740,34 +795,6 @@ app.post("/api/bb/scrape", async (req, res) => {
   res.json({ success: true, message: "Bangladesh Bank scraper launched." });
 });
 
-// 4. Scrape status & live logs
-app.get("/api/scrape/status", (req, res) => {
-  res.json({
-    success: true,
-    isScraping,
-    logs: liveLogs,
-  });
-});
-
-// 5. SSE stream for real-time log output
-app.get("/api/scrape/events", (req, res) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.flushHeaders();
-
-  // Send current backlog of logs
-  liveLogs.forEach((entry) => {
-    res.write(`data: ${JSON.stringify(entry)}\n\n`);
-  });
-
-  sseClients.push(res);
-
-  req.on("close", () => {
-    sseClients = sseClients.filter((client) => client !== res);
-  });
-});
-
 // 6. Scrape history
 app.get("/api/scrape/history", async (req, res) => {
   try {
@@ -908,66 +935,68 @@ app.post("/api/ai/test-all", async (req, res) => {
 // visible instead of silent, which is the part code alone can fix.
 app.post("/api/autofill/launch", async (req, res) => {
   try {
-    const { url, postTitle } = req.body;
+    const { url, postTitle } = req.body || {};
     const nodeExe = process.execPath;
     const scriptPath = path.join(__dirname, "scripts", "autofill.mjs");
 
-    const scriptArgs = [scriptPath];
+    const scriptArgs = [scriptPath, "--headless=true"];
     if (url) scriptArgs.push("--url", url);
     if (postTitle) scriptArgs.push("--post", postTitle);
 
-    let child;
-
-    if (process.platform === "win32") {
-      // `cmd /c start "title" <exe> <args...>` opens a NEW visible console window.
-      // Passed as an array (not a hand-built string), so node handles the
-      // Windows argument escaping instead of us — no more broken quoting
-      // when postTitle has spaces or Bangla text.
-      child = spawn(
-        "cmd.exe",
-        ["/c", "start", "Teletalk Autofill Assistant", nodeExe, ...scriptArgs],
-        { cwd: __dirname, detached: true, stdio: "ignore", windowsHide: false }
-      );
-    } else if (process.platform === "darwin") {
-      // macOS: hand off to Terminal.app via a small osascript wrapper.
-      const shellCmd = [nodeExe, ...scriptArgs].map((a) => `'${String(a).replace(/'/g, `'\\''`)}'`).join(" ");
-      child = spawn(
-        "osascript",
-        ["-e", `tell application "Terminal" to do script "cd ${__dirname} && ${shellCmd}"`],
-        { detached: true, stdio: "ignore" }
-      );
-    } else {
-      // Linux: try common terminal emulators in order until one exists.
-      const candidates = [
-        { cmd: "x-terminal-emulator", args: ["-e", nodeExe, ...scriptArgs] },
-        { cmd: "gnome-terminal", args: ["--", nodeExe, ...scriptArgs] },
-        { cmd: "konsole", args: ["-e", nodeExe, ...scriptArgs] },
-        { cmd: "xterm", args: ["-e", nodeExe, ...scriptArgs] },
-      ];
-      const term = candidates.find((c) => {
-        try {
-          require("node:child_process").execSync(`command -v ${c.cmd}`, { stdio: "ignore" });
-          return true;
-        } catch {
-          return false;
-        }
-      });
-      if (!term) {
-        throw new Error("No terminal emulator found (tried x-terminal-emulator, gnome-terminal, konsole, xterm). Install one, or run headless.");
-      }
-      child = spawn(term.cmd, term.args, { cwd: __dirname, detached: true, stdio: "ignore" });
-    }
-
-    child.on("error", (err) => {
-      console.error("[Autofill Spawn Error]:", err);
+    broadcastLog({
+      time: new Date().toLocaleTimeString(),
+      message: `🤖 [Autofill Agent] Launching headless assistant for: "${postTitle || 'Job'}"...`,
     });
 
-    child.unref(); // let the terminal/browser run independently of the server process
+    const child = spawn(nodeExe, scriptArgs, {
+      cwd: __dirname,
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    child.stdout.on("data", (chunk) => {
+      const lines = chunk.toString().split("\n");
+      lines.forEach((l) => {
+        const trimmed = l.trim();
+        if (trimmed) {
+          console.log(`[Autofill]: ${trimmed}`);
+          broadcastLog({
+            time: new Date().toLocaleTimeString(),
+            message: trimmed,
+          });
+        }
+      });
+    });
+
+    child.stderr.on("data", (chunk) => {
+      const lines = chunk.toString().split("\n");
+      lines.forEach((l) => {
+        const trimmed = l.trim();
+        if (trimmed) {
+          console.error(`[Autofill Err]: ${trimmed}`);
+          broadcastLog({
+            time: new Date().toLocaleTimeString(),
+            message: trimmed,
+            isError: true,
+          });
+        }
+      });
+    });
+
+    child.on("close", (code) => {
+      broadcastLog({
+        time: new Date().toLocaleTimeString(),
+        message: `🏁 [Autofill Agent] Process finished with exit code ${code}.`,
+        isComplete: true,
+      });
+    });
+
+    child.unref();
 
     res.json({
       success: true,
-      message: "A new terminal window has been launched running the autofill script.",
-      command: `npm run autofill -- ${scriptArgs.slice(1).map((a) => JSON.stringify(a)).join(" ")}`,
+      message: "Autonomous headless autofill agent launched! Live logs streaming to terminal.",
+      headless: true,
     });
   } catch (err) {
     console.error("[Autofill Launch Exception]:", err);

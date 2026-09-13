@@ -69,6 +69,7 @@ async function loadCurrentUser() {
 async function loadOverview() {
   try {
     const res = await fetch("/api/overview");
+    if (res.status === 401) { window.location.href = "/login"; return; }
     const data = await res.json();
     if (!data.success) return;
 
@@ -196,6 +197,7 @@ async function loadJobs() {
 
   try {
     const res = await fetch(`/api/jobs?filter=${currentFilter}&limit=300`);
+    if (res.status === 401) { window.location.href = "/login"; return; }
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
@@ -724,39 +726,76 @@ window.trackJobAsApplied = async function (jobId, title, org) {
 // -------------------------------------------------------------
 // Live SSE Logs
 // -------------------------------------------------------------
+let _logPollTimer = null;
+let _lastRenderedLogCount = 0;
+
 function connectLiveLogEvents() {
-  if (sseSource) sseSource.close();
-  sseSource = new EventSource("/api/scrape/events");
+  if (_logPollTimer) clearInterval(_logPollTimer);
+  _lastRenderedLogCount = 0;
 
   const terminalLogs = document.getElementById("terminalLogs");
+  const modalLogs = document.getElementById("autofillModalLogs");
   const bannerLog = document.getElementById("scraperBannerLog");
+  const statusBadge = document.getElementById("autofillStatusBadge");
+  const screenshotLink = document.getElementById("autofillScreenshotLink");
+  const spinner = document.getElementById("autofillSpinner");
 
-  sseSource.onmessage = (e) => {
+  _logPollTimer = setInterval(async () => {
     try {
-      const data = JSON.parse(e.data);
-      if (!data.message) return;
+      const res = await fetch("/api/scrape/status", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.logs)) return;
 
-      if (bannerLog) bannerLog.textContent = data.message;
+      const newEntries = data.logs.slice(_lastRenderedLogCount);
+      _lastRenderedLogCount = data.logs.length;
 
-      const logEl = document.createElement("div");
-      logEl.className = `log-entry ${data.isError ? 'error' : data.message.includes('MATCH') ? 'match' : ''}`;
-      logEl.textContent = `[${data.time || new Date().toLocaleTimeString()}] ${data.message}`;
-      terminalLogs.appendChild(logEl);
+      newEntries.forEach((entry) => {
+        if (!entry || !entry.message) return;
+        const timeStr = entry.time || new Date().toLocaleTimeString();
 
-      const autoScroll = document.getElementById("chkAutoScroll").checked;
-      if (autoScroll) {
-        terminalLogs.scrollTop = terminalLogs.scrollHeight;
-      }
+        if (bannerLog) bannerLog.textContent = entry.message;
 
-      if (data.isComplete) {
-        loadOverview();
-        loadJobs();
-        showToast("Scrape completed successfully!", "success");
-      }
-    } catch (err) {
-      console.error("SSE parse error:", err);
-    }
-  };
+        // Append to main dashboard terminal
+        if (terminalLogs) {
+          const el = document.createElement("div");
+          el.className = "log-entry" +
+            (entry.isError ? " error" : "") +
+            (entry.message.includes("MATCH") || entry.message.includes("🎯") ? " match" : "");
+          el.textContent = `[${timeStr}] ${entry.message}`;
+          terminalLogs.appendChild(el);
+          const autoScroll = document.getElementById("chkAutoScroll");
+          if (!autoScroll || autoScroll.checked) {
+            terminalLogs.scrollTop = terminalLogs.scrollHeight;
+          }
+        }
+
+        // Append to modal terminal if visible
+        if (modalLogs) {
+          const mEl = document.createElement("div");
+          mEl.style.color = entry.isError ? "#f87171" : entry.message.includes("✅") || entry.message.includes("🎯") ? "#34d399" : "#e2e8f0";
+          mEl.style.marginBottom = "3px";
+          mEl.textContent = `[${timeStr}] ${entry.message}`;
+          modalLogs.appendChild(mEl);
+          modalLogs.scrollTop = modalLogs.scrollHeight;
+        }
+
+        if (entry.message && entry.message.includes("snapshot")) {
+          if (screenshotLink) screenshotLink.style.display = "block";
+        }
+
+        if (entry.isComplete || (entry.message && entry.message.includes("Finished with exit code"))) {
+          if (statusBadge) {
+            statusBadge.textContent = "Completed ✅";
+            statusBadge.style.background = "rgba(52,211,153,0.2)";
+            statusBadge.style.color = "#6ee7b7";
+          }
+          if (spinner) spinner.style.display = "none";
+          if (screenshotLink) screenshotLink.style.display = "block";
+        }
+      });
+    } catch (_) {}
+  }, 1000);
 }
 
 // -------------------------------------------------------------
@@ -1085,26 +1124,40 @@ async function executeDesktopAutofill() {
   const { url, postTitle } = currentAutofillJob;
   const btn = document.getElementById("btnLaunchPlaywrightBrowser");
   btn.disabled = true;
-  btn.textContent = "Opening Window...";
+  btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;display:inline-block;margin-right:5px;"></span> Running Agent...`;
 
   try {
-    showToast(`Launching Chromium window for "${postTitle}"...`, "info");
+    // Show modal log section
+    const modalLogSec = document.getElementById("autofillLiveLogSection");
+    if (modalLogSec) modalLogSec.style.display = "block";
+    const modalLogs = document.getElementById("autofillModalLogs");
+    if (modalLogs) {
+      modalLogs.innerHTML = `<div style="color:#818cf8;">🚀 [${new Date().toLocaleTimeString()}] Launching Headless Autofill Agent for: "${escapeHtml(postTitle)}"...</div>`;
+    }
+
+    // Also open dashboard terminal drawer
+    const term = document.getElementById("terminalSection");
+    if (term) term.style.display = "block";
+
+    showToast(`🤖 Autofill Agent started for "${postTitle}"! Streaming live steps...`, "info");
+    connectLiveLogEvents();
+
     const res = await fetch("/api/autofill/launch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, postTitle }),
     });
     const data = await res.json();
-    if (data.success) {
-      showToast("Playwright browser window popped up on your desktop!", "success");
-    } else {
-      showToast(data.message, "error");
+    if (!data.success) {
+      showToast(data.message || data.error, "error");
     }
   } catch (err) {
     showToast("Error launching autofill: " + err.message, "error");
   } finally {
-    btn.disabled = false;
-    btn.textContent = "🚀 Pop Up Chrome Window Now";
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = `🤖 Run Server-Side Autofill Agent`;
+    }, 4000);
   }
 }
 

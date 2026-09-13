@@ -1,0 +1,26 @@
+services:
+  job-automation:
+    build: .
+    container_name: job-automation
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./.env:/app/.env
+      - ./server.mjs:/app/server.mjs
+      - ./public:/app/public
+      - ./scripts:/app/scripts
+      - ./application:/app/application
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - SCRAPE_CONCURRENCY=4
+      - NODE_OPTIONS=--max-old-space-size=4096
+    deploy:
+      resources:
+        limits:
+          memory: 5G
+        reservations:
+          memory: 512M

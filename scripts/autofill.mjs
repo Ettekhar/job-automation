@@ -50,6 +50,22 @@ const postTitle = getArg("post");
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
+// ── HOISTED TO MODULE SCOPE ──────────────────────────────────────────────
+// Previously this was declared with `const isHeadless = ...` *inside*
+// main(), which meant it only existed in main()'s local scope. Any other
+// top-level function in this file that tried to read it (or a future
+// refactor that moved code around) would hit
+// "ReferenceError: isHeadless is not defined". Declaring it once here,
+// at module scope, means every function in the file can safely read it.
+// main() now just *assigns* to it (see below) instead of redeclaring it.
+let isHeadless = !process.argv.includes("--headed");
+// ── Record which post ACTUALLY got selected during navigation ────────────
+// The confirmation-PDF email must reflect the post that was really selected
+// on the portal (not just the requested one), so a wrong-post fill is
+// visible in the inbox immediately instead of being discovered days later
+// during admit-card verification. Set by deterministicNavigate().
+let selectedPostLabel = "";
+
 // ── Multi-provider AI cascade (Gemini → Groq → Cloudflare → OpenRouter) ──
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
@@ -76,14 +92,70 @@ async function loadProfile() {
   }
 }
 
+// ── SHARED UPLOAD PATH RESOLUTION ────────────────────────────────────────
+// Single source of truth for "where is the photo/signature file", used by
+// both the startup preflight check and handleImageUpload(). Resolution
+// order: explicit profile.photo_path/signature_path override -> the
+// conventional application/Applicant.jpg or application/applicant_signature.jpg
+// -> last-resort config/photo.jpg or config/signature.jpg.
+async function resolveUploadFilePath(profile, kind) {
+  const overrideKey = kind === "photo" ? "photo_path" : "signature_path";
+  if (profile[overrideKey]) {
+    return path.resolve(__dirname, "..", profile[overrideKey]);
+  }
+  const primaryName = kind === "photo" ? "Applicant.jpg" : "applicant_signature.jpg";
+  const primaryPath = path.join(__dirname, "..", "application", primaryName);
+  const exists = await fs.access(primaryPath).then(() => true).catch(() => false);
+  if (exists) return primaryPath;
+  const fallbackName = kind === "photo" ? "photo.jpg" : "signature.jpg";
+  return path.join(__dirname, "..", "config", fallbackName);
+}
+
+// ── STARTUP PREFLIGHT: CATCH MISSING PHOTO/SIGNATURE EARLY ─────────────────
+// Checks -- loudly, right at startup, before spending minutes on
+// navigation/CAPTCHA/submit -- whether the photo/signature files this run
+// will need are actually present in THIS running environment. Local
+// deployments where the script runs on the same machine the files were
+// saved on will basically always pass this; it exists specifically to catch
+// cases where the files exist on the developer's machine but were never
+// copied into the container/server/cloud runner that actually executes the
+// script (e.g. missing from the Docker image, or excluded by .gitignore).
+async function preflightCheckUploadFiles(profile) {
+  const photoPath = await resolveUploadFilePath(profile, "photo");
+  const sigPath = await resolveUploadFilePath(profile, "signature");
+  const photoExists = await fs.access(photoPath).then(() => true).catch(() => false);
+  const sigExists = await fs.access(sigPath).then(() => true).catch(() => false);
+
+  console.log("\n📋 [Preflight] Checking photo/signature files in this environment...");
+  console.log(`   Photo:     ${photoPath}  ${photoExists ? "✅ found" : "❌ MISSING"}`);
+  console.log(`   Signature: ${sigPath}  ${sigExists ? "✅ found" : "❌ MISSING"}`);
+
+  if (!photoExists || !sigExists) {
+    console.log("");
+    console.log("⚠️  [Preflight] One or both files are missing HERE, in the environment actually");
+    console.log("    running this script. If you already have these files on your own machine,");
+    console.log("    that alone isn't enough -- they need to be copied into wherever this script");
+    console.log("    is actually executing (baked into the Docker image, uploaded to the server,");
+    console.log("    committed if not .gitignore'd, etc). Continuing anyway -- the form will get");
+    console.log("    stuck on the upload step later if these aren't fixed before then.");
+  }
+  console.log("");
+}
+
 async function main() {
   const profile = await loadProfile();
+  await preflightCheckUploadFiles(profile);
 
-  // Use Playwright's own bundled Chromium — it ALWAYS opens a fresh,
-  // independent window (never hidden behind your existing Chrome windows).
-  console.log("🚀 Launching Playwright Chromium browser window...");
+  // Use Playwright's Chromium in headless mode by default for cloud/background runners.
+  // Pass --headed if you explicitly want to watch the window locally.
+  // NOTE: this now ASSIGNS to the module-scoped `isHeadless` declared above
+  // with `let` -- it must NOT be redeclared with `const`/`let` here, or
+  // it would shadow the module-level variable and any other function
+  // reading the outer `isHeadless` would still see the wrong/undefined value.
+  isHeadless = !process.argv.includes("--headed");
+  console.log(`🚀 Launching Playwright Chromium (headless: ${isHeadless})...`);
   const browser = await chromium.launch({
-    headless: false,
+    headless: isHeadless,
     args: [
       "--start-maximized",
       "--no-sandbox",
@@ -92,7 +164,9 @@ async function main() {
     ],
   });
 
-  const context = await browser.newContext({ viewport: null });
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+  });
   const page = await context.newPage();
 
   if (startUrl) {
@@ -153,6 +227,19 @@ async function main() {
     console.log("  \u2192 Review in the browser, then click Submit.");
     console.log("  \u2192 Type 'r' in terminal to re-read CAPTCHA if needed.");
     console.log("-------------------------------------------------------\n");
+  }
+
+  // --- Save verification screenshot (especially helpful in headless / cloud runs) ---
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const dir = path.join(process.cwd(), "public", "screenshots");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const shotPath = path.join(dir, "autofill-preview.png");
+    await formPage.screenshot({ path: shotPath, fullPage: true }).catch(() => { });
+    console.log(`📸 Form verification screenshot saved to: ${shotPath}`);
+  } catch (err) {
+    // ignore screenshot failure
   }
 
   // --- Post-submit agent: handles every page AFTER submission ---
@@ -225,7 +312,7 @@ async function verifyCaptchaBeforeSubmit(formPage) {
   }
 }
 
-async function findAndClickSubmit(formPage, { timeoutMs = 8000, maxClicks = 3 } = {}) {
+async function findAndClickSubmit(formPage, { timeoutMs = 8000, maxClicks = 5 } = {}) {
   const deadline = Date.now() + timeoutMs;
   let submitBtn = null;
 
@@ -303,6 +390,21 @@ async function findAndClickSubmit(formPage, { timeoutMs = 8000, maxClicks = 3 } 
       console.log(`⚠️ Submit was rejected by the site: "${rejection}"`);
       if (i < maxClicks - 1) {
         console.log("🔄 Getting a fresh CAPTCHA and retrying submit...");
+        // IMPORTANT: force a real refresh of the CAPTCHA image here. Without
+        // this, solveCaptchaRobust() only clicks the refresh control when its
+        // own OCR read comes back suspiciously short (<4 chars) -- a normal-
+        // looking 6-character read (even if it was JUST rejected by the site
+        // as wrong, or the token behind it expired after one failed check)
+        // gets re-read from the exact same, already-invalid image every
+        // retry. That silently burns all retries solving the same rejected
+        // CAPTCHA over and over -- which is exactly what happened here (two
+        // identical "GDS44R" reads, two identical "Invalid captcha code!"
+        // rejections). Refreshing first guarantees each retry actually gets
+        // a new image/token to read.
+        const refreshed = await refreshCaptchaImage(formPage).catch(() => false);
+        if (!refreshed) {
+          console.log("⚠️ Couldn't find a CAPTCHA refresh control -- re-reading the same image (may repeat the same rejected value).");
+        }
         await solveCaptchaRobust(formPage);
         await tickDeclarationCheckbox(formPage);
         continue;
@@ -390,6 +492,18 @@ function keepAlive(browser, page) {
       } catch (e) {
         // ignore
       }
+    } else {
+      // Non-interactive (e.g. GitHub Actions cloud runner, headless execution)
+      // Allow up to 3 minutes for any post-submit flows, then cleanly exit
+      const timer = setTimeout(async () => {
+        console.log("⏱️ Headless session finished. Closing browser.");
+        await browser.close().catch(() => { });
+        resolve();
+      }, 180000);
+      browser.on("disconnected", () => {
+        clearTimeout(timer);
+        resolve();
+      });
     }
   });
 }
@@ -736,27 +850,65 @@ async function deterministicNavigate(page, context, targetPost) {
           await radios[radios.length - 1].check({ force: true }).catch(() => { });
         }
       } else {
-        // Post selection list
-        if (targetPost) {
-          const targetNorm = targetPost.toLowerCase().replace(/[^a-z0-9]/g, "");
-          for (const r of radios) {
-            const labelText = await r.evaluate(el => {
-              const row = el.closest("tr, label, div.radio, div.form-check, li, td") || el.parentElement;
-              return row ? row.innerText : "";
-            }).catch(() => "");
-            const labelNorm = labelText.toLowerCase().replace(/[^a-z0-9]/g, "");
-            if (labelNorm.includes(targetNorm) || targetNorm.includes(labelNorm)) {
-              matchedRadio = r;
-              console.log(`[⚡ Standard Navigation] 👉 Step: Selecting post "${labelText.trim().slice(0, 50)}"...`);
-              break;
-            }
-          }
+        // Post selection list — read every option's label first, so we can
+        // match the REQUESTED post exactly and, if it's missing, abort
+        // loudly instead of silently submitting the wrong job.
+        const allLabels = [];
+        for (const r of radios) {
+          const labelText = await r.evaluate(el => {
+            const row = el.closest("tr, label, div.radio, div.form-check, li, td") || el.parentElement;
+            return row ? row.innerText : "";
+          }).catch(() => "");
+          allLabels.push(labelText.trim().replace(/\s+/g, " "));
         }
 
-        // If no direct post title match, select the first circular/post radio
-        if (!matchedRadio && radios.length > 0) {
-          matchedRadio = radios[0];
-          console.log(`[⚡ Standard Navigation] 👉 Step: Selecting active circular/post option...`);
+        if (targetPost) {
+          const targetNorm = targetPost.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+          // Exact normalized substring match
+          radios.forEach((r, i) => {
+            if (matchedRadio) return;
+            const labelNorm = allLabels[i].toLowerCase().replace(/[^a-z0-9]/g, "");
+            if (labelNorm && (labelNorm.includes(targetNorm) || targetNorm.includes(labelNorm))) {
+              matchedRadio = r;
+              console.log(`[⚡ Standard Navigation] 👉 Step: Selecting post "${allLabels[i].slice(0, 60)}" (exact match for requested "${targetPost}")...`);
+            }
+          });
+
+          // Token match: every significant word of the requested title must
+          // appear in the label (labels often carry extra grade/dept text).
+          if (!matchedRadio) {
+            const words = targetPost.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 3);
+            radios.forEach((r, i) => {
+              if (matchedRadio || !words.length) return;
+              const labelLower = allLabels[i].toLowerCase();
+              if (labelLower && words.every(w => labelLower.includes(w))) {
+                matchedRadio = r;
+                console.log(`[⚡ Standard Navigation] 👉 Step: Selecting post "${allLabels[i].slice(0, 60)}" (token match for requested "${targetPost}")...`);
+              }
+            });
+          }
+
+          // SAFETY: never silently submit a different post than requested.
+          // (Previously this fell back to radios[0] — the FIRST radio — and
+          // filled whatever post happened to be listed first, which is how
+          // the wrong job got submitted with the right applicant details!)
+          if (!matchedRadio) {
+            console.log(`[⚠️ Standard Navigation] ❌ No post option matches requested "${targetPost}". Available options:`);
+            for (const l of allLabels) console.log(`     - ${l || "(blank label)"}`);
+            console.log(`   ➔ Aborting standard navigation — the AI Vision agent may take over, but no wrong post will be submitted blindly.`);
+            return null;
+          }
+
+          selectedPostLabel = allLabels[radios.indexOf(matchedRadio)].slice(0, 100);
+        } else {
+          // Caller launched without --post: choosing the first active
+          // option is then the user's explicit choice.
+          if (radios.length > 0) {
+            matchedRadio = radios[0];
+            selectedPostLabel = allLabels[0] || "first available option (no --post given)";
+            console.log(`[⚡ Standard Navigation] 👉 Step: Selecting first active circular/post option (no --post specified)...`);
+          }
         }
 
         if (matchedRadio) {
@@ -1811,13 +1963,10 @@ or {"type":"wait","reason":"page loading"}`;
 // falls back to generic detection / AI-provided selectors if neither
 // #photo nor #signature is present, e.g. on a differently-built portal.
 async function handleImageUpload(page, fields, profile) {
-  // Check application/ folder first, then fall back to config/
-  const photoPath = profile.photo_path
-    ? path.resolve(__dirname, "..", profile.photo_path)
-    : (await fs.access(path.join(__dirname, "..", "application", "Applicant.jpg")).then(() => path.join(__dirname, "..", "application", "Applicant.jpg")).catch(() => path.join(__dirname, "..", "config", "photo.jpg")));
-  const sigPath = profile.signature_path
-    ? path.resolve(__dirname, "..", profile.signature_path)
-    : (await fs.access(path.join(__dirname, "..", "application", "applicant_signature.jpg")).then(() => path.join(__dirname, "..", "application", "applicant_signature.jpg")).catch(() => path.join(__dirname, "..", "config", "signature.jpg")));
+  // Resolved once via the shared helper -- same order/logic as the startup
+  // preflight check, so what preflight reported is exactly what gets used here.
+  const photoPath = await resolveUploadFilePath(profile, "photo");
+  const sigPath = await resolveUploadFilePath(profile, "signature");
 
   console.log(`[Image] Looking for uploads. photoPath="${photoPath}" sigPath="${sigPath}"`);
 
@@ -2047,11 +2196,22 @@ async function emailPdfAttachment(pdfPath, filename, profile) {
   const toStr = toList.join(", ");
   const ccStr = ccList.join(", ");
 
+  // ── Post transparency: requested (dashboard card) vs actually selected ──
+  // The agent may reach a post-selection page where the requested title is
+  // missing or the first radio was chosen; surfacing both in the email
+  // makes any wrong-post submission obvious in the inbox itself.
+  const requestedPost = postTitle || "";
+  const filledPost = selectedPostLabel || "";
+  const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const postMatch = !requestedPost || !filledPost ||
+    norm(filledPost).includes(norm(requestedPost)) ||
+    norm(requestedPost).includes(norm(filledPost));
+
   await transporter.sendMail({
     from: process.env.SMTP_FROM || smtpUser,
     to: toStr,
     cc: ccStr || undefined,
-    subject: `🎉 Application Submitted — ${applicantName} (PDF Attached)`,
+    subject: `🎉 Application Submitted — ${applicantName}${requestedPost ? ` — ${requestedPost}` : ""} (PDF Attached)`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:auto">
         <div style="background:#16a34a;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">
@@ -2059,6 +2219,10 @@ async function emailPdfAttachment(pdfPath, filename, profile) {
         </div>
         <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;padding:20px 24px;border-radius:0 0 8px 8px">
           <p style="color:#555">The job application for <strong>${applicantName}</strong> has been submitted successfully.</p>
+          ${requestedPost ? `<p style="color:#555">📝 <strong>Requested post (from dashboard):</strong> ${requestedPost}</p>` : ""}
+          ${filledPost ? `<p style="color:#555"><strong>Post actually selected on portal:</strong> ${filledPost}</p>` : `<p style="color:#555"><strong>Post actually selected on portal:</strong> (not recorded — verify the attached PDF)</p>`}
+          ${!postMatch ? `<p style="color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;padding:12px;border-radius:6px">⚠️ <strong>Mismatch detected:</strong> the portal selected a different post than the one requested. Verify the attached PDF before paying any fee or submitting payment!</p>` : ""}
+          <p style="color:#555">📎 Confirmation file: <strong>${filename}</strong></p>
           <p style="color:#555">The application PDF is attached to this email for your records.</p>
         </div>
       </div>`,

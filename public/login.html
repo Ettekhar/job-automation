@@ -320,6 +320,10 @@
         <label class="form-label" for="password">Password</label>
         <input class="form-input" type="password" id="password" name="password"
                placeholder="••••••••" autocomplete="current-password" required>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px;color:#94a3b8;">
+          <span>Default: <strong style="color:#a5b4fc;background:rgba(99,102,241,0.15);padding:2px 6px;border-radius:4px;">admin</strong></span>
+          <button type="button" id="btnFillCreds" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#818cf8;font-size:11px;font-weight:600;cursor:pointer;padding:3px 8px;border-radius:6px;">Auto-fill Credentials</button>
+        </div>
       </div>
       <button type="submit" class="btn-submit" id="btnSubmit">
         Sign In
@@ -358,6 +362,11 @@
     el.className = 'alert ' + type;
     el.textContent = msg;
   }
+
+  document.getElementById('btnFillCreds')?.addEventListener('click', () => {
+    document.getElementById('username').value = 'admin';
+    document.getElementById('password').value = 'Teletalk@2026!';
+  });
 
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();

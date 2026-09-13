@@ -46,6 +46,11 @@
           "selector": "#submit"
         }
       ]
+    },
+    "#dep_status": {
+      "action": "select",
+      "selector": "#dep_status",
+      "option": "Not Applicable"
     }
   },
   "policekishoreganj.teletalk.com.bd": {

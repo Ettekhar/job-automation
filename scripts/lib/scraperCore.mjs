@@ -170,12 +170,27 @@ export async function runScraper(options = {}) {
             title: post.title,
             category: detail.organization || circular.orgId || "Government",
             orgId: circular.orgId,
-            applyUrl: detail.applyUrl || `${BASE}/jobs/government/${circular.orgId}?jobId=${post.jobIdNumber}`,
             pdfUrl: detail.pdfUrl || null,
             deadline: detail.deadline || null,
             isMatch,
             matchedKeywords,
           };
+
+          // Prefer a specific per-circular apply URL. Alljobs' ".apply-online"
+          // href is often just the portal ROOT — resolve a deep link in that
+          // case, and if none is found fall back to the alljobs DETAIL page
+          // (which is specific to this post) instead of the bare portal root.
+          let applyUrl = detail.applyUrl || null;
+          if (!applyUrl || isBarePortalRoot(applyUrl)) {
+            if (applyUrl) {
+              const deep = await resolveDeepApplyUrl(page, applyUrl, log);
+              if (deep) applyUrl = deep;
+            }
+            if (!applyUrl || isBarePortalRoot(applyUrl)) {
+              applyUrl = `${BASE}/jobs/government/${circular.orgId}?jobId=${post.jobIdNumber}`;
+            }
+          }
+          jobObj.applyUrl = applyUrl;
 
           circularJobs.push(jobObj);
 
@@ -368,6 +383,76 @@ async function getAllCirculars(page, log) {
   }
 
   return circulars;
+}
+
+// ── Deep-link resolution for bare portal apply URLs ─────────────────────────
+// Alljobs' ".apply-online" link often points at the organization portal ROOT
+// (e.g. https://bhtpa.teletalk.com.bd/) instead of the specific circular.
+// When several circulars are live on one portal, launching the autofill
+// agent from the root can land on the WRONG one (first radio). Probing the
+// root once per host gives us a per-circular deep link instead.
+function isBarePortalRoot(url) {
+  try {
+    const u = new URL(url);
+    return (u.pathname === "/" || u.pathname === "") && !u.search && !u.hash;
+  } catch {
+    return false;
+  }
+}
+
+const portalDeepLinkCache = new Map();
+
+async function resolveDeepApplyUrl(page, portalRootUrl, log) {
+  try {
+    const u = new URL(portalRootUrl);
+    const host = u.host;
+    if (portalDeepLinkCache.has(host)) return portalDeepLinkCache.get(host);
+
+    const root = `${u.protocol}//${u.host}/`;
+    await page.goto(root, { waitUntil: "domcontentloaded", timeout: 20000 });
+    const deep = await page.evaluate(() => {
+      const abs = (href) => {
+        try { return new URL(href, location.href); } catch { return null; }
+      };
+      const usable = (a) => {
+        if (!a) return null;
+        const u2 = abs(a.getAttribute("href"));
+        if (!u2 || u2.host !== location.host) return null;
+        if (u2.pathname === "/" || u2.pathname === "") return null;
+        if (/\.pdf($|\?)/i.test(u2.pathname + u2.search)) return null;
+        return u2.href;
+      };
+      // Standard Teletalk pattern: <fieldset><legend>Ongoing Circular</legend><a ...>
+      for (const fs of document.querySelectorAll("fieldset")) {
+        const legend = fs.querySelector("legend")?.textContent || "";
+        if (/ongoing|circular/i.test(legend)) {
+          const link = usable(fs.querySelector("a[href]"));
+          if (link) return link;
+        }
+      }
+      // Any link whose text mentions apply/circular/ongoing
+      for (const a of document.querySelectorAll("a[href]")) {
+        const text = (a.textContent || "").trim();
+        if (/ongoing|circular|apply/i.test(text)) {
+          const link = usable(a);
+          if (link) return link;
+        }
+      }
+      // Last resort: internal path that looks like a circular application app
+      for (const a of document.querySelectorAll("a[href]")) {
+        const link = usable(a);
+        if (link && /apply|circular|onlineapp|application/i.test(link)) return link;
+      }
+      return null;
+    });
+    portalDeepLinkCache.set(host, deep);
+    if (deep) log(`🔗 Deep-link enrichment: ${host} → ${deep}`);
+    else log(`ℹ️ No per-circular deep link found on ${host} — using alljobs detail page as apply URL.`);
+    return deep;
+  } catch (e) {
+    log(`⚠️ Deep-link enrichment failed for ${portalRootUrl}: ${e.message}`);
+    return null;
+  }
 }
 
 async function getPostsForCircular(page, circularUrl) {

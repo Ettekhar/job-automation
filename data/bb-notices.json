@@ -1,5 +1,74 @@
 [
   {
+    "id": "BSCS-10229-selected-candidate",
+    "jobId": "10229",
+    "source": "bscs",
+    "circularFor": "Selected Candidate",
+    "title": "List of Primarily Selected Candidates for the Post of Officer (IT) (10th Grade) (Job ID-10229) of 4 Banks.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260909_bscs_304_1788949586.pdf",
+    "publishDate": "09/09/2026",
+    "closeDate": "09/10/2026",
+    "isMatch": true,
+    "matchedKeywords": [
+      "officer (it)"
+    ],
+    "scrapedAt": "2026-09-13T18:15:28.274Z"
+  },
+  {
+    "id": "BSCS-25107, 25116-others",
+    "jobId": "25107, 25116",
+    "source": "bscs",
+    "circularFor": "Others",
+    "title": "Regarding correction of CV for the applicants of Assistant Maintenance Engineer/ Assistant Engineer (IT), (Job ID: 25107) and Senior Officer (Law), (Job ID: 25116)",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260909_bscs_306_1788948917.pdf",
+    "publishDate": "09/09/2026",
+    "closeDate": "15/09/2026",
+    "isMatch": true,
+    "matchedKeywords": [
+      "IT"
+    ],
+    "scrapedAt": "2026-09-13T18:15:28.274Z"
+  },
+  {
+    "id": "BSCS-25102-viva",
+    "jobId": "25102",
+    "source": "bscs",
+    "circularFor": "VIVA",
+    "title": "Corrected - Viva Voce for the Post of Officer (G) (10th Grade, Job ID: 25102) of 11 Banks/FI.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260907_bscs_300.pdf",
+    "publishDate": "07/09/2026",
+    "closeDate": "18/10/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-09-13T18:15:28.274Z"
+  },
+  {
+    "id": "BSCS-10220-selected-candidate",
+    "jobId": "10220",
+    "source": "bscs",
+    "circularFor": "Selected Candidate",
+    "title": "List of Primarily Selected Candidates (2nd Phase) for the Post of Senior Officer (G) (9th Grade) (Job ID: 10220) of 11 Bank/FIs.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260907_bscs_299.pdf",
+    "publishDate": "07/09/2026",
+    "closeDate": "07/10/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-09-13T18:15:28.274Z"
+  },
+  {
+    "id": "BSCS-26101-admit-card",
+    "jobId": "26101",
+    "source": "bscs",
+    "circularFor": "Admit Card",
+    "title": "Download Admit Card for the post of Senior Officer (General) (Job ID No-26101) of 09 Banks and 2 FIs.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260906_bscs_297.pdf",
+    "publishDate": "06/09/2026",
+    "closeDate": "20/09/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-09-13T18:15:28.274Z"
+  },
+  {
     "id": "BSCS-10225-selected-candidate",
     "jobId": "10225",
     "source": "bscs",
@@ -13,7 +82,7 @@
       "senior officer (it)",
       "officer (it)"
     ],
-    "scrapedAt": "2026-09-04T06:59:41.318Z"
+    "scrapedAt": "2026-09-13T18:15:28.274Z"
   },
   {
     "id": "BSCS-10233-selected-candidate",
@@ -26,7 +95,7 @@
     "closeDate": "29/09/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T06:59:41.318Z"
+    "scrapedAt": "2026-09-13T18:15:28.274Z"
   },
   {
     "id": "BSCS-10226-selected-candidate",
@@ -42,7 +111,7 @@
       "programmer",
       "assistant programmer"
     ],
-    "scrapedAt": "2026-09-04T06:59:41.318Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-25102-viva",
@@ -55,7 +124,7 @@
     "closeDate": "18/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T06:59:41.318Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-25104-viva",
@@ -71,7 +140,7 @@
       "senior officer (it)",
       "officer (it)"
     ],
-    "scrapedAt": "2026-09-04T06:59:41.318Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-10209-selected-candidate",
@@ -86,7 +155,7 @@
     "matchedKeywords": [
       "officer (it)"
     ],
-    "scrapedAt": "2026-09-04T06:59:41.318Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-10205-selected-candidate",
@@ -102,7 +171,20 @@
       "senior officer (it)",
       "officer (it)"
     ],
-    "scrapedAt": "2026-09-04T06:59:41.318Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
+  },
+  {
+    "id": "BSCS-10235-selected-candidate",
+    "jobId": "10235",
+    "source": "bscs",
+    "circularFor": "Selected Candidate",
+    "title": "List of Primarily selected candidates for the post of Sub-Assistant Engineer (Civil) (10th grade) of SBPLC, ABPLC & BHBFC (Job ID: 10235).",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260818_bscs_276.pdf",
+    "publishDate": "18/08/2026",
+    "closeDate": "17/09/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-10228-selected-candidate",
@@ -117,20 +199,7 @@
     "matchedKeywords": [
       "database administrator"
     ],
-    "scrapedAt": "2026-09-04T06:59:41.318Z"
-  },
-  {
-    "id": "BSCS-10235-selected-candidate",
-    "jobId": "10235",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily selected candidates for the post of Sub-Assistant Engineer (Civil) (10th grade) of SBPLC, ABPLC & BHBFC (Job ID: 10235).",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260818_bscs_276.pdf",
-    "publishDate": "18/08/2026",
-    "closeDate": "17/09/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T06:59:41.319Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-10224-selected-candidate",
@@ -145,7 +214,7 @@
     "matchedKeywords": [
       "programmer"
     ],
-    "scrapedAt": "2026-09-04T06:59:41.319Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-10206-selected-candidate",
@@ -161,46 +230,7 @@
       "programmer",
       "assistant programmer"
     ],
-    "scrapedAt": "2026-09-04T06:59:41.319Z"
-  },
-  {
-    "id": "BSCS-10231-selected-candidate",
-    "jobId": "10231",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "Primarily selected candidates for the post of Senior Officer (Eng-Civil)/Assistant Engineer (Civil) of SBPLC, BHBFC and PKB (Job ID: 10231)",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260810_bscs_272.pdf",
-    "publishDate": "10/08/2026",
-    "closeDate": "09/09/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T06:59:41.319Z"
-  },
-  {
-    "id": "BSCS-10234-selected-candidate",
-    "jobId": "10234",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of primarily selected candidates for the post of Senior Officer (Law) (Grade-9, Job ID: 10234) of 02 Banks & 01 FI.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260806_bscs_270.pdf",
-    "publishDate": "06/08/2026",
-    "closeDate": "10/09/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T06:59:41.319Z"
-  },
-  {
-    "id": "BSCS-10223-selected-candidate",
-    "jobId": "10223",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of primarily selected candidates for the post of Officer-Rural Credit (O-RC) (Grade-10, Job ID: 10223) of 02 Banks.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260729_bscs_1.pdf",
-    "publishDate": "29/07/2026",
-    "closeDate": "10/09/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T06:59:41.319Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -213,7 +243,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T06:59:41.319Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -226,7 +256,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T06:59:41.319Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -239,6 +269,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-04T06:59:41.319Z"
+    "scrapedAt": "2026-09-13T18:15:28.275Z"
   }
 ]

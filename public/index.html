@@ -319,10 +319,10 @@
 
           <!-- Method 2: Launch in Headed Browser -->
           <div class="settings-group">
-            <h4 class="group-title">🖥️ Method 2: Launch Automated Browser / Terminal</h4>
+            <h4 class="group-title">🤖 Method 2: Autonomous Server-Side Autofill Agent (Headless)</h4>
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 10px 0;">
               <button class="btn btn-primary" id="btnLaunchPlaywrightBrowser">
-                🚀 Pop Up Chrome Window Now
+                🤖 Run Server-Side Autofill Agent
               </button>
               <button class="btn btn-outline" id="btnOpenApplyInTab">
                 🌐 Open Portal in New Tab
@@ -335,7 +335,26 @@
                 <button class="btn btn-secondary btn-sm" id="btnCopyCliCommand">Copy</button>
               </div>
             </div>
+          
+          <!-- Live Autofill Agent Terminal inside Modal -->
+          <div id="autofillLiveLogSection" style="display: none; margin-top: 16px; background: #0b0f19; border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 8px;">
+                <span class="spinner" id="autofillSpinner" style="width: 12px; height: 12px; display: inline-block;"></span>
+                <span>🤖 Live Autofill Agent Progress</span>
+              </div>
+              <span id="autofillStatusBadge" style="font-size: 11px; font-weight: 600; background: rgba(99,102,241,0.2); color: #c7d2fe; padding: 2px 8px; border-radius: 12px;">Running...</span>
+            </div>
+            <div id="autofillModalLogs" style="max-height: 200px; min-height: 100px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #e2e8f0; line-height: 1.6; padding: 10px; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="color: #94a3b8;">Waiting for agent to initialize...</div>
+            </div>
+            <div id="autofillScreenshotLink" style="display: none; margin-top: 10px; text-align: right;">
+              <a href="/autofill-preview.png" target="_blank" class="btn btn-emerald btn-sm" style="font-size: 11.5px; padding: 4px 12px;">
+                📸 View Form Snapshot
+              </a>
+            </div>
           </div>
+
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="btnDismissAutofill">Close</button>
@@ -359,7 +378,26 @@
           <div class="form-field" style="margin-top: 16px;">
             <label>Recipient Email Address</label>
             <input type="email" id="inputAlertRecipient" placeholder="e.g. taion@razibmarketing.net">
+          
+          <!-- Live Autofill Agent Terminal inside Modal -->
+          <div id="autofillLiveLogSection" style="display: none; margin-top: 16px; background: #0b0f19; border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 8px;">
+                <span class="spinner" id="autofillSpinner" style="width: 12px; height: 12px; display: inline-block;"></span>
+                <span>🤖 Live Autofill Agent Progress</span>
+              </div>
+              <span id="autofillStatusBadge" style="font-size: 11px; font-weight: 600; background: rgba(99,102,241,0.2); color: #c7d2fe; padding: 2px 8px; border-radius: 12px;">Running...</span>
+            </div>
+            <div id="autofillModalLogs" style="max-height: 200px; min-height: 100px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #e2e8f0; line-height: 1.6; padding: 10px; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="color: #94a3b8;">Waiting for agent to initialize...</div>
+            </div>
+            <div id="autofillScreenshotLink" style="display: none; margin-top: 10px; text-align: right;">
+              <a href="/autofill-preview.png" target="_blank" class="btn btn-emerald btn-sm" style="font-size: 11.5px; padding: 4px 12px;">
+                📸 View Form Snapshot
+              </a>
+            </div>
           </div>
+
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="btnCancelSendAlert">Cancel</button>
@@ -389,7 +427,26 @@
           <div class="add-keyword-form">
             <input type="text" id="inputNewKeyword" placeholder="e.g. data engineer, সহকারী প্রোগ্রামার">
             <button class="btn btn-primary" id="btnAddKeyword">Add Keyword</button>
+          
+          <!-- Live Autofill Agent Terminal inside Modal -->
+          <div id="autofillLiveLogSection" style="display: none; margin-top: 16px; background: #0b0f19; border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 8px;">
+                <span class="spinner" id="autofillSpinner" style="width: 12px; height: 12px; display: inline-block;"></span>
+                <span>🤖 Live Autofill Agent Progress</span>
+              </div>
+              <span id="autofillStatusBadge" style="font-size: 11px; font-weight: 600; background: rgba(99,102,241,0.2); color: #c7d2fe; padding: 2px 8px; border-radius: 12px;">Running...</span>
+            </div>
+            <div id="autofillModalLogs" style="max-height: 200px; min-height: 100px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #e2e8f0; line-height: 1.6; padding: 10px; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="color: #94a3b8;">Waiting for agent to initialize...</div>
+            </div>
+            <div id="autofillScreenshotLink" style="display: none; margin-top: 10px; text-align: right;">
+              <a href="/autofill-preview.png" target="_blank" class="btn btn-emerald btn-sm" style="font-size: 11.5px; padding: 4px 12px;">
+                📸 View Form Snapshot
+              </a>
+            </div>
           </div>
+
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="btnResetKeywords">Reset Defaults</button>
@@ -471,7 +528,26 @@
                 </select>
               </div>
             </div>
+          
+          <!-- Live Autofill Agent Terminal inside Modal -->
+          <div id="autofillLiveLogSection" style="display: none; margin-top: 16px; background: #0b0f19; border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 8px;">
+                <span class="spinner" id="autofillSpinner" style="width: 12px; height: 12px; display: inline-block;"></span>
+                <span>🤖 Live Autofill Agent Progress</span>
+              </div>
+              <span id="autofillStatusBadge" style="font-size: 11px; font-weight: 600; background: rgba(99,102,241,0.2); color: #c7d2fe; padding: 2px 8px; border-radius: 12px;">Running...</span>
+            </div>
+            <div id="autofillModalLogs" style="max-height: 200px; min-height: 100px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #e2e8f0; line-height: 1.6; padding: 10px; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="color: #94a3b8;">Waiting for agent to initialize...</div>
+            </div>
+            <div id="autofillScreenshotLink" style="display: none; margin-top: 10px; text-align: right;">
+              <a href="/autofill-preview.png" target="_blank" class="btn btn-emerald btn-sm" style="font-size: 11.5px; padding: 4px 12px;">
+                📸 View Form Snapshot
+              </a>
+            </div>
           </div>
+
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="btnCancelSettings">Cancel</button>
@@ -491,7 +567,26 @@
         <div class="modal-body">
           <div class="history-table-wrapper" id="historyTableContainer">
             <!-- Dynamic History table -->
+          
+          <!-- Live Autofill Agent Terminal inside Modal -->
+          <div id="autofillLiveLogSection" style="display: none; margin-top: 16px; background: #0b0f19; border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 8px;">
+                <span class="spinner" id="autofillSpinner" style="width: 12px; height: 12px; display: inline-block;"></span>
+                <span>🤖 Live Autofill Agent Progress</span>
+              </div>
+              <span id="autofillStatusBadge" style="font-size: 11px; font-weight: 600; background: rgba(99,102,241,0.2); color: #c7d2fe; padding: 2px 8px; border-radius: 12px;">Running...</span>
+            </div>
+            <div id="autofillModalLogs" style="max-height: 200px; min-height: 100px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #e2e8f0; line-height: 1.6; padding: 10px; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="color: #94a3b8;">Waiting for agent to initialize...</div>
+            </div>
+            <div id="autofillScreenshotLink" style="display: none; margin-top: 10px; text-align: right;">
+              <a href="/autofill-preview.png" target="_blank" class="btn btn-emerald btn-sm" style="font-size: 11.5px; padding: 4px 12px;">
+                📸 View Form Snapshot
+              </a>
+            </div>
           </div>
+
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="btnDismissHistory">Close</button>
@@ -687,7 +782,26 @@
                 <span class="ai-test-feedback" id="testResultOpenRouter"></span>
               </div>
             </div>
+          
+          <!-- Live Autofill Agent Terminal inside Modal -->
+          <div id="autofillLiveLogSection" style="display: none; margin-top: 16px; background: #0b0f19; border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 8px;">
+                <span class="spinner" id="autofillSpinner" style="width: 12px; height: 12px; display: inline-block;"></span>
+                <span>🤖 Live Autofill Agent Progress</span>
+              </div>
+              <span id="autofillStatusBadge" style="font-size: 11px; font-weight: 600; background: rgba(99,102,241,0.2); color: #c7d2fe; padding: 2px 8px; border-radius: 12px;">Running...</span>
+            </div>
+            <div id="autofillModalLogs" style="max-height: 200px; min-height: 100px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #e2e8f0; line-height: 1.6; padding: 10px; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="color: #94a3b8;">Waiting for agent to initialize...</div>
+            </div>
+            <div id="autofillScreenshotLink" style="display: none; margin-top: 10px; text-align: right;">
+              <a href="/autofill-preview.png" target="_blank" class="btn btn-emerald btn-sm" style="font-size: 11.5px; padding: 4px 12px;">
+                📸 View Form Snapshot
+              </a>
+            </div>
           </div>
+
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" id="btnTestAllAi">
@@ -948,6 +1062,6 @@
 
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260905_autofill_logs"></script>
 </body>
 </html>
