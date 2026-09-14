@@ -153,21 +153,26 @@ async function main() {
   const profile = await loadProfile();
   await preflightCheckUploadFiles(profile);
 
-  // Always headless on the server -- ignore --headed entirely (see the
-  // module-scope declaration above for why).
-  isHeadless = true;
+  // Headless by default (correct for the server / headless VPS hosts).
+  // On a local desktop run set AUTOFILL_HEADED=true to launch a VISIBLE
+  // Chromium window so you can watch the agent fill the form live.
+  isHeadless = process.env.AUTOFILL_HEADED === "true" ? false : true;
   console.log(`🚀 Launching Playwright Chromium (headless: ${isHeadless})...`);
   const browser = await chromium.launch({
     headless: isHeadless,
     args: [
-      // Forces Chrome's newer headless mode explicitly. The OLD headless
-      // mode (Chromium's original --headless flag) can still briefly
-      // flash a console/terminal-looking window on Windows even with
-      // headless:true. The new mode ("--headless=new") runs as a true
-      // headless process with no window of any kind, so this stops that
-      // flash entirely. Safe to pass even on Linux/Mac servers -- it's a
-      // no-op improvement there since they never had this issue.
-      "--headless=new",
+      // "--headless=new" forces Chrome's newer headless mode exclusively and
+      // is ONLY valid when actually heading headless — including it in a
+      // headed (visible-window) run would silently force headless anyway.
+      ...(isHeadless
+        ? [
+            // The OLD headless mode (Chromium's original --headless flag) can
+            // still briefly flash a console/terminal-looking window on Windows
+            // even with headless:true. The new mode runs as a true headless
+            // process with no window of any kind, so this stops that flash.
+            "--headless=new",
+          ]
+        : []),
       "--no-sandbox",
       "--disable-gpu",
       "--disable-dev-shm-usage",
@@ -205,7 +210,11 @@ async function main() {
   });
 
   console.log("\n=======================================================");
-  console.log("👀 HEADLESS CHROMIUM RUNNING (no window will open)");
+  console.log(
+    isHeadless
+      ? "👀 HEADLESS CHROMIUM RUNNING (no window will open)"
+      : "🖥️ VISIBLE CHROMIUM WINDOW OPENED — watch the agent fill the form live!",
+  );
   console.log("=======================================================\n");
 
   if (!formPage) {
@@ -214,8 +223,19 @@ async function main() {
   }
 
   console.log("\n🎯 Application Form detected! Filling in all details now...");
-  await fillMainForm(formPage, profile);
-  console.log("✅ Known fields filled!");
+  try {
+    await fillMainForm(formPage, profile);
+    console.log("✅ Known fields filled!");
+  } catch (err) {
+    if (/closed|disconnected|crash/i.test(err.message)) {
+      console.log(
+        "⚠️ The browser window closed while filling the form. If you closed " +
+          "it yourself, leave it open next time until “✅ Known fields filled!” " +
+          "appears in the dashboard Logs — then it’s safe to review and submit.",
+      );
+    }
+    throw err;
+  }
 
   await handleOptionalSections(formPage, profile);
   await fillOtherQualifications(formPage, profile);
@@ -479,15 +499,24 @@ function keepAlive(browser, page) {
         // ignore
       }
     } else {
-      const timer = setTimeout(async () => {
-        console.log("⏱️ Headless session finished. Closing browser.");
-        await browser.close().catch(() => {});
-        resolve();
-      }, 180000);
-      browser.on("disconnected", () => {
-        clearTimeout(timer);
-        resolve();
-      });
+      // Headed (visible-window) runs: keep the browser alive until the user
+      // (or a crash) closes the window — no auto-close that would kill the
+      // preview while the user is still reviewing the filled form.
+      if (isHeadless) {
+        const timer = setTimeout(async () => {
+          console.log("⏱️ Headless session finished. Closing browser.");
+          await browser.close().catch(() => {});
+          resolve();
+        }, 180000);
+        browser.on("disconnected", () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      } else {
+        browser.on("disconnected", () => {
+          resolve();
+        });
+      }
     }
   });
 }

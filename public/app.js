@@ -728,6 +728,15 @@ window.trackJobAsApplied = async function (jobId, title, org) {
 // -------------------------------------------------------------
 let _logPollTimer = null;
 let _lastRenderedLogCount = 0;
+// Shows the "📸 View Form Snapshot" link with a cache-busting URL so it
+// always opens the LATEST screenshot from the most recent autofill run
+// (the agent overwrites public/screenshots/autofill-preview.png each run).
+function refreshAutofillScreenshotLink(link) {
+  if (!link) return;
+  const anchor = link.querySelector("a");
+  if (anchor) anchor.href = "/screenshots/autofill-preview.png?t=" + Date.now();
+  link.style.display = "block";
+}
 
 function connectLiveLogEvents() {
   if (_logPollTimer) clearInterval(_logPollTimer);
@@ -780,8 +789,9 @@ function connectLiveLogEvents() {
           modalLogs.scrollTop = modalLogs.scrollHeight;
         }
 
-        if (entry.message && entry.message.includes("snapshot")) {
-          if (screenshotLink) screenshotLink.style.display = "block";
+        const screenshotMsg = entry.message && (entry.message.includes("snapshot") || entry.message.includes("screenshot"));
+        if (screenshotMsg) {
+          refreshAutofillScreenshotLink(screenshotLink);
         }
 
         if (entry.isComplete || (entry.message && entry.message.includes("Finished with exit code"))) {
@@ -791,7 +801,7 @@ function connectLiveLogEvents() {
             statusBadge.style.color = "#6ee7b7";
           }
           if (spinner) spinner.style.display = "none";
-          if (screenshotLink) screenshotLink.style.display = "block";
+          refreshAutofillScreenshotLink(screenshotLink);
         }
       });
     } catch (_) {}

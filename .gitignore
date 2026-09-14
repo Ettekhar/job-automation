@@ -16,3 +16,4 @@ dist/
 public/screenshots/
 public/autofill-preview.png
 *.bak-*
+local-server.err

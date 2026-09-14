@@ -939,13 +939,17 @@ app.post("/api/autofill/launch", async (req, res) => {
     const nodeExe = process.execPath;
     const scriptPath = path.join(__dirname, "scripts", "autofill.mjs");
 
-    const scriptArgs = [scriptPath, "--headless=true"];
+    // LOCAL PREVIEW MODE: launch a VISIBLE Chromium window so you can watch
+    // the agent fill the form live. Set AUTOFILL_HEADED=false to force
+    // headless (e.g. when running this copy on a headless server).
+    const headed = process.env.AUTOFILL_HEADED !== "false";
+    const scriptArgs = [scriptPath, headed ? "--headed" : "--headless=true"];
     if (url) scriptArgs.push("--url", url);
     if (postTitle) scriptArgs.push("--post", postTitle);
 
     broadcastLog({
       time: new Date().toLocaleTimeString(),
-      message: `🤖 [Autofill Agent] Launching headless assistant for: "${postTitle || 'Job'}"...`,
+      message: `🤖 [Autofill Agent] Launching ${headed ? "VISIBLE (headed)" : "headless"} assistant for: "${postTitle || 'Job'}"...`,
     });
 
     const child = spawn(nodeExe, scriptArgs, {
@@ -995,8 +999,8 @@ app.post("/api/autofill/launch", async (req, res) => {
 
     res.json({
       success: true,
-      message: "Autonomous headless autofill agent launched! Live logs streaming to terminal.",
-      headless: true,
+      message: `Autonomous ${headed ? "visible " : "headless "}autofill agent launched! Live logs streaming to terminal.`,
+      headless: !headed,
     });
   } catch (err) {
     console.error("[Autofill Launch Exception]:", err);
