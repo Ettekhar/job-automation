@@ -1,5 +1,25 @@
 [
   {
+    "id": "scrape_1789528224588",
+    "timestamp": "2026-09-16T03:10:24.588Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 319,
+    "circularsScanned": 23,
+    "totalPostsFound": 119,
+    "matchedPosts": 1,
+    "newMatchingPosts": 0,
+    "notificationsSent": 0,
+    "bbJobsFound": 0,
+    "bbMatchedPosts": 0,
+    "bbNewMatches": 0,
+    "errors": [],
+    "bscsNotices": 0,
+    "bscsMatched": 0,
+    "matchedJobTitles": [],
+    "matchedJobPdfUrls": []
+  },
+  {
     "id": "scrape_1789505662513",
     "timestamp": "2026-09-15T20:54:22.513Z",
     "status": "completed",
