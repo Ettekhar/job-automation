@@ -1,37 +1,41 @@
 {
   "success": true,
   "stats": {
-    "totalJobs": 201,
-    "matchedJobs": 1,
-    "seenCount": 201,
+    "totalJobs": 219,
+    "matchedJobs": 2,
+    "seenCount": 219,
     "bbJobs": 2,
     "noticesCount": 17,
     "matchedNoticesCount": 8,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1789528224588",
-      "timestamp": "2026-09-16T03:10:24.588Z",
+      "id": "scrape_1789555883221",
+      "timestamp": "2026-09-16T10:51:23.221Z",
       "status": "completed",
       "dryRun": false,
-      "durationSeconds": 319,
-      "circularsScanned": 23,
-      "totalPostsFound": 119,
-      "matchedPosts": 1,
-      "newMatchingPosts": 0,
-      "notificationsSent": 0,
+      "durationSeconds": 328,
+      "circularsScanned": 27,
+      "totalPostsFound": 137,
+      "matchedPosts": 2,
+      "newMatchingPosts": 1,
+      "notificationsSent": 1,
       "bbJobsFound": 0,
       "bbMatchedPosts": 0,
       "bbNewMatches": 0,
       "errors": [],
       "bscsNotices": 0,
       "bscsMatched": 0,
-      "matchedJobTitles": [],
-      "matchedJobPdfUrls": []
+      "matchedJobTitles": [
+        "Programmer"
+      ],
+      "matchedJobPdfUrls": [
+        "https://alljobs.teletalk.com.bd/media/public/uploads/governments/jobs/advertisement-1789533925500.pdf"
+      ]
     },
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-09-16T09:10:25.138Z",
+      "nextRun": "2026-09-16T16:51:23.414Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }

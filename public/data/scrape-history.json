@@ -1,5 +1,29 @@
 [
   {
+    "id": "scrape_1789555883221",
+    "timestamp": "2026-09-16T10:51:23.221Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 328,
+    "circularsScanned": 27,
+    "totalPostsFound": 137,
+    "matchedPosts": 2,
+    "newMatchingPosts": 1,
+    "notificationsSent": 1,
+    "bbJobsFound": 0,
+    "bbMatchedPosts": 0,
+    "bbNewMatches": 0,
+    "errors": [],
+    "bscsNotices": 0,
+    "bscsMatched": 0,
+    "matchedJobTitles": [
+      "Programmer"
+    ],
+    "matchedJobPdfUrls": [
+      "https://alljobs.teletalk.com.bd/media/public/uploads/governments/jobs/advertisement-1789533925500.pdf"
+    ]
+  },
+  {
     "id": "scrape_1789528224588",
     "timestamp": "2026-09-16T03:10:24.588Z",
     "status": "completed",
