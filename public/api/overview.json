@@ -1,21 +1,21 @@
 {
   "success": true,
   "stats": {
-    "totalJobs": 277,
+    "totalJobs": 284,
     "matchedJobs": 2,
-    "seenCount": 277,
+    "seenCount": 284,
     "bbJobs": 2,
     "noticesCount": 17,
     "matchedNoticesCount": 8,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1790046471355",
-      "timestamp": "2026-09-22T03:07:51.355Z",
+      "id": "scrape_1790074688846",
+      "timestamp": "2026-09-22T10:58:08.846Z",
       "status": "completed",
       "dryRun": false,
-      "durationSeconds": 296,
+      "durationSeconds": 354,
       "circularsScanned": 26,
-      "totalPostsFound": 172,
+      "totalPostsFound": 179,
       "matchedPosts": 2,
       "newMatchingPosts": 0,
       "notificationsSent": 0,
@@ -31,7 +31,7 @@
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-09-22T09:07:51.850Z",
+      "nextRun": "2026-09-22T16:58:09.388Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }
