@@ -1,5 +1,32 @@
 [
   {
+    "id": "scrape_1790248020500",
+    "timestamp": "2026-09-24T11:07:00.500Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 331,
+    "circularsScanned": 34,
+    "totalPostsFound": 192,
+    "matchedPosts": 2,
+    "newMatchingPosts": 0,
+    "notificationsSent": 0,
+    "bbJobsFound": 0,
+    "bbMatchedPosts": 0,
+    "bbNewMatches": 0,
+    "errors": [
+      "Circular https://alljobs.teletalk.com.bd/jobs/government/777?jobId=14837: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/777?jobId=14837\", waiting until \"domcontentloaded\"\n",
+      "Circular https://alljobs.teletalk.com.bd/jobs/government/615?jobId=14836: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/615?jobId=14836\", waiting until \"domcontentloaded\"\n",
+      "Circular https://alljobs.teletalk.com.bd/jobs/government/252?jobId=14832: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/252?jobId=14832\", waiting until \"domcontentloaded\"\n",
+      "Circular https://alljobs.teletalk.com.bd/jobs/government/1029?jobId=14819: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/1029?jobId=14819\", waiting until \"domcontentloaded\"\n",
+      "Circular https://alljobs.teletalk.com.bd/jobs/government/432?jobId=14816: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/432?jobId=14816\", waiting until \"domcontentloaded\"\n",
+      "Circular https://alljobs.teletalk.com.bd/jobs/government/1051?jobId=14814: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/1051?jobId=14814\", waiting until \"domcontentloaded\"\n"
+    ],
+    "bscsNotices": 0,
+    "bscsMatched": 0,
+    "matchedJobTitles": [],
+    "matchedJobPdfUrls": []
+  },
+  {
     "id": "scrape_1790218800324",
     "timestamp": "2026-09-24T03:00:00.324Z",
     "status": "completed",
