@@ -1,35 +1,28 @@
 {
   "success": true,
   "stats": {
-    "totalJobs": 302,
+    "totalJobs": 327,
     "matchedJobs": 2,
-    "seenCount": 302,
+    "seenCount": 327,
     "bbJobs": 2,
     "noticesCount": 17,
     "matchedNoticesCount": 8,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1790248020500",
-      "timestamp": "2026-09-24T11:07:00.500Z",
+      "id": "scrape_1790267362847",
+      "timestamp": "2026-09-24T16:29:22.847Z",
       "status": "completed",
       "dryRun": false,
-      "durationSeconds": 331,
+      "durationSeconds": 300,
       "circularsScanned": 34,
-      "totalPostsFound": 192,
+      "totalPostsFound": 222,
       "matchedPosts": 2,
       "newMatchingPosts": 0,
       "notificationsSent": 0,
       "bbJobsFound": 0,
       "bbMatchedPosts": 0,
       "bbNewMatches": 0,
-      "errors": [
-        "Circular https://alljobs.teletalk.com.bd/jobs/government/777?jobId=14837: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/777?jobId=14837\", waiting until \"domcontentloaded\"\n",
-        "Circular https://alljobs.teletalk.com.bd/jobs/government/615?jobId=14836: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/615?jobId=14836\", waiting until \"domcontentloaded\"\n",
-        "Circular https://alljobs.teletalk.com.bd/jobs/government/252?jobId=14832: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/252?jobId=14832\", waiting until \"domcontentloaded\"\n",
-        "Circular https://alljobs.teletalk.com.bd/jobs/government/1029?jobId=14819: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/1029?jobId=14819\", waiting until \"domcontentloaded\"\n",
-        "Circular https://alljobs.teletalk.com.bd/jobs/government/432?jobId=14816: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/432?jobId=14816\", waiting until \"domcontentloaded\"\n",
-        "Circular https://alljobs.teletalk.com.bd/jobs/government/1051?jobId=14814: page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://alljobs.teletalk.com.bd/jobs/government/1051?jobId=14814\", waiting until \"domcontentloaded\"\n"
-      ],
+      "errors": [],
       "bscsNotices": 0,
       "bscsMatched": 0,
       "matchedJobTitles": [],
@@ -38,7 +31,7 @@
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-09-24T17:07:01.018Z",
+      "nextRun": "2026-09-24T22:29:23.391Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }
