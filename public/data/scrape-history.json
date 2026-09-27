@@ -1,5 +1,25 @@
 [
   {
+    "id": "scrape_1790508193247",
+    "timestamp": "2026-09-27T11:23:13.247Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 331,
+    "circularsScanned": 33,
+    "totalPostsFound": 208,
+    "matchedPosts": 1,
+    "newMatchingPosts": 0,
+    "notificationsSent": 0,
+    "bbJobsFound": 0,
+    "bbMatchedPosts": 0,
+    "bbNewMatches": 0,
+    "errors": [],
+    "bscsNotices": 0,
+    "bscsMatched": 0,
+    "matchedJobTitles": [],
+    "matchedJobPdfUrls": []
+  },
+  {
     "id": "scrape_1790479672177",
     "timestamp": "2026-09-27T03:27:52.177Z",
     "status": "completed",
@@ -1986,19 +2006,5 @@
     "errors": [],
     "matchedJobTitles": [],
     "matchedJobPdfUrls": []
-  },
-  {
-    "id": "scrape_1788344400929",
-    "timestamp": "2026-09-02T10:20:00.929Z",
-    "status": "completed",
-    "dryRun": false,
-    "durationSeconds": 34,
-    "circularsScanned": 23,
-    "totalPostsFound": 123,
-    "matchedPosts": 1,
-    "newMatchingPosts": 0,
-    "notificationsSent": 0,
-    "errors": [],
-    "matchedJobTitles": []
   }
 ]
