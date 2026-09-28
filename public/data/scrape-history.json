@@ -1,5 +1,31 @@
 [
   {
+    "id": "scrape_1790599945924",
+    "timestamp": "2026-09-28T12:52:25.924Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 377,
+    "circularsScanned": 33,
+    "totalPostsFound": 209,
+    "matchedPosts": 3,
+    "newMatchingPosts": 2,
+    "notificationsSent": 2,
+    "bbJobsFound": 0,
+    "bbMatchedPosts": 0,
+    "bbNewMatches": 0,
+    "errors": [],
+    "bscsNotices": 0,
+    "bscsMatched": 0,
+    "matchedJobTitles": [
+      "Programmer",
+      "Assistant Programmer"
+    ],
+    "matchedJobPdfUrls": [
+      "https://alljobs.teletalk.com.bd/media/public/uploads/governments/jobs/advertisement-1790571858958.pdf",
+      "https://alljobs.teletalk.com.bd/media/public/uploads/governments/jobs/advertisement-1790572072933.pdf"
+    ]
+  },
+  {
     "id": "scrape_1790565911191",
     "timestamp": "2026-09-28T03:25:11.191Z",
     "status": "completed",
@@ -1980,26 +2006,6 @@
     "status": "completed",
     "dryRun": false,
     "durationSeconds": 42,
-    "circularsScanned": 20,
-    "totalPostsFound": 102,
-    "matchedPosts": 1,
-    "newMatchingPosts": 0,
-    "notificationsSent": 0,
-    "bbJobsFound": 2,
-    "bbMatchedPosts": 0,
-    "bbNewMatches": 0,
-    "errors": [],
-    "bscsNotices": 17,
-    "bscsMatched": 8,
-    "matchedJobTitles": [],
-    "matchedJobPdfUrls": []
-  },
-  {
-    "id": "scrape_1788497552494",
-    "timestamp": "2026-09-04T04:52:32.494Z",
-    "status": "completed",
-    "dryRun": false,
-    "durationSeconds": 114,
     "circularsScanned": 20,
     "totalPostsFound": 102,
     "matchedPosts": 1,
