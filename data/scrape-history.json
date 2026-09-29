@@ -1,5 +1,25 @@
 [
   {
+    "id": "scrape_1790718861193",
+    "timestamp": "2026-09-29T21:54:21.193Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 373,
+    "circularsScanned": 33,
+    "totalPostsFound": 213,
+    "matchedPosts": 3,
+    "newMatchingPosts": 0,
+    "notificationsSent": 0,
+    "bbJobsFound": 0,
+    "bbMatchedPosts": 0,
+    "bbNewMatches": 0,
+    "errors": [],
+    "bscsNotices": 0,
+    "bscsMatched": 0,
+    "matchedJobTitles": [],
+    "matchedJobPdfUrls": []
+  },
+  {
     "id": "scrape_1790683707121",
     "timestamp": "2026-09-29T12:08:27.121Z",
     "status": "completed",
@@ -1995,29 +2015,5 @@
     "bscsMatched": 0,
     "matchedJobTitles": [],
     "matchedJobPdfUrls": []
-  },
-  {
-    "id": "scrape_1788530152829",
-    "timestamp": "2026-09-04T13:55:52.829Z",
-    "status": "completed",
-    "dryRun": true,
-    "durationSeconds": 34,
-    "circularsScanned": 20,
-    "totalPostsFound": 102,
-    "matchedPosts": 1,
-    "newMatchingPosts": 1,
-    "notificationsSent": 0,
-    "bbJobsFound": 2,
-    "bbMatchedPosts": 0,
-    "bbNewMatches": 0,
-    "errors": [],
-    "bscsNotices": 17,
-    "bscsMatched": 8,
-    "matchedJobTitles": [
-      "Assistant Programmer"
-    ],
-    "matchedJobPdfUrls": [
-      "https://alljobs.teletalk.com.bd/media/public/uploads/governments/jobs/advertisement-1788079602214.pdf"
-    ]
   }
 ]
