@@ -50,6 +50,16 @@ const postTitle = getArg("post");
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
+// ── HOISTED TO MODULE SCOPE ──────────────────────────────────────────────
+// Previously this was declared with `const isHeadless = ...` *inside*
+// main(), which meant it only existed in main()'s local scope. Any other
+// top-level function in this file that tried to read it (or a future
+// refactor that moved code around) would hit
+// "ReferenceError: isHeadless is not defined". Declaring it once here,
+// at module scope, means every function in the file can safely read it.
+// main() now just *assigns* to it (see below) instead of redeclaring it.
+let isHeadless = !process.argv.includes("--headed");
+
 // ── Multi-provider AI cascade (Gemini → Groq → Cloudflare → OpenRouter) ──
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
@@ -76,12 +86,67 @@ async function loadProfile() {
   }
 }
 
+// ── SHARED UPLOAD PATH RESOLUTION ────────────────────────────────────────
+// Single source of truth for "where is the photo/signature file", used by
+// both the startup preflight check and handleImageUpload(). Resolution
+// order: explicit profile.photo_path/signature_path override -> the
+// conventional application/Applicant.jpg or application/applicant_signature.jpg
+// -> last-resort config/photo.jpg or config/signature.jpg.
+async function resolveUploadFilePath(profile, kind) {
+  const overrideKey = kind === "photo" ? "photo_path" : "signature_path";
+  if (profile[overrideKey]) {
+    return path.resolve(__dirname, "..", profile[overrideKey]);
+  }
+  const primaryName = kind === "photo" ? "Applicant.jpg" : "applicant_signature.jpg";
+  const primaryPath = path.join(__dirname, "..", "application", primaryName);
+  const exists = await fs.access(primaryPath).then(() => true).catch(() => false);
+  if (exists) return primaryPath;
+  const fallbackName = kind === "photo" ? "photo.jpg" : "signature.jpg";
+  return path.join(__dirname, "..", "config", fallbackName);
+}
+
+// ── STARTUP PREFLIGHT: CATCH MISSING PHOTO/SIGNATURE EARLY ─────────────────
+// Checks -- loudly, right at startup, before spending minutes on
+// navigation/CAPTCHA/submit -- whether the photo/signature files this run
+// will need are actually present in THIS running environment. Local
+// deployments where the script runs on the same machine the files were
+// saved on will basically always pass this; it exists specifically to catch
+// cases where the files exist on the developer's machine but were never
+// copied into the container/server/cloud runner that actually executes the
+// script (e.g. missing from the Docker image, or excluded by .gitignore).
+async function preflightCheckUploadFiles(profile) {
+  const photoPath = await resolveUploadFilePath(profile, "photo");
+  const sigPath = await resolveUploadFilePath(profile, "signature");
+  const photoExists = await fs.access(photoPath).then(() => true).catch(() => false);
+  const sigExists = await fs.access(sigPath).then(() => true).catch(() => false);
+
+  console.log("\n📋 [Preflight] Checking photo/signature files in this environment...");
+  console.log(`   Photo:     ${photoPath}  ${photoExists ? "✅ found" : "❌ MISSING"}`);
+  console.log(`   Signature: ${sigPath}  ${sigExists ? "✅ found" : "❌ MISSING"}`);
+
+  if (!photoExists || !sigExists) {
+    console.log("");
+    console.log("⚠️  [Preflight] One or both files are missing HERE, in the environment actually");
+    console.log("    running this script. If you already have these files on your own machine,");
+    console.log("    that alone isn't enough -- they need to be copied into wherever this script");
+    console.log("    is actually executing (baked into the Docker image, uploaded to the server,");
+    console.log("    committed if not .gitignore'd, etc). Continuing anyway -- the form will get");
+    console.log("    stuck on the upload step later if these aren't fixed before then.");
+  }
+  console.log("");
+}
+
 async function main() {
   const profile = await loadProfile();
+  await preflightCheckUploadFiles(profile);
 
   // Use Playwright's Chromium in headless mode by default for cloud/background runners.
   // Pass --headed if you explicitly want to watch the window locally.
-  const isHeadless = !process.argv.includes("--headed");
+  // NOTE: this now ASSIGNS to the module-scoped `isHeadless` declared above
+  // with `let` -- it must NOT be redeclared with `const`/`let` here, or
+  // it would shadow the module-level variable and any other function
+  // reading the outer `isHeadless` would still see the wrong/undefined value.
+  isHeadless = !process.argv.includes("--headed");
   console.log(`🚀 Launching Playwright Chromium (headless: ${isHeadless})...`);
   const browser = await chromium.launch({
     headless: isHeadless,
@@ -165,7 +230,7 @@ async function main() {
     const dir = path.join(process.cwd(), "public", "screenshots");
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     const shotPath = path.join(dir, "autofill-preview.png");
-    await formPage.screenshot({ path: shotPath, fullPage: true }).catch(() => {});
+    await formPage.screenshot({ path: shotPath, fullPage: true }).catch(() => { });
     console.log(`📸 Form verification screenshot saved to: ${shotPath}`);
   } catch (err) {
     // ignore screenshot failure
@@ -241,7 +306,7 @@ async function verifyCaptchaBeforeSubmit(formPage) {
   }
 }
 
-async function findAndClickSubmit(formPage, { timeoutMs = 8000, maxClicks = 3 } = {}) {
+async function findAndClickSubmit(formPage, { timeoutMs = 8000, maxClicks = 5 } = {}) {
   const deadline = Date.now() + timeoutMs;
   let submitBtn = null;
 
@@ -319,6 +384,21 @@ async function findAndClickSubmit(formPage, { timeoutMs = 8000, maxClicks = 3 } 
       console.log(`⚠️ Submit was rejected by the site: "${rejection}"`);
       if (i < maxClicks - 1) {
         console.log("🔄 Getting a fresh CAPTCHA and retrying submit...");
+        // IMPORTANT: force a real refresh of the CAPTCHA image here. Without
+        // this, solveCaptchaRobust() only clicks the refresh control when its
+        // own OCR read comes back suspiciously short (<4 chars) -- a normal-
+        // looking 6-character read (even if it was JUST rejected by the site
+        // as wrong, or the token behind it expired after one failed check)
+        // gets re-read from the exact same, already-invalid image every
+        // retry. That silently burns all retries solving the same rejected
+        // CAPTCHA over and over -- which is exactly what happened here (two
+        // identical "GDS44R" reads, two identical "Invalid captcha code!"
+        // rejections). Refreshing first guarantees each retry actually gets
+        // a new image/token to read.
+        const refreshed = await refreshCaptchaImage(formPage).catch(() => false);
+        if (!refreshed) {
+          console.log("⚠️ Couldn't find a CAPTCHA refresh control -- re-reading the same image (may repeat the same rejected value).");
+        }
         await solveCaptchaRobust(formPage);
         await tickDeclarationCheckbox(formPage);
         continue;
@@ -411,7 +491,7 @@ function keepAlive(browser, page) {
       // Allow up to 3 minutes for any post-submit flows, then cleanly exit
       const timer = setTimeout(async () => {
         console.log("⏱️ Headless session finished. Closing browser.");
-        await browser.close().catch(() => {});
+        await browser.close().catch(() => { });
         resolve();
       }, 180000);
       browser.on("disconnected", () => {
@@ -1839,13 +1919,10 @@ or {"type":"wait","reason":"page loading"}`;
 // falls back to generic detection / AI-provided selectors if neither
 // #photo nor #signature is present, e.g. on a differently-built portal.
 async function handleImageUpload(page, fields, profile) {
-  // Check application/ folder first, then fall back to config/
-  const photoPath = profile.photo_path
-    ? path.resolve(__dirname, "..", profile.photo_path)
-    : (await fs.access(path.join(__dirname, "..", "application", "Applicant.jpg")).then(() => path.join(__dirname, "..", "application", "Applicant.jpg")).catch(() => path.join(__dirname, "..", "config", "photo.jpg")));
-  const sigPath = profile.signature_path
-    ? path.resolve(__dirname, "..", profile.signature_path)
-    : (await fs.access(path.join(__dirname, "..", "application", "applicant_signature.jpg")).then(() => path.join(__dirname, "..", "application", "applicant_signature.jpg")).catch(() => path.join(__dirname, "..", "config", "signature.jpg")));
+  // Resolved once via the shared helper -- same order/logic as the startup
+  // preflight check, so what preflight reported is exactly what gets used here.
+  const photoPath = await resolveUploadFilePath(profile, "photo");
+  const sigPath = await resolveUploadFilePath(profile, "signature");
 
   console.log(`[Image] Looking for uploads. photoPath="${photoPath}" sigPath="${sigPath}"`);
 
