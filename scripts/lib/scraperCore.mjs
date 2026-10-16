@@ -288,13 +288,19 @@ export async function runScraper(options = {}) {
             if (notifyResult?.results?.some((r) => r.success)) {
               stats.notificationsSent++;
               job.notifiedAt = new Date().toISOString();
+              // Only mark as seen once delivery is confirmed — a failed send
+              // must be retried on the next run instead of being skipped forever.
+              seenIds.add(job.id);
               log(`✅ Notification delivered for: "${job.title}"`);
-            } else if (notifyResult?.errors?.length) {
-              log(`❌ Notification failed for "${job.title}": ${notifyResult.errors.join(", ")}`);
+            } else {
+              const why = notifyResult?.errors?.length
+                ? notifyResult.errors.join(", ")
+                : "no delivery confirmation";
+              log(`❌ Notification failed for "${job.title}": ${why} — will retry on next run`);
+              stats.errors.push(`Notify ${job.id}: ${why}`);
             }
-            seenIds.add(job.id);
           } catch (nErr) {
-            log(`❌ Failed to send notification for ${job.title}: ${nErr.message}`);
+            log(`❌ Failed to send notification for ${job.title}: ${nErr.message} — will retry on next run`);
             stats.errors.push(`Notify ${job.id}: ${nErr.message}`);
           }
         }
