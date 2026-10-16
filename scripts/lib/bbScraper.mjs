@@ -395,12 +395,22 @@ export function matchBBKeywords(title = "", educationalReq = "", keywords = []) 
     }
   }
 
-  // Also specifically detect IT in bank job context: e.g. "(IT)", "Officer (IT)", "Senior Officer (IT)", "IT Officer", "ICT"
+  // Bank IT posts in the title: e.g. "(IT)", "Officer (IT)", "Senior Officer (IT)", "IT Officer", "ICT"
   const bankITRegex = /(\(it\)|officer\s*\(\s*it\s*\)|senior\s+officer\s*\(\s*it\s*\)|\bit\s+officer\b|\bict\b)/i;
   if (bankITRegex.test(combined)) {
     if (!matched.some((m) => m.toLowerCase() === "it" || m.toLowerCase().includes("it"))) {
       matched.push("IT");
     }
+  }
+
+  // Bank CSE/IT titles that reliable bank circulars use but that may not
+  // mention any keyword in their requirement text. Scanned against the TITLE
+  // only — in requirement text these terms would be too noisy (e.g. "computer
+  // literacy" appears in non-CSE posts).
+  const bankCSETitles =
+    /(\bsystem\s+(manager|engineer|analyst)\b|\bcomputer\s+(engineer|science)\b|\binformation\s+(technology|security)\b|\bsoftware\b|\bdeveloper\b|\bnetwork\s+engineer\b|\bhardware\s+engineer\b|\bdatabase\s+administrator\b|\bdata\s+scientist\b|\bcyber\s+security\b)/i;
+  if (bankCSETitles.test(title)) {
+    if (!matched.length) matched.push("CSE role");
   }
 
   return { isMatch: matched.length > 0, matchedKeywords: matched };
