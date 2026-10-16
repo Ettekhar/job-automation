@@ -1,37 +1,41 @@
 {
   "success": true,
   "stats": {
-    "totalJobs": 466,
-    "matchedJobs": 5,
-    "seenCount": 466,
-    "bbJobs": 2,
-    "noticesCount": 19,
-    "matchedNoticesCount": 10,
+    "totalJobs": 485,
+    "matchedJobs": 6,
+    "seenCount": 485,
+    "bbJobs": 21,
+    "noticesCount": 16,
+    "matchedNoticesCount": 2,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1792166698461",
-      "timestamp": "2026-10-16T16:04:58.461Z",
+      "id": "scrape_1792171396781",
+      "timestamp": "2026-10-16T17:23:16.781Z",
       "status": "completed",
       "dryRun": false,
-      "durationSeconds": 345,
-      "circularsScanned": 31,
-      "totalPostsFound": 182,
-      "matchedPosts": 4,
-      "newMatchingPosts": 0,
-      "notificationsSent": 0,
-      "bbJobsFound": 0,
-      "bbMatchedPosts": 0,
-      "bbNewMatches": 0,
+      "durationSeconds": 7,
+      "circularsScanned": 0,
+      "totalPostsFound": 19,
+      "matchedPosts": 1,
+      "newMatchingPosts": 1,
+      "notificationsSent": 1,
+      "bbJobsFound": 19,
+      "bbMatchedPosts": 1,
+      "bbNewMatches": 1,
       "errors": [],
-      "bscsNotices": 0,
-      "bscsMatched": 0,
-      "matchedJobTitles": [],
-      "matchedJobPdfUrls": []
+      "bscsNotices": 16,
+      "bscsMatched": 2,
+      "matchedJobTitles": [
+        "System Manager (Grade-3) for Ansar VDP Unnayan Bank"
+      ],
+      "matchedJobPdfUrls": [
+        "https://erecruitment.bb.org.bd/career/20261005_bscs_321.pdf"
+      ]
     },
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-10-16T22:04:58.947Z",
+      "nextRun": "2026-10-16T23:23:17.430Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }

@@ -1,33 +1,151 @@
 [
   {
-    "id": "BSCS-10229-selected-candidate",
-    "jobId": "10229",
+    "id": "BSCS-25109-mcq-and-written-exam",
+    "jobId": "25109",
     "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily Selected Candidates for the Post of Officer (IT) (10th Grade) (Job ID-10229) of 4 Banks.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260909_bscs_304_1788949586.pdf",
-    "publishDate": "09/09/2026",
-    "closeDate": "09/10/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "IT"
-    ],
-    "scrapedAt": "2026-09-13T16:48:27.560Z"
+    "circularFor": "MCQ And Written Exam",
+    "title": "Schedule of MCQ and Written Test, Exam Content with Mark Distribution for the Post of Senior Officer (ANE/ANSE) (Job ID: 25109) (Grade-9) of 02 Banks.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261008_bscs_325_1791451833.pdf",
+    "publishDate": "08/10/2026",
+    "closeDate": "16/10/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
   },
   {
-    "id": "BSCS-25107, 25116-others",
-    "jobId": "25107, 25116",
+    "id": "BSCS-25115-written-exam",
+    "jobId": "25115",
+    "source": "bscs",
+    "circularFor": "Written Exam",
+    "title": "Schedule of Written Test and Exam Content with Mark Distribution for the Post of Sub Assistant Engineer (Civil) (Job ID: 25115) (Grade-10) of 02 Bank/FI.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261008_bscs_327_1791452030.pdf",
+    "publishDate": "08/10/2026",
+    "closeDate": "16/10/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
+  },
+  {
+    "id": "BSCS-26102-admit-card",
+    "jobId": "26102",
+    "source": "bscs",
+    "circularFor": "Admit Card",
+    "title": "Download Admit Card for the post of Officer (General) (Job ID-26102) of 07 Banks and 2 FIs",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261008_bscs_334_1791453707.pdf",
+    "publishDate": "08/10/2026",
+    "closeDate": "26/10/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
+  },
+  {
+    "id": "BSCS-25112-written-exam",
+    "jobId": "25112",
+    "source": "bscs",
+    "circularFor": "Written Exam",
+    "title": "Schedule of Written Test and Exam Content with Mark Distribution for the Post of Assistant Engineer (Civil) (Job ID: 25112) (Grade-09) of 03 Banks.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261008_bscs_329_1791455713.pdf",
+    "publishDate": "08/10/2026",
+    "closeDate": "08/11/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
+  },
+  {
+    "id": "BSCS-25113-written-exam",
+    "jobId": "25113",
+    "source": "bscs",
+    "circularFor": "Written Exam",
+    "title": "Schedule of Written Test and Exam Content with Mark Distribution for the Post of Sub-Assistant Engineer (Electrical) (Job ID: 25113) (Grade-10) of Sonali Bank PLC.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261008_bscs_331_1791456562.pdf",
+    "publishDate": "08/10/2026",
+    "closeDate": "08/11/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
+  },
+  {
+    "id": "BSCS-26106, 26108-others",
+    "jobId": "26106, 26108",
     "source": "bscs",
     "circularFor": "Others",
-    "title": "Regarding correction of CV for the applicants of Assistant Maintenance Engineer/ Assistant Engineer (IT), (Job ID: 25107) and Senior Officer (Law), (Job ID: 25116)",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260909_bscs_306_1788948917.pdf",
-    "publishDate": "09/09/2026",
-    "closeDate": "15/09/2026",
+    "title": "Regarding correction of CV for the applicants of Assistant Programmer (Job ID-26106) and Assistant System Engineer (Job Id- 26108) of Different Banks and FIs.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261007_bscs_324_1791360546.pdf",
+    "publishDate": "07/10/2026",
+    "closeDate": "18/10/2026",
+    "isMatch": true,
+    "matchedKeywords": [
+      "programmer",
+      "assistant programmer"
+    ],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
+  },
+  {
+    "id": "BSCS-26131 - 26132-job-circular",
+    "jobId": "26131 - 26132",
+    "source": "bscs",
+    "circularFor": "Job Circular",
+    "title": "New job circular of Ansar VDP Unnayan Bank.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261005_bscs_321_1791188486.pdf",
+    "publishDate": "05/10/2026",
+    "closeDate": "25/10/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
+  },
+  {
+    "id": "BSCS-25101-selected-candidate",
+    "jobId": "25101",
+    "source": "bscs",
+    "circularFor": "Selected Candidate",
+    "title": "List of primarily selected candidates for the post of Senior Officer (G) (Grade-9, Job ID: 25101) of 09 Banks and 02 FIs.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260929_bscs_1_1790684549.pdf",
+    "publishDate": "29/09/2026",
+    "closeDate": "29/11/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
+  },
+  {
+    "id": "BSCS-25102-viva",
+    "jobId": "25102",
+    "source": "bscs",
+    "circularFor": "VIVA",
+    "title": "Reschedule of Viva Voce for the Post of Officer (G) (10th Grade, Job ID: 25102) of 11 Banks/FI.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260928_bscs_316_1790573841.pdf",
+    "publishDate": "28/09/2026",
+    "closeDate": "18/10/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
+  },
+  {
+    "id": "BSCS-25105-viva",
+    "jobId": "25105",
+    "source": "bscs",
+    "circularFor": "VIVA",
+    "title": "Written Test Result and Schedule of Viva Voce for the Post Officer (IT) (10th Grade, Job ID: 25105) of 03 Banks.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260920_bscs_309_1789902532.pdf",
+    "publishDate": "20/09/2026",
+    "closeDate": "19/10/2026",
     "isMatch": true,
     "matchedKeywords": [
       "IT"
     ],
-    "scrapedAt": "2026-09-13T16:48:27.560Z"
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
+  },
+  {
+    "id": "BSCS-26114 - 26130-job-circular",
+    "jobId": "26114 - 26130",
+    "source": "bscs",
+    "circularFor": "Job Circular",
+    "title": "New Job Circular for Combined 17 category Engineering and Miscellaneous related jobs.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260921_bscs_307_1789964082.pdf",
+    "publishDate": "16/09/2026",
+    "closeDate": "18/10/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
   },
   {
     "id": "BSCS-25102-viva",
@@ -40,77 +158,7 @@
     "closeDate": "18/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-13T16:48:27.560Z"
-  },
-  {
-    "id": "BSCS-10220-selected-candidate",
-    "jobId": "10220",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily Selected Candidates (2nd Phase) for the Post of Senior Officer (G) (9th Grade) (Job ID: 10220) of 11 Bank/FIs.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260907_bscs_299.pdf",
-    "publishDate": "07/09/2026",
-    "closeDate": "07/10/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-09-13T16:48:27.561Z"
-  },
-  {
-    "id": "BSCS-26101-admit-card",
-    "jobId": "26101",
-    "source": "bscs",
-    "circularFor": "Admit Card",
-    "title": "Download Admit Card for the post of Senior Officer (General) (Job ID No-26101) of 09 Banks and 2 FIs.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260906_bscs_297.pdf",
-    "publishDate": "06/09/2026",
-    "closeDate": "20/09/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-09-13T16:48:27.561Z"
-  },
-  {
-    "id": "BSCS-10225-selected-candidate",
-    "jobId": "10225",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily Selected Candidates for the Post of Senior Officer (IT) (9th Grade) (Job ID-10225) of Sonali Bank PLC",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260901_bscs_295.pdf",
-    "publishDate": "01/09/2026",
-    "closeDate": "01/10/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "IT"
-    ],
-    "scrapedAt": "2026-09-13T16:48:27.561Z"
-  },
-  {
-    "id": "BSCS-10233-selected-candidate",
-    "jobId": "10233",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily Selected Candidates for the Post of Senior officer (Mechanical)/Assistant Engineer( Mechanical) (9th Grade) (Job ID-10233) of  Sonali Bank PLC",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260830_bscs_293.pdf",
-    "publishDate": "30/08/2026",
-    "closeDate": "29/09/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-09-13T16:48:27.561Z"
-  },
-  {
-    "id": "BSCS-10226-selected-candidate",
-    "jobId": "10226",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily Selected Candidates for the Post of Assistant Programmer (9th Grade) (Job ID-10226) of 04 Bank/FIs",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260830_bscs_291.pdf",
-    "publishDate": "30/08/2026",
-    "closeDate": "29/09/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "programmer",
-      "assistant programmer"
-    ],
-    "scrapedAt": "2026-09-13T16:48:27.561Z"
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
   },
   {
     "id": "BSCS-25102-viva",
@@ -123,111 +171,7 @@
     "closeDate": "18/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-13T16:48:27.561Z"
-  },
-  {
-    "id": "BSCS-25104-viva",
-    "jobId": "25104",
-    "source": "bscs",
-    "circularFor": "VIVA",
-    "title": "Written Test Result and Schedule of Viva Voce for the Post of Senior Officer (IT) (9th Grade, Job ID: 25104) of 04 Banks",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260827_bscs_287.pdf",
-    "publishDate": "27/08/2026",
-    "closeDate": "18/09/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "IT"
-    ],
-    "scrapedAt": "2026-09-13T16:48:27.561Z"
-  },
-  {
-    "id": "BSCS-10209-selected-candidate",
-    "jobId": "10209",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily Selected Candidates (2nd Phase) for the Post of Officer (IT) (10th Grade) (Job ID-10209) (base Year-2022) of 02 Banks.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260824_bscs_285.pdf",
-    "publishDate": "24/08/2026",
-    "closeDate": "24/09/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "IT"
-    ],
-    "scrapedAt": "2026-09-13T16:48:27.561Z"
-  },
-  {
-    "id": "BSCS-10205-selected-candidate",
-    "jobId": "10205",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily Selected Candidates (2nd Phase) for the Post of Senior Officer (IT) (9th Grade) (Job ID-10205) (base Year-2022) of 03 Banks.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260824_bscs_283.pdf",
-    "publishDate": "24/08/2026",
-    "closeDate": "24/09/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "IT"
-    ],
-    "scrapedAt": "2026-09-13T16:48:27.562Z"
-  },
-  {
-    "id": "BSCS-10235-selected-candidate",
-    "jobId": "10235",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily selected candidates for the post of Sub-Assistant Engineer (Civil) (10th grade) of SBPLC, ABPLC & BHBFC (Job ID: 10235).",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260818_bscs_276.pdf",
-    "publishDate": "18/08/2026",
-    "closeDate": "17/09/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-09-13T16:48:27.562Z"
-  },
-  {
-    "id": "BSCS-10228-selected-candidate",
-    "jobId": "10228",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily Selected Candidates for the Post of Assistant Database Administrator (9th Grade) (Job ID-10228) of Sonali Bank PLC",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260818_bscs_278.pdf",
-    "publishDate": "18/08/2026",
-    "closeDate": "17/09/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "database administrator"
-    ],
-    "scrapedAt": "2026-09-13T16:48:27.562Z"
-  },
-  {
-    "id": "BSCS-10224-selected-candidate",
-    "jobId": "10224",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of Primarily Selected Candidates (2nd Phase) for the Post of Programmer (6th Grade) (Job ID-10224) of Bangladesh Krishi Bank .",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260817_bscs_275.pdf",
-    "publishDate": "17/08/2026",
-    "closeDate": "17/09/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "programmer"
-    ],
-    "scrapedAt": "2026-09-13T16:48:27.562Z"
-  },
-  {
-    "id": "BSCS-10206-selected-candidate",
-    "jobId": "10206",
-    "source": "bscs",
-    "circularFor": "Selected Candidate",
-    "title": "List of primarily selected candidates (2nd Phase) for the post of Assistant Programmer (Grade-9, Job ID: 10206, Base Year-2022) of 06 Banks/FIs.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260813_bscs_1.pdf",
-    "publishDate": "13/08/2026",
-    "closeDate": "14/09/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "programmer",
-      "assistant programmer"
-    ],
-    "scrapedAt": "2026-09-13T16:48:27.562Z"
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -240,7 +184,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-13T16:48:27.562Z"
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -253,7 +197,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-13T16:48:27.562Z"
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -266,6 +210,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-09-13T16:48:27.562Z"
+    "scrapedAt": "2026-10-16T17:23:13.258Z"
   }
 ]

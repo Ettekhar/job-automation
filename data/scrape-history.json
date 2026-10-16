@@ -1,5 +1,29 @@
 [
   {
+    "id": "scrape_1792171396781",
+    "timestamp": "2026-10-16T17:23:16.781Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 7,
+    "circularsScanned": 0,
+    "totalPostsFound": 19,
+    "matchedPosts": 1,
+    "newMatchingPosts": 1,
+    "notificationsSent": 1,
+    "bbJobsFound": 19,
+    "bbMatchedPosts": 1,
+    "bbNewMatches": 1,
+    "errors": [],
+    "bscsNotices": 16,
+    "bscsMatched": 2,
+    "matchedJobTitles": [
+      "System Manager (Grade-3) for Ansar VDP Unnayan Bank"
+    ],
+    "matchedJobPdfUrls": [
+      "https://erecruitment.bb.org.bd/career/20261005_bscs_321.pdf"
+    ]
+  },
+  {
     "id": "scrape_1792166698461",
     "timestamp": "2026-10-16T16:04:58.461Z",
     "status": "completed",
@@ -1982,26 +2006,6 @@
     "status": "completed",
     "dryRun": false,
     "durationSeconds": 348,
-    "circularsScanned": 27,
-    "totalPostsFound": 141,
-    "matchedPosts": 2,
-    "newMatchingPosts": 0,
-    "notificationsSent": 0,
-    "bbJobsFound": 0,
-    "bbMatchedPosts": 0,
-    "bbNewMatches": 0,
-    "errors": [],
-    "bscsNotices": 0,
-    "bscsMatched": 0,
-    "matchedJobTitles": [],
-    "matchedJobPdfUrls": []
-  },
-  {
-    "id": "scrape_1789763108318",
-    "timestamp": "2026-09-18T20:25:08.318Z",
-    "status": "completed",
-    "dryRun": false,
-    "durationSeconds": 319,
     "circularsScanned": 27,
     "totalPostsFound": 141,
     "matchedPosts": 2,
