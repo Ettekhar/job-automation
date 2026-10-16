@@ -9,33 +9,29 @@
     "matchedNoticesCount": 2,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1792171396781",
-      "timestamp": "2026-10-16T17:23:16.781Z",
+      "id": "scrape_1792171605454",
+      "timestamp": "2026-10-16T17:26:45.454Z",
       "status": "completed",
       "dryRun": false,
-      "durationSeconds": 7,
+      "durationSeconds": 1,
       "circularsScanned": 0,
       "totalPostsFound": 19,
       "matchedPosts": 1,
-      "newMatchingPosts": 1,
-      "notificationsSent": 1,
+      "newMatchingPosts": 0,
+      "notificationsSent": 0,
       "bbJobsFound": 19,
       "bbMatchedPosts": 1,
-      "bbNewMatches": 1,
+      "bbNewMatches": 0,
       "errors": [],
       "bscsNotices": 16,
       "bscsMatched": 2,
-      "matchedJobTitles": [
-        "System Manager (Grade-3) for Ansar VDP Unnayan Bank"
-      ],
-      "matchedJobPdfUrls": [
-        "https://erecruitment.bb.org.bd/career/20261005_bscs_321.pdf"
-      ]
+      "matchedJobTitles": [],
+      "matchedJobPdfUrls": []
     },
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-10-16T23:23:17.430Z",
+      "nextRun": "2026-10-16T23:26:45.887Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }

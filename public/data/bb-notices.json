@@ -10,7 +10,7 @@
     "closeDate": "16/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25115-written-exam",
@@ -23,7 +23,7 @@
     "closeDate": "16/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-26102-admit-card",
@@ -36,7 +36,7 @@
     "closeDate": "26/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25112-written-exam",
@@ -49,7 +49,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25113-written-exam",
@@ -62,7 +62,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-26106, 26108-others",
@@ -78,7 +78,7 @@
       "programmer",
       "assistant programmer"
     ],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-26131 - 26132-job-circular",
@@ -91,7 +91,7 @@
     "closeDate": "25/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25101-selected-candidate",
@@ -104,7 +104,7 @@
     "closeDate": "29/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25102-viva",
@@ -117,7 +117,7 @@
     "closeDate": "18/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25105-viva",
@@ -132,7 +132,7 @@
     "matchedKeywords": [
       "IT"
     ],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-26114 - 26130-job-circular",
@@ -145,7 +145,7 @@
     "closeDate": "18/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25102-viva",
@@ -158,7 +158,7 @@
     "closeDate": "18/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25102-viva",
@@ -171,7 +171,7 @@
     "closeDate": "18/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -184,7 +184,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -197,7 +197,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -210,6 +210,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-16T17:23:13.258Z"
+    "scrapedAt": "2026-10-16T17:26:45.435Z"
   }
 ]
