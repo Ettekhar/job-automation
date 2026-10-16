@@ -3,7 +3,7 @@
 # ============================================================================
 #  Why this exists:
 #    erecruitment.bb.org.bd (and www.bb.org.bd) are protected by an F5
-#    anti-bot layer that shows a CAPTCHA challenge to cloud/datacenter IPs —
+#    anti-bot layer that shows a CAPTCHA challenge to cloud/datacenter IPs -
 #    including GitHub Actions runners and even Cloudflare. Only real
 #    Bangladeshi residential IPs get the actual job list. This PC is such an
 #    IP, so this script runs the BB-only scan locally and syncs the results
@@ -12,15 +12,19 @@
 #
 #  Installed as a Windows Scheduled Task ("BB Portal Job Scan") that runs
 #  every 6 hours. Logs to:  data/bb-local-run.log
+#
+#  NOTE: keep this file pure ASCII. Windows PowerShell 5.1 reads BOM-less
+#  files as ANSI, and non-ASCII bytes (e.g. an em-dash) can be interpreted
+#  as quote characters, breaking the parser.
 # ============================================================================
 
 $ErrorActionPreference = "Continue"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
-# Scheduled tasks get a minimal PATH — add what we need.
+# Scheduled tasks get a minimal PATH - add what we need.
 $env:Path = "$env:ProgramFiles\nodejs;$env:ProgramFiles\Git\cmd;" + $env:Path
-# Never pop up credential prompts in a background run — fail cleanly instead.
+# Never pop up credential prompts in a background run - fail cleanly instead.
 $env:GIT_TERMINAL_PROMPT = "0"
 $env:GCM_INTERACTIVE = "never"
 
@@ -53,7 +57,7 @@ if (-not (Test-Path (Join-Path $repoRoot "node_modules"))) {
     Run "npm" @("install", "--no-audit", "--no-fund")
 }
 
-# 3. The actual BB-only scrape (Teletalk is skipped — GitHub handles that).
+# 3. The actual BB-only scrape (Teletalk is skipped - GitHub handles that).
 #    This autonomously sends email alerts for new keyword matches via SMTP.
 Run "node" @("scripts/scrape.mjs", "--bb-only")
 
@@ -70,7 +74,7 @@ if ($LASTEXITCODE -ne 0) {
         Run "git" @("pull", "--rebase", "--autostash")
         $code = Run "git" @("push")
         if ($code -eq 0) { Log "push ok (attempt $i)"; $pushed = $true; break }
-        Log "push attempt $i failed — retrying in 10s"
+        Log "push attempt $i failed - retrying in 10s"
         Start-Sleep -Seconds 10
     }
     if (-not $pushed) { Log "WARNING: could not push data to GitHub after 3 attempts (next run will retry)" }
