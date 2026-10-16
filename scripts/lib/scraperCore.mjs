@@ -81,6 +81,7 @@ export async function runScraper(options = {}) {
     dryRun = false,
     ignoreSeen = false,
     verbose = false,
+    bbOnly = false,
     onProgress = () => { },
   } = options;
 
@@ -131,10 +132,17 @@ export async function runScraper(options = {}) {
 
     // Listing pagination stays on one dedicated page — page numbers must be
     // discovered sequentially since we don't know the total count up front.
-    const listingPage = await newFastPage(browser);
-    log("Scanning government circulars listing...");
-    const circulars = await getAllCirculars(listingPage, log);
-    await listingPage.close().catch(() => { });
+    // In BB-only mode (used by the local Bangladeshi runner, because the BB
+    // portal rejects cloud IPs) the Teletalk portal is skipped entirely.
+    let circulars = [];
+    if (bbOnly) {
+      log("⏩ --bb-only mode: skipping the Teletalk government portal scan.");
+    } else {
+      const listingPage = await newFastPage(browser);
+      log("Scanning government circulars listing...");
+      circulars = await getAllCirculars(listingPage, log);
+      await listingPage.close().catch(() => {});
+    }
     stats.circularsScanned = circulars.length;
     log(`Found ${circulars.length} organization circular(s) to process. Processing with concurrency=${CONCURRENCY}...`);
 
@@ -228,6 +236,14 @@ export async function runScraper(options = {}) {
       stats.totalPostsFound += bbResult.jobs.length;
       stats.matchedPosts += bbResult.matchedCount;
       stats.newMatchingPosts += bbResult.newMatches.length;
+      if (bbResult.blocked) {
+        // Not a crash — but make it visible in history/dashboard instead of a silent "0 jobs".
+        stats.errors.push(
+          `BB portal did not serve the job list to this runner: ${bbResult.blockReason}. This is expected on GitHub Actions (cloud IP) — the local Bangladeshi runner covers BB.`
+        );
+      } else if (bbResult.note) {
+        stats.errors.push(`BB scrape note: ${bbResult.note}`);
+      }
       log(`🏦 [BB] Complete: ${bbResult.jobs.length} jobs, ${bbResult.matchedCount} matched, ${bbResult.newMatches.length} new.`);
     } catch (bbErr) {
       log(`⚠️ [BB] Scrape failed: ${bbErr.message}`);
@@ -244,6 +260,13 @@ export async function runScraper(options = {}) {
       }
       stats.bscsNotices = bscsResult.notices.length;
       stats.bscsMatched = bscsResult.matchedCount;
+      if (bscsResult.blocked) {
+        stats.errors.push(
+          `BSCS notice board did not serve content to this runner: ${bscsResult.blockReason}. Expected on cloud IPs — covered by the local runner.`
+        );
+      } else if (bscsResult.note) {
+        stats.errors.push(`BSCS scrape note: ${bscsResult.note}`);
+      }
       log(`📋 [BSCS] Saved ${bscsResult.notices.length} notices (${bscsResult.matchedCount} keyword matches).`);
     } catch (bscsErr) {
       log(`⚠️ [BSCS] Notice scrape failed: ${bscsErr.message}`);

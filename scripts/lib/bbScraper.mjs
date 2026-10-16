@@ -13,6 +13,55 @@ const BB_LISTING_URL = `${BB_BASE}/onlineapp/joblist.php`;
 const BLOCKED = new Set(["image", "media", "font", "stylesheet"]);
 
 /**
+ * The BB portal is protected by an F5 anti-bot layer. Requests coming from
+ * cloud/datacenter IP ranges (GitHub Actions, Cloudflare, AWS, ...) receive a
+ * CAPTCHA challenge page instead of the real content — even when the request
+ * originates from Bangladesh. Detecting it lets callers report the reason
+ * clearly instead of silently finding "0 jobs".
+ *
+ * @returns {Promise<{blocked: boolean, supportId: string|null}>}
+ */
+export async function detectF5Challenge(page) {
+  try {
+    const text = await page.evaluate(() =>
+      document.body ? document.body.innerText.slice(0, 5000) : ""
+    );
+    if (/human visitor|support ID|What code is in the image/i.test(text)) {
+      const m = text.match(/support ID is:\s*(\d+)/i);
+      return { blocked: true, supportId: m ? m[1] : null };
+    }
+  } catch {
+    /* page may already be closed — treat as not blocked */
+  }
+  return { blocked: false, supportId: null };
+}
+
+/**
+ * Create a page for BB scraping. If BB_PROXY_URL is set (e.g. a Bangladeshi
+ * residential proxy such as http://user:pass@host:port), the page is served
+ * through it — the BB portal's anti-bot layer accepts Bangladeshi residential
+ * IPs, so a proxy is the way to make this work from cloud runners.
+ */
+async function newBBPage(browser) {
+  const proxyUrl = process.env.BB_PROXY_URL;
+  if (!proxyUrl) return { page: await browser.newPage(), context: null };
+
+  const parsed = new URL(proxyUrl);
+  const proxy = {
+    server: `${parsed.protocol}//${parsed.host}`,
+    username: parsed.username ? decodeURIComponent(parsed.username) : undefined,
+    password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+  };
+  const context = await browser.newContext({ proxy });
+  return { page: await context.newPage(), context };
+}
+
+async function closeBBPage(page, context) {
+  await page.close().catch(() => {});
+  if (context) await context.close().catch(() => {});
+}
+
+/**
  * Run the BB scraper. Requires an already-open Playwright browser instance.
  * @param {import('playwright').Browser} browser
  * @param {string[]} keywords  - lowercased keyword array (same format as Teletalk)
@@ -20,7 +69,7 @@ const BLOCKED = new Set(["image", "media", "font", "stylesheet"]);
  * @returns {Promise<{ jobs: object[], matchedCount: number, newMatches: object[], seenIds: Set<string> }>}
  */
 export async function scrapeBBJobs(browser, keywords, seenIds, log) {
-  const page = await browser.newPage();
+  const { page, context } = await newBBPage(browser);
   page.setDefaultTimeout(35000);
 
   // Block unnecessary resources for speed
@@ -40,6 +89,21 @@ export async function scrapeBBJobs(browser, keywords, seenIds, log) {
       timeout: 35000,
     });
 
+    // F5 anti-bot challenge? Cloud IPs always get the CAPTCHA page.
+    const challenge = await detectF5Challenge(page);
+    if (challenge.blocked) {
+      log(
+        "⛔ [BB] The portal served a CAPTCHA challenge instead of the job list — this IP is flagged as a bot (normal for cloud/datacenter IPs). BB scan skipped for this run; the local Bangladeshi runner covers it."
+      );
+      return {
+        jobs: [],
+        matchedCount: 0,
+        newMatches: [],
+        blocked: true,
+        blockReason: `F5 CAPTCHA challenge${challenge.supportId ? ` (support ID ${challenge.supportId})` : ""}`,
+      };
+    }
+
     // Wait for the job table
     const tableFound = await page
       .waitForSelector("table.pageBodyText", { timeout: 15000 })
@@ -47,8 +111,15 @@ export async function scrapeBBJobs(browser, keywords, seenIds, log) {
       .catch(() => false);
 
     if (!tableFound) {
-      log("⚠️ [BB] Job table not found — the portal may be down or blocking requests.");
-      return { jobs: [], matchedCount: 0, newMatches: [], bbSeenIds: seenIds };
+      const pageTitle = await page.title().catch(() => "");
+      log("⚠️ [BB] Job table not found — the portal may be down or serving different content.");
+      return {
+        jobs: [],
+        matchedCount: 0,
+        newMatches: [],
+        blocked: false,
+        note: `Job table not found (page title: "${pageTitle}")`,
+      };
     }
 
     // Extract all job rows and the section (organization) headers above them
@@ -173,9 +244,9 @@ export async function scrapeBBJobs(browser, keywords, seenIds, log) {
     return { jobs, matchedCount: jobs.filter(j => j.isMatch).length, newMatches };
   } catch (err) {
     log(`❌ [BB] Scraper error: ${err.message}`);
-    return { jobs: [], matchedCount: 0, newMatches: [] };
+    return { jobs: [], matchedCount: 0, newMatches: [], blocked: false, note: err.message };
   } finally {
-    await page.close().catch(() => {});
+    await closeBBPage(page, context);
   }
 }
 
@@ -195,7 +266,7 @@ const BSCS_PDF_BASE = `${BB_BASE}/career/`;
  * @returns {Promise<{ notices: object[], matchedCount: number }>}
  */
 export async function scrapeBSCSNotices(browser, keywords, log) {
-  const page = await browser.newPage();
+  const { page, context } = await newBBPage(browser);
   page.setDefaultTimeout(35000);
 
   await page.route("**/*", (route) => {
@@ -207,14 +278,33 @@ export async function scrapeBSCSNotices(browser, keywords, log) {
     log("📋 [BSCS] Navigating to BSCS notice board...");
     await page.goto(BSCS_URL, { waitUntil: "domcontentloaded", timeout: 35000 });
 
+    const challenge = await detectF5Challenge(page);
+    if (challenge.blocked) {
+      log(
+        "⛔ [BSCS] The portal served a CAPTCHA challenge instead of the notice board — this IP is flagged as a bot (normal for cloud/datacenter IPs). BSCS scan skipped for this run."
+      );
+      return {
+        notices: [],
+        matchedCount: 0,
+        blocked: true,
+        blockReason: `F5 CAPTCHA challenge${challenge.supportId ? ` (support ID ${challenge.supportId})` : ""}`,
+      };
+    }
+
     const tableFound = await page
       .waitForSelector("table.w3-table-all", { timeout: 15000 })
       .then(() => true)
       .catch(() => false);
 
     if (!tableFound) {
-      log("⚠️ [BSCS] Notice table not found — portal may be down or blocking.");
-      return { notices: [], matchedCount: 0 };
+      const pageTitle = await page.title().catch(() => "");
+      log("⚠️ [BSCS] Notice table not found — portal may be down or serving different content.");
+      return {
+        notices: [],
+        matchedCount: 0,
+        blocked: false,
+        note: `Notice table not found (page title: "${pageTitle}")`,
+      };
     }
 
     const rawRows = await page.evaluate((pdfBase) => {
@@ -282,9 +372,9 @@ export async function scrapeBSCSNotices(browser, keywords, log) {
     return { notices, matchedCount };
   } catch (err) {
     log(`❌ [BSCS] Error: ${err.message}`);
-    return { notices: [], matchedCount: 0 };
+    return { notices: [], matchedCount: 0, blocked: false, note: err.message };
   } finally {
-    await page.close().catch(() => {});
+    await closeBBPage(page, context);
   }
 }
 

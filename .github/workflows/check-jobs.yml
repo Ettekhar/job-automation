@@ -45,6 +45,12 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Optional: Bangladeshi residential proxy for the BB portal.
+          # BB's anti-bot layer rejects cloud IPs (incl. GitHub runners) with a
+          # CAPTCHA. Set this secret (e.g. http://user:pass@host:port) to route
+          # bb.org.bd requests through a BD IP. Not required — the scheduled
+          # local runner (scripts/bb-local-run.ps1) covers BB from Bangladesh.
+          BB_PROXY_URL: ${{ secrets.BB_PROXY_URL }}
 
       - name: Write status.json (last run metadata)
         if: always()
@@ -63,4 +69,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/ public/data/ public/api/
           git diff --staged --quiet || git commit -m "chore(data): sync latest job scan results"
-          git push
+          # Retry with rebase — the local BB runner may have pushed data changes
+          # while this job was running.
+          for i in 1 2 3; do
+            git pull --rebase --autostash && git push && break
+            echo "push attempt $i failed, retrying in 5s..."
+            sleep 5
+          done

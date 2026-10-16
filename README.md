@@ -58,3 +58,43 @@ npm run check:dry
 # Launch the Playwright form autofill tool
 npm run autofill -- --url "https://bhtpa.teletalk.com.bd/" --post "Assistant Programmer"
 ```
+
+---
+
+## Bangladesh Bank portal (erecruitment.bb.org.bd)
+
+The BB e-recruitment portal sits behind an F5 anti-bot layer that answers
+requests from cloud/datacenter IP ranges (GitHub Actions runners, Cloudflare,
+AWS, ...) with an image CAPTCHA instead of the job list — even when the request
+comes from Bangladesh. Only real Bangladeshi residential connections receive
+the actual content, so the GitHub cron alone cannot reliably scan this portal
+(it records a clear "CAPTCHA challenge" note in scrape history when blocked).
+
+That is why BB scanning runs **from your own PC** (a Bangladeshi connection):
+
+```bash
+# BB portal only (Teletalk keeps running on the GitHub cron).
+# Sends the same email alerts for new keyword matches and updates data files.
+npm run check:bb
+```
+
+On Windows this is wired up as the Scheduled Task **"BB Portal Job Scan"**,
+which runs `scripts/bb-local-run.ps1` every 6 hours, logs to
+`data/bb-local-run.log`, and pushes the updated data files back to GitHub so
+the dashboard stays current and the GitHub cron won't double-alert.
+
+Recreate or move the task (adjust the repo path):
+
+```powershell
+$repo = "C:\Users\toufi_qicjadj\job-automation"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$repo\scripts\bb-local-run.ps1`""
+$trigger = New-ScheduledTaskTrigger -Once -At "05:45" -RepetitionInterval (New-TimeSpan -Hours 6)
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
+Register-ScheduledTask -TaskName "BB Portal Job Scan" -Action $action -Trigger $trigger -Settings $settings
+```
+
+Remove it with: `Unregister-ScheduledTask -TaskName "BB Portal Job Scan" -Confirm:$false`
+
+Optional (advanced): if you ever get a Bangladeshi residential proxy, set
+`BB_PROXY_URL=http://user:pass@host:port` in `.env` (and/or as the
+`BB_PROXY_URL` GitHub secret) and the GitHub cron will scan BB directly too.

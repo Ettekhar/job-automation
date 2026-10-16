@@ -196,10 +196,11 @@ async function sendEmailSmtp(job, customEmailTo = null) {
   `;
 
   try {
+    const portal = job.source === "bb" ? "Bangladesh Bank" : "Teletalk";
     const info = await transporter.sendMail({
       from,
       to,
-      subject: `🚨 New Teletalk Job: ${job.title} (${job.category || "Govt"})`,
+      subject: `🚨 New ${portal} Job: ${job.title} (${job.category || "Govt"})`,
       html,
     });
     console.log(`[SMTP] Notification sent to ${to} for job "${job.title}". Message ID: ${info.messageId}`);
