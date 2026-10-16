@@ -19,6 +19,9 @@
 # ============================================================================
 
 $ErrorActionPreference = "Continue"
+# Decode child-process (node/git) UTF-8 output correctly so emoji don't turn
+# into mojibake in the log.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
@@ -38,12 +41,12 @@ if ((Test-Path $log) -and ((Get-Item $log).Length -gt 1MB)) {
 
 function Log([string]$msg) {
     $line = "{0}  {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $msg
-    Add-Content -Path $log -Value $line
+    Add-Content -Path $log -Value $line -Encoding UTF8
     Write-Host $line
 }
 
 function Run([string]$exe, [string[]]$arguments) {
-    & $exe @arguments 2>&1 | ForEach-Object { Add-Content -Path $log -Value "    $_" }
+    & $exe @arguments 2>&1 | ForEach-Object { Add-Content -Path $log -Value "    $_" -Encoding UTF8 }
     return $LASTEXITCODE
 }
 
