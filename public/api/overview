@@ -9,32 +9,29 @@
     "matchedNoticesCount": 2,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1792231777701",
-      "timestamp": "2026-10-17T10:09:37.701Z",
+      "id": "scrape_1792237511161",
+      "timestamp": "2026-10-17T11:45:11.161Z",
       "status": "completed",
       "dryRun": false,
-      "durationSeconds": 298,
-      "circularsScanned": 33,
-      "totalPostsFound": 180,
-      "matchedPosts": 3,
+      "durationSeconds": 5,
+      "circularsScanned": 0,
+      "totalPostsFound": 19,
+      "matchedPosts": 1,
       "newMatchingPosts": 0,
       "notificationsSent": 0,
-      "bbJobsFound": 0,
-      "bbMatchedPosts": 0,
+      "bbJobsFound": 19,
+      "bbMatchedPosts": 1,
       "bbNewMatches": 0,
-      "errors": [
-        "BB portal did not serve the job list to this runner: F5 CAPTCHA challenge (support ID 9697294389922370998). This is expected on GitHub Actions (cloud IP) — the local Bangladeshi runner covers BB.",
-        "BSCS notice board did not serve content to this runner: F5 CAPTCHA challenge (support ID 9697294389924094772). Expected on cloud IPs — covered by the local runner."
-      ],
-      "bscsNotices": 0,
-      "bscsMatched": 0,
+      "errors": [],
+      "bscsNotices": 14,
+      "bscsMatched": 2,
       "matchedJobTitles": [],
       "matchedJobPdfUrls": []
     },
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-10-17T16:09:37.889Z",
+      "nextRun": "2026-10-17T17:45:11.660Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }
