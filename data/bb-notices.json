@@ -10,7 +10,7 @@
     "closeDate": "26/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.713Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   },
   {
     "id": "BSCS-26102-admit-card",
@@ -23,7 +23,7 @@
     "closeDate": "26/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   },
   {
     "id": "BSCS-25112-written-exam",
@@ -36,7 +36,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   },
   {
     "id": "BSCS-25113-written-exam",
@@ -49,23 +49,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
-  },
-  {
-    "id": "BSCS-26106, 26108-others",
-    "jobId": "26106, 26108",
-    "source": "bscs",
-    "circularFor": "Others",
-    "title": "Regarding correction of CV for the applicants of Assistant Programmer (Job ID-26106) and Assistant System Engineer (Job Id- 26108) of Different Banks and FIs.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261007_bscs_324_1791360546.pdf",
-    "publishDate": "07/10/2026",
-    "closeDate": "18/10/2026",
-    "isMatch": true,
-    "matchedKeywords": [
-      "programmer",
-      "assistant programmer"
-    ],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   },
   {
     "id": "BSCS-26131 - 26132-job-circular",
@@ -78,7 +62,7 @@
     "closeDate": "25/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   },
   {
     "id": "BSCS-25101-selected-candidate",
@@ -91,20 +75,7 @@
     "closeDate": "29/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
-  },
-  {
-    "id": "BSCS-25102-viva",
-    "jobId": "25102",
-    "source": "bscs",
-    "circularFor": "VIVA",
-    "title": "Reschedule of Viva Voce for the Post of Officer (G) (10th Grade, Job ID: 25102) of 11 Banks/FI.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260928_bscs_316_1790573841.pdf",
-    "publishDate": "28/09/2026",
-    "closeDate": "18/10/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   },
   {
     "id": "BSCS-25105-viva",
@@ -119,46 +90,7 @@
     "matchedKeywords": [
       "IT"
     ],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
-  },
-  {
-    "id": "BSCS-26114 - 26130-job-circular",
-    "jobId": "26114 - 26130",
-    "source": "bscs",
-    "circularFor": "Job Circular",
-    "title": "New Job Circular for Combined 17 category Engineering and Miscellaneous related jobs.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260921_bscs_307_1789964082.pdf",
-    "publishDate": "16/09/2026",
-    "closeDate": "18/10/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
-  },
-  {
-    "id": "BSCS-25102-viva",
-    "jobId": "25102",
-    "source": "bscs",
-    "circularFor": "VIVA",
-    "title": "Corrected - Viva Voce for the Post of Officer (G) (10th Grade, Job ID: 25102) of 11 Banks/FI.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260907_bscs_300.pdf",
-    "publishDate": "07/09/2026",
-    "closeDate": "18/10/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
-  },
-  {
-    "id": "BSCS-25102-viva",
-    "jobId": "25102",
-    "source": "bscs",
-    "circularFor": "VIVA",
-    "title": "Written Test Result and Schedule of Viva Voce for the Post Officer (G) (10th Grade, Job ID: 25102) of 11 Banks/FI.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20260830_bscs_289.pdf",
-    "publishDate": "30/08/2026",
-    "closeDate": "18/10/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -171,7 +103,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -184,7 +116,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -197,6 +129,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-18T17:55:23.714Z"
+    "scrapedAt": "2026-10-18T23:45:15.936Z"
   }
 ]
