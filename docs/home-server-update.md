@@ -70,3 +70,9 @@ rebuilds the Docker image automatically.
 - `.env` and `data/settings.json` are git-ignored: the commands never touch them.
 - `docker-compose.override.yml` is untracked too — updates keep it.
 - The old runtime data is kept in `../data-backup-<timestamp>/`.
+- **`scripts/autofill.mjs` on this branch is the proven SERVER autofill**
+  (headless-safe, fuzzy best-match post selection, snapshot fix). It
+  intentionally differs from `main`'s desktop/cloud autofill, which launches
+  a visible browser (`--headed`) and cannot run on the headless server. When
+  refreshing `server-live` from `main`, keep this file:
+  `git checkout <previous-server-live-sha> -- scripts/autofill.mjs`
