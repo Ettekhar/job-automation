@@ -420,7 +420,7 @@ function createJobCardHtml(job) {
       </div>
 
       <div class="card-actions">
-        <a href="${escapeHtml(job.applyUrl)}" target="_blank" rel="noreferrer" class="btn btn-primary btn-sm">
+        <a href="${escapeHtml(isBB ? "https://erecruitment.bb.org.bd/onlineapp/joblist.php" : job.applyUrl)}" target="_blank" rel="noreferrer" class="btn btn-primary btn-sm">
           🔗 Apply Online
         </a>
         ${job.pdfUrl ? `

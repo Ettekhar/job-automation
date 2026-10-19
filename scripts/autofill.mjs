@@ -3130,6 +3130,23 @@ async function ensureAddressIntegrity(page, profile) {
     console.log("🛠️ [Address] Permanent address drifted from profile — restoring...");
     await fillAddressBlock(page, "permanent", profile.permanent_address);
   }
+
+  // Always report what the two address blocks actually contain, so a silent
+  // swap/copy can never pass unnoticed again.
+  await page.waitForTimeout(400).catch(() => {});
+  const verified = await page.evaluate(() => {
+    const label = (prefix) => {
+      const d = document.getElementById(`${prefix}_district`);
+      const u = document.getElementById(`${prefix}_upazila`);
+      const dt = d && d.selectedIndex >= 0 ? d.options[d.selectedIndex].text : "?";
+      const ut = u && u.selectedIndex >= 0 ? u.options[u.selectedIndex].text : "?";
+      return `${dt} / ${ut}`;
+    };
+    return { present: label("present"), permanent: label("permanent") };
+  }).catch(() => null);
+  if (verified) {
+    console.log(`✅ [Address] Verified — Present: ${verified.present} · Permanent: ${verified.permanent}`);
+  }
 }
 
 // ── FORM FIELD AUDIT ────────────────────────────────────────────────────────
@@ -3169,10 +3186,19 @@ async function auditFormFields(page) {
         if (!visible(el) || el.disabled) return;
         const name = el.name || el.id || "";
         if (/captcha/i.test(name)) return;
+        // "from[]" is the Available list of the Organization Choice dual-list --
+        // it is a source list, not a field we fill, so don't audit it.
+        if (/^from\[\]$/.test(name)) return;
         const empty = el.tagName === "SELECT"
-          ? el.selectedIndex <= 0
+          ? (el.multiple ? el.options.length === 0 : el.selectedIndex <= 0)
           : (type === "checkbox" ? !el.checked : !String(el.value).trim());
-        fields.push({ name, type, required: !!el.required, empty, label: labelFor(el) });
+        fields.push({
+          name,
+          type,
+          required: !!el.required,
+          empty,
+          label: name === "to[]" ? "Selected Organization Choice" : labelFor(el),
+        });
       });
       return {
         total: fields.length,
