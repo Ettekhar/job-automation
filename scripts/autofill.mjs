@@ -3905,10 +3905,13 @@ async function auditFormFields(page) {
         if (!visible(el) || el.disabled) return;
         const name = el.name || el.id || "";
         if (/captcha/i.test(name)) return;
+        // "from[]" is the Available list of the Organization Choice dual-list --
+        // it is a source list, not a field we fill, so don't audit it.
+        if (/^from\[\]$/.test(name)) return;
         const empty =
           el.tagName === "SELECT"
             ? el.multiple
-              ? el.selectedOptions.length === 0
+              ? el.options.length === 0
               : el.selectedIndex <= 0
             : type === "checkbox"
               ? !el.checked
@@ -3918,7 +3921,10 @@ async function auditFormFields(page) {
           type,
           required: !!el.required,
           empty,
-          label: labelFor(el),
+          label:
+            name === "to[]"
+              ? "Selected Organization Choice"
+              : labelFor(el),
         });
       });
       return {
