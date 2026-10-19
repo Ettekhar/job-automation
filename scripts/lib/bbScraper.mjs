@@ -205,7 +205,10 @@ export async function scrapeBBJobs(browser, keywords, seenIds, log) {
 
     for (const row of rawRows) {
       const id = `BB-${row.applyJobId || row.rawId}`;
-      const applyUrl = `${BB_BASE}/onlineapp/new_apply.php?advtno=${row.applyJobId || row.rawId}`;
+      // BB's apply control is a JS POST (newApply -> apply_job_with_fee.php),
+      // so a deep link like new_apply.php?advtno=... returns "File not found".
+      // Send users to the live job list, where they can click Apply Online.
+      const applyUrl = `${BB_BASE}/onlineapp/joblist.php`;
 
       // Keyword matching using same logic as Teletalk (word-boundary aware)
       const { isMatch, matchedKeywords } = matchBBKeywords(row.title, row.educationalReq || "", keywords);
