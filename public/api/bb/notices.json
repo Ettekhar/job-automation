@@ -2,6 +2,22 @@
   "success": true,
   "notices": [
     {
+      "id": "BSCS-25106-mcq-and-written-exam",
+      "jobId": "25106",
+      "source": "bscs",
+      "circularFor": "MCQ And Written Exam",
+      "title": "Schedule of MCQ and Written Test, Exam Content with Mark Distribution for the Post of Assistant programmer/SO (Assistant programmer) (Job ID: 25106) (Grade-9) of 5 Banks and 2 financial institutions.",
+      "pdfUrl": "https://erecruitment.bb.org.bd/career/20261019_bscs_341_1792385526.pdf",
+      "publishDate": "19/10/2026",
+      "closeDate": "31/10/2026",
+      "isMatch": true,
+      "matchedKeywords": [
+        "programmer",
+        "assistant programmer"
+      ],
+      "scrapedAt": "2026-10-19T06:15:30.191Z"
+    },
+    {
       "id": "BSCS-25114-admit-card",
       "jobId": "25114",
       "source": "bscs",
@@ -12,7 +28,7 @@
       "closeDate": "26/10/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.191Z"
     },
     {
       "id": "BSCS-26102-admit-card",
@@ -25,7 +41,7 @@
       "closeDate": "26/10/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.191Z"
     },
     {
       "id": "BSCS-25112-written-exam",
@@ -38,7 +54,7 @@
       "closeDate": "08/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.191Z"
     },
     {
       "id": "BSCS-25113-written-exam",
@@ -51,7 +67,7 @@
       "closeDate": "08/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.191Z"
     },
     {
       "id": "BSCS-26131 - 26132-job-circular",
@@ -64,7 +80,7 @@
       "closeDate": "25/10/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.191Z"
     },
     {
       "id": "BSCS-25101-selected-candidate",
@@ -77,7 +93,7 @@
       "closeDate": "29/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.191Z"
     },
     {
       "id": "BSCS-25105-viva",
@@ -92,7 +108,7 @@
       "matchedKeywords": [
         "IT"
       ],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.192Z"
     },
     {
       "id": "BSCS-25103-mcq",
@@ -105,7 +121,7 @@
       "closeDate": "21/06/2027",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.192Z"
     },
     {
       "id": "BSCS-25102-mcq",
@@ -118,7 +134,7 @@
       "closeDate": "06/05/2027",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.192Z"
     },
     {
       "id": "BSCS-25101-mcq",
@@ -131,9 +147,9 @@
       "closeDate": "05/05/2027",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-10-18T23:45:15.936Z"
+      "scrapedAt": "2026-10-19T06:15:30.192Z"
     }
   ],
-  "total": 10,
-  "matchedCount": 1
+  "total": 11,
+  "matchedCount": 2
 }
