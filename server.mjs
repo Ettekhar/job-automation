@@ -50,7 +50,15 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
+
+// Static assets (pages + the pre-built fallback JSON snapshots). IMPORTANT:
+// never let a file in public/api/* shadow the live /api routes — otherwise
+// GET endpoints would silently serve stale build snapshots instead of data.
+const publicStatic = express.static(path.join(__dirname, "public"));
+app.use((req, res, next) => {
+  if (req.path === "/api" || req.path.startsWith("/api/")) return next();
+  return publicStatic(req, res, next);
+});
 
 // Serve login page at /login (also available as /login.html via static)
 app.get("/login", (req, res) => {
