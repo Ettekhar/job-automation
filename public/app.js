@@ -867,7 +867,7 @@ function connectLiveLogEvents() {
 
   const tick = async () => {
     try {
-      const res = await fetch("/api/scrape/logs");
+      const res = await fetch(`/api/scrape/logs?t=${Date.now()}`);
       if (!res.ok) return;
       const data = await res.json();
       render(data.logs);
@@ -1605,7 +1605,7 @@ function startAutofillPolling() {
 
   const tick = async () => {
     try {
-      const res = await fetch("/api/autofill/logs");
+      const res = await fetch(`/api/autofill/logs?t=${Date.now()}`);
       if (!res.ok) return;
       const data = await res.json();
       const logs = Array.isArray(data.logs) ? data.logs : [];

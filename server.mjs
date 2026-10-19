@@ -794,6 +794,7 @@ app.get("/api/scrape/events", (req, res) => {
 // can buffer SSE streams, leaving the dashboard terminal empty even while a
 // scan is running. The UI polls this small JSON endpoint instead.
 app.get("/api/scrape/logs", (req, res) => {
+  res.set("Cache-Control", "no-store");
   res.json({ isScraping, logs: liveLogs });
 });
 
@@ -961,6 +962,7 @@ app.get("/api/autofill/events", (req, res) => {
 
 // Polling fallback for the autofill console (same tunnel-buffering reason).
 app.get("/api/autofill/logs", (req, res) => {
+  res.set("Cache-Control", "no-store");
   res.json({ logs: autofillLogsHistory });
 });
 
