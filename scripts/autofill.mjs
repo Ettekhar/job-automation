@@ -195,6 +195,10 @@ async function main() {
   }
 
   console.log("\n🎯 Application Form detected! Filling in all details now...");
+  // Enable "If Applicable" blocks (Graduation / Masters / Experience) BEFORE
+  // filling fields, otherwise those inputs are still disabled and stay empty.
+  await tickIfApplicableSections(formPage, profile);
+
   await fillMainForm(formPage, profile);
   console.log("✅ Known fields filled!");
 
@@ -203,6 +207,9 @@ async function main() {
 
   // --- Auto-fill Computer Skills & other qualification questions ---
   await fillOtherQualifications(formPage, profile);
+
+  // --- Organization Choice dual-list (Available -> Selected) ---
+  await fillOrganizationChoices(formPage);
 
   // --- CAPTCHA ---
   if (hasAnyAI) {
@@ -1297,6 +1304,126 @@ async function tickDeclarationCheckbox(page) {
 // Supported shape (single object or array of objects):
 //   { organization, designation, employedOn, address, lengthOfService,
 //     description, currentlyWorking }
+// ── "IF APPLICABLE" SECTION TOGGLES ─────────────────────────────────────────
+// BOGMC/Petrobangla (and some other Teletalk portals) gate the Graduation,
+// Masters and Job Experience blocks behind checkboxes labelled only
+// "If Applicable". Text-based detection misses them, so target the stable
+// Teletalk field names and only enable sections we actually have data for.
+async function tickIfApplicableSections(page, profile) {
+  try {
+    const hasGraduation = Boolean(
+      profile &&
+        profile.graduation &&
+        (profile.graduation.examination ||
+          profile.graduation.exam ||
+          profile.graduation.institute),
+    );
+    const hasMasters = Boolean(
+      profile &&
+        profile.masters &&
+        (profile.masters.examination ||
+          profile.masters.exam ||
+          profile.masters.institute),
+    );
+    const rawExp = profile && profile.experience;
+    const hasExperience = Array.isArray(rawExp)
+      ? rawExp.filter(Boolean).length > 0
+      : Boolean(rawExp && (rawExp.organization || rawExp.designation));
+
+    const sections = [
+      { name: "if_applicable_gra", label: "Graduation", enabled: hasGraduation },
+      { name: "if_applicable_mas", label: "Masters", enabled: hasMasters },
+      { name: "if_applicable_exp", label: "Job Experience", enabled: hasExperience },
+    ];
+
+    for (const s of sections) {
+      const cb = page.locator(`input[name="${s.name}"]`).first();
+      if (!(await cb.count().catch(() => 0))) continue;
+      const checked = await cb.isChecked().catch(() => false);
+      if (s.enabled && !checked) {
+        await cb.check({ force: true }).catch(() => {});
+        await page.waitForTimeout(700);
+        console.log(`[Section] Enabled "${s.label}" (data found in profile).`);
+      } else if (!s.enabled && checked) {
+        await cb.uncheck({ force: true }).catch(() => {});
+        console.log(`[Section] Left "${s.label}" disabled (no data in profile).`);
+      }
+    }
+  } catch (e) {
+    console.log(`[Section] ${e.message}`);
+  }
+}
+
+// ── ORGANIZATION CHOICE (dual-list "Available" -> "Selected") ───────────────
+// BOGMC/Petrobangla forms make the candidate pick preferred organizations
+// from a from[]/to[] dual list (BAPEX, BGFCL, SGFL, ...). The portal's
+// "move all" button is commented out, so move the options one by one using
+// the page's own moveRight() function (or the chevron button / raw DOM).
+async function fillOrganizationChoices(page) {
+  try {
+    const from = page.locator('select[name="from[]"]').first();
+    const to = page.locator('select[name="to[]"]').first();
+    if (!(await from.count().catch(() => 0))) return false;
+    if (!(await to.count().catch(() => 0))) return false;
+
+    const available = await from.locator("option").count().catch(() => 0);
+    const already = await to.locator("option").count().catch(() => 0);
+    if (already > 0) {
+      console.log(
+        `[Org Choice] ${already} organization(s) already selected - leaving as is.`,
+      );
+      return true;
+    }
+    if (available === 0) return false;
+
+    const result = await page
+      .evaluate(() => {
+        const fromEl = document.querySelector('select[name="from[]"]');
+        const toEl = document.querySelector('select[name="to[]"]');
+        const btn = document.getElementById("multiselect_rightSelected");
+        if (!fromEl || !toEl) return { moved: [], toCount: 0 };
+        const hasMoveRight = typeof window.moveRight === "function";
+        const moved = [];
+        let guard = 0;
+        while (fromEl.options.length > 0 && guard < 100) {
+          guard++;
+          const opt = fromEl.options[0];
+          const label = (opt.text || "").trim();
+          opt.selected = true;
+          if (hasMoveRight) {
+            window.moveRight();
+          } else if (btn) {
+            btn.click();
+          } else {
+            toEl.appendChild(opt);
+            fromEl.dispatchEvent(new Event("change", { bubbles: true }));
+            toEl.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          moved.push(label);
+          if (toEl.options.length === 0) break;
+        }
+        return {
+          moved,
+          toCount: toEl.options.length,
+          toList: Array.from(toEl.options).map((o) => (o.text || "").trim()),
+        };
+      })
+      .catch(() => ({ moved: [], toCount: 0 }));
+
+    if (result.moved && result.moved.length) {
+      console.log(
+        `[Org Choice] Moved ${result.moved.length} organization(s) serially: ${result.moved.join(", ")}`,
+      );
+      return true;
+    }
+    console.log("[Org Choice] Organization list found but nothing moved.");
+    return false;
+  } catch (e) {
+    console.log(`[Org Choice] ${e.message}`);
+    return false;
+  }
+}
+
 async function fillExperienceSection(page, profile) {
   try {
     const raw = profile && profile.experience;
@@ -1473,60 +1600,127 @@ async function fillExperienceSection(page, profile) {
       }
       const position = i > 0 ? "last" : "first";
 
-      const employed = e.employedOn || e.employed_on || e.since || e.from;
+      const jobName = (suffix) =>
+        page.locator(`[name="job[${i}][${suffix}]"]`).first();
+      const hasExact = async (suffix) =>
+        (await page
+          .locator(`[name="job[${i}][${suffix}]"]`)
+          .count()
+          .catch(() => 0)) > 0;
+
+      const empType = e.employmentType || e.employment_type || e.employ_type;
+      const employed = e.employedOn || e.employed_on || e.since;
+      const startDate = e.startDate || e.start_date || e.fromDate || e.from;
+      const endDate = e.endDate || e.end_date || e.toDate || e.to;
       const org = e.organization || e.employer || e.company;
       const desig = e.designation || e.designationPost || e.post || e.title;
       const addr = e.address || e.organizationAddress;
       const length = e.lengthOfService || e.length_of_service || e.duration;
       const desc = e.description || e.jobDescription || e.duties;
 
-      if (employed) {
-        const f = findField(/^employed\s*on/i, position);
-        if (f) await setDate(page.locator(f.selector).first(), employed, f);
-        else console.log("[Experience] 'Employed on' control not found.");
+      // Employment type ("Employed on" on Teletalk) — a select on BOGMC.
+      if (empType || employed) {
+        if (await hasExact("employment_type")) {
+          const ok = await setSelect(jobName("employment_type"), empType || employed);
+          if (!ok)
+            console.log(
+              `[Experience] Could not set employment type "${empType || employed}".`,
+            );
+          else console.log(`[Experience] Employment type: ${empType || employed}`);
+        } else {
+          const f = findField(/^employed\s*on/i, position);
+          if (f) {
+            const el = page.locator(f.selector).first();
+            if (f.tag === "select") await setSelect(el, empType || employed);
+            else await setDate(el, employed || startDate, f);
+          } else console.log("[Experience] 'Employed on' control not found.");
+        }
       }
       if (org) {
-        const f = findField(/^organization\b/i, position);
-        if (f) {
-          await setText(page.locator(f.selector).first(), org);
+        if (await hasExact("organization")) {
+          await setText(jobName("organization"), org);
           console.log(`[Experience] Organization: ${org}`);
-        } else console.log("[Experience] 'Organization' input not found.");
+        } else {
+          const f = findField(/^organization\b/i, position);
+          if (f) {
+            await setText(page.locator(f.selector).first(), org);
+            console.log(`[Experience] Organization: ${org}`);
+          } else console.log("[Experience] 'Organization' input not found.");
+        }
       }
       if (desig) {
-        const f = findField(/^designation/i, position);
-        if (f) {
-          const el = page.locator(f.selector).first();
+        if (await hasExact("designation")) {
+          const el = jobName("designation");
+          const tag = await el
+            .evaluate((n) => n.tagName.toLowerCase())
+            .catch(() => "input");
           const ok =
-            f.tag === "select" ? await setSelect(el, desig) : await setText(el, desig);
+            tag === "select" ? await setSelect(el, desig) : await setText(el, desig);
           if (!ok)
             console.log(`[Experience] Could not set Designation "${desig}".`);
-        } else console.log("[Experience] 'Designation' control not found.");
+        } else {
+          const f = findField(/^designation/i, position);
+          if (f) {
+            const el = page.locator(f.selector).first();
+            const ok =
+              f.tag === "select"
+                ? await setSelect(el, desig)
+                : await setText(el, desig);
+            if (!ok)
+              console.log(`[Experience] Could not set Designation "${desig}".`);
+          } else console.log("[Experience] 'Designation' control not found.");
+        }
       }
-      if (addr) {
-        const f = findField(/^address\b/i, position);
-        if (f) await setText(page.locator(f.selector).first(), addr);
-      }
-      if (length) {
+
+      // Length of Service — Teletalk uses a start date + end date ("to").
+      if (await hasExact("job_start_date")) {
+        const start = startDate || employed;
+        if (start) await setDate(jobName("job_start_date"), start, { type: "date" });
+        if (endDate) await setDate(jobName("job_end_date"), endDate, { type: "date" });
+        else if (e.currentlyWorking)
+          await setDate(jobName("job_end_date"), new Date().toISOString().slice(0, 10), {
+            type: "date",
+          });
+      } else if (length || startDate) {
         const f = findField(/^length\s*of\s*service/i, position);
         if (f) {
           const el = page.locator(f.selector).first();
-          if (f.tag === "select") await setSelect(el, length);
-          else await setText(el, length);
+          if (f.tag === "select") await setSelect(el, length || startDate);
+          else if (f.type === "date") await setDate(el, startDate || length || "", f);
+          else await setText(el, length || startDate);
+        }
+      }
+
+      if (addr) {
+        if (await hasExact("office_address"))
+          await setText(jobName("office_address"), addr);
+        else {
+          const f = findField(/^address\b/i, position);
+          if (f) await setText(page.locator(f.selector).first(), addr);
         }
       }
       if (desc) {
-        const f = findField(/^job\s*description/i, position);
-        if (f) await setText(page.locator(f.selector).first(), desc);
+        if (await hasExact("job_description"))
+          await setText(jobName("job_description"), desc);
+        else {
+          const f = findField(/^job\s*description/i, position);
+          if (f) await setText(page.locator(f.selector).first(), desc);
+        }
       }
       if (e.currentlyWorking) {
-        const f = findField(/currently\s*working/i, position);
-        if (f && f.type === "checkbox") {
-          await page
-            .locator(f.selector)
-            .first()
-            .check({ force: true })
-            .catch(() => {});
+        if (await hasExact("currently_working")) {
+          await jobName("currently_working").check({ force: true }).catch(() => {});
           console.log("[Experience] Marked 'Currently working'.");
+        } else {
+          const f = findField(/currently\s*working/i, position);
+          if (f && f.type === "checkbox") {
+            await page
+              .locator(f.selector)
+              .first()
+              .check({ force: true })
+              .catch(() => {});
+            console.log("[Experience] Marked 'Currently working'.");
+          }
         }
       }
     }

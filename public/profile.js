@@ -273,9 +273,10 @@ function populateForm(p) {
   if (exp) {
     setVal("exp_org", exp.organization);
     setVal("exp_desig", exp.designation);
-    setVal("exp_employed_on", exp.employedOn);
+    setVal("exp_type", exp.employmentType);
+    setVal("exp_start", exp.startDate || exp.employedOn);
+    setVal("exp_end", exp.endDate);
     setVal("exp_address", exp.address);
-    setVal("exp_length", exp.lengthOfService);
     setVal("exp_desc", exp.description);
     const expCurrent = document.getElementById("exp_current");
     if (expCurrent) expCurrent.checked = Boolean(exp.currentlyWorking);
@@ -404,17 +405,30 @@ function serializeForm() {
 
   // Optional Job Experience
   if (getVal("exp_org") || getVal("exp_desig")) {
+    const existingExp =
+      currentProfileData &&
+      currentProfileData.experience &&
+      !Array.isArray(currentProfileData.experience)
+        ? currentProfileData.experience
+        : {};
+
     profile.experience = {
+      ...existingExp,
       organization: getVal("exp_org"),
       designation: getVal("exp_desig"),
-      employedOn: getVal("exp_employed_on"),
+      employmentType: getVal("exp_type"),
+      startDate: getVal("exp_start"),
+      endDate: getVal("exp_end"),
       address: getVal("exp_address"),
-      lengthOfService: getVal("exp_length"),
       description: getVal("exp_desc"),
       currentlyWorking: Boolean(
         document.getElementById("exp_current")?.checked,
       ),
     };
+    // Never submit blank strings as real data.
+    for (const key of ["employmentType", "startDate", "endDate"]) {
+      if (!profile.experience[key]) delete profile.experience[key];
+    }
   } else if (currentProfileData && currentProfileData.experience) {
     // Preserve experience data that isn't editable through these fields
     // (e.g. an array of multiple entries added by hand to profile.json).
