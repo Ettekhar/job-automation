@@ -369,6 +369,7 @@ function createJobCardHtml(job) {
     </div>` : "";
 
   const safeId = String(job.id || Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g, "_");
+  const expired = isJobDeadlinePassed(job.deadline);
 
   // Action buttons — inline terminal before autofill button
   const autofillBtn = isBB ? `` : `
@@ -389,9 +390,9 @@ function createJobCardHtml(job) {
       <span class="inline-term-pill" id="term-pill-${safeId}" style="display: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
         ⏳ Connecting...
       </span>
-      <button class="btn btn-autofill btn-sm" id="btn-autofill-${safeId}" onclick="runInlineAutofill('${safeId}', '${escapeHtml(job.applyUrl)}', '${escapeHtml(job.title)}')" title="Run autofill with live terminal output">
+      ${expired ? `<button class="btn btn-sm" disabled title="The application deadline for this circular has passed — the portal only shows the advertisement now" style="opacity: 0.6; cursor: not-allowed; background: #334155; color: #94a3b8; border: 1px solid #475569;">⛔ Deadline Passed</button>` : `<button class="btn btn-autofill btn-sm" id="btn-autofill-${safeId}" onclick="runInlineAutofill('${safeId}', '${escapeHtml(job.applyUrl)}', '${escapeHtml(job.title)}')" title="Run autofill with live terminal output">
         🤖 Autofill
-      </button>
+      </button>`}
     </div>`;
 
   return `
@@ -2441,6 +2442,31 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+// Returns true when the application deadline has clearly passed (with a
+// 24h slack so timezone differences can never disable a job too early).
+// Teletalk keeps closed circulars online and only shows the advertisement
+// PDF afterwards, so autofill on an expired job can never find a form.
+function isJobDeadlinePassed(deadline) {
+  if (!deadline) return false;
+  const m = String(deadline).match(
+    /(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2})\s*(AM|PM)?)?/i
+  );
+  if (!m) return false;
+  let hour = m[4] !== undefined ? Number(m[4]) : 23;
+  const mins = m[5] !== undefined ? Number(m[5]) : 59;
+  if (m[6] && /pm/i.test(m[6]) && hour < 12) hour += 12;
+  if (m[6] && /am/i.test(m[6]) && hour === 12) hour = 0;
+  const t = new Date(
+    Number(m[1]),
+    Number(m[2]) - 1,
+    Number(m[3]),
+    hour,
+    mins,
+    59
+  ).getTime();
+  return Date.now() > t + 24 * 3600 * 1000;
 }
 
 function formatRelativeTime(isoString) {
