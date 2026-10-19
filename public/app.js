@@ -381,7 +381,7 @@ function createJobCardHtml(job) {
           </span>
           <span id="term-status-${safeId}" style="color: #64748b; font-size: 9.5px; font-weight: 700;">ACTIVE</span>
         </div>
-        <div id="term-text-${safeId}" style="color: #cbd5e1; font-size: 11px; line-height: 1.5; max-height: 90px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Ready...</div>
+        <div id="term-text-${safeId}" class="inline-term-text" style="color: #cbd5e1; white-space: pre-wrap; word-break: break-word;">Ready...</div>
         <div id="term-fallback-${safeId}" style="display: none; margin-top: 8px;"></div>
       </div>
     </div>
