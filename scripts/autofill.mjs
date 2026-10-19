@@ -231,6 +231,11 @@ async function main() {
     console.log(
       "📧 [Email] Submission confirmed — preparing the application PDF email...",
     );
+    // Let the post-submit redirect (e.g. appcopy.php) settle before capture.
+    await formPage
+      .waitForLoadState("domcontentloaded", { timeout: 8000 })
+      .catch(() => {});
+    await formPage.waitForTimeout(1200).catch(() => {});
     await downloadAndEmailPdf(formPage, profile).catch((e) =>
       console.log(`[Email] Post-submit PDF email failed: ${e.message}`),
     );
