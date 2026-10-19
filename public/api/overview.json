@@ -1,37 +1,46 @@
 {
   "success": true,
   "stats": {
-    "totalJobs": 533,
-    "matchedJobs": 6,
-    "seenCount": 533,
+    "totalJobs": 537,
+    "matchedJobs": 8,
+    "seenCount": 537,
     "bbJobs": 21,
     "noticesCount": 14,
     "matchedNoticesCount": 2,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1792410307492",
-      "timestamp": "2026-10-19T11:45:07.492Z",
+      "id": "scrape_1792411450719",
+      "timestamp": "2026-10-19T12:04:10.719Z",
       "status": "completed",
       "dryRun": false,
-      "durationSeconds": 4,
-      "circularsScanned": 0,
-      "totalPostsFound": 2,
-      "matchedPosts": 1,
-      "newMatchingPosts": 0,
-      "notificationsSent": 0,
-      "bbJobsFound": 2,
-      "bbMatchedPosts": 1,
+      "durationSeconds": 375,
+      "circularsScanned": 34,
+      "totalPostsFound": 217,
+      "matchedPosts": 5,
+      "newMatchingPosts": 2,
+      "notificationsSent": 2,
+      "bbJobsFound": 0,
+      "bbMatchedPosts": 0,
       "bbNewMatches": 0,
-      "errors": [],
-      "bscsNotices": 14,
-      "bscsMatched": 2,
-      "matchedJobTitles": [],
-      "matchedJobPdfUrls": []
+      "errors": [
+        "BB portal did not serve the job list to this runner: F5 CAPTCHA challenge (support ID 9697294390192788116). This is expected on GitHub Actions (cloud IP) — the local Bangladeshi runner covers BB.",
+        "BSCS notice board did not serve content to this runner: F5 CAPTCHA challenge (support ID 9697294390192211446). Expected on cloud IPs — covered by the local runner."
+      ],
+      "bscsNotices": 0,
+      "bscsMatched": 0,
+      "matchedJobTitles": [
+        "Sub Assistant Engineer(Computer/IT)",
+        "Assistant Manager(CSE/IT)"
+      ],
+      "matchedJobPdfUrls": [
+        "https://alljobs.teletalk.com.bd/media/public/uploads/governments/jobs/advertisement-1792297894838.pdf",
+        "https://alljobs.teletalk.com.bd/media/public/uploads/governments/jobs/advertisement-1792296024401.pdf"
+      ]
     },
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-10-19T17:45:08.124Z",
+      "nextRun": "2026-10-19T18:04:10.965Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }
