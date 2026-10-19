@@ -84,6 +84,38 @@ const hasAnyAI = Boolean(
   (process.env.CF_ACCOUNT_ID && process.env.CF_API_TOKEN),
 );
 
+// ── ROBUST AI JSON PARSER ────────────────────────────────────────────────────
+// Vision models sometimes wrap JSON in markdown fences or prefix it with
+// prose like "**Step 2:** ..." even when told not to. Extract the JSON
+// object/array from anywhere in the response instead of failing on char 1.
+function parseAiJson(text) {
+  if (!text || typeof text !== "string") return null;
+  const cleaned = text
+    .replace(/```[a-zA-Z]*\s*/g, "")
+    .replace(/```/g, "")
+    .trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (_) {
+    /* fall through to bracket extraction */
+  }
+  const firstObj = cleaned.indexOf("{");
+  const lastObj = cleaned.lastIndexOf("}");
+  if (firstObj !== -1 && lastObj > firstObj) {
+    try {
+      return JSON.parse(cleaned.slice(firstObj, lastObj + 1));
+    } catch (_) {}
+  }
+  const firstArr = cleaned.indexOf("[");
+  const lastArr = cleaned.lastIndexOf("]");
+  if (firstArr !== -1 && lastArr > firstArr) {
+    try {
+      return JSON.parse(cleaned.slice(firstArr, lastArr + 1));
+    } catch (_) {}
+  }
+  return null;
+}
+
 async function loadProfile() {
   try {
     const raw = await fs.readFile(PROFILE_PATH, "utf-8");
@@ -265,6 +297,19 @@ async function main() {
     console.log("  \u2192 Review in the browser, then click Submit.");
     console.log("  \u2192 Type 'r' in terminal to re-read CAPTCHA if needed.");
     console.log("-------------------------------------------------------\n");
+  }
+
+  // --- Email the application PDF as soon as submission is confirmed ---
+  // Previously the PDF email only fired when the post-submit AI agent
+  // recognised a later "download / applicant copy" step, so a successful
+  // submission could end with no email at all.
+  if (submitted) {
+    console.log(
+      "📧 [Email] Submission confirmed — preparing the application PDF email...",
+    );
+    await downloadAndEmailPdf(formPage, profile).catch((e) =>
+      console.log(`[Email] Post-submit PDF email failed: ${e.message}`),
+    );
   }
 
   try {
@@ -471,6 +516,10 @@ async function detectSubmitRejection(page, dialogMessage) {
 
 async function waitForApplicationForm(context) {
   let tick = 0;
+  const startedAt = Date.now();
+  // Headless server runs can never be helped manually -- cap the wait so a
+  // broken navigation can't leave a zombie browser spinning for hours.
+  const maxWaitMs = Number(process.env.AUTOFILL_FORM_WAIT_MS || 8 * 60 * 1000);
   while (true) {
     for (const p of context.pages()) {
       if (p.isClosed()) continue;
@@ -482,9 +531,20 @@ async function waitForApplicationForm(context) {
     }
     tick++;
     if (tick % 5 === 0) {
+      const waitedMin = ((Date.now() - startedAt) / 60000).toFixed(1);
       console.log(
-        "[Listening...] Waiting for Application Form (#name) to load in any tab...",
+        `[Listening...] Waiting for Application Form (#name) in any tab... (${waitedMin} min)`,
       );
+    }
+    if (Date.now() - startedAt > maxWaitMs) {
+      console.log(
+        `[Timeout] Application form never appeared after ${(maxWaitMs / 60000).toFixed(0)} min — closing the browser to avoid a stuck run.`,
+      );
+      try {
+        const b = context.browser();
+        if (b) await b.close();
+      } catch (_) {}
+      process.exit(2);
     }
     await new Promise((resolve) => setTimeout(resolve, 1500));
   }
@@ -1373,11 +1433,12 @@ or
   try {
     const raw = await callAIWithFallback(prompt, base64Screenshot);
     if (!raw) return null;
-    const cleaned = raw
-      .replace(/^```[\w]*\n?/gm, "")
-      .replace(/```$/gm, "")
-      .trim();
-    return JSON.parse(cleaned);
+    const parsed = parseAiJson(raw);
+    if (parsed) return parsed;
+    console.log(
+      `[AI] Parse error: response was not valid JSON — ${String(raw).slice(0, 140)}`,
+    );
+    return null;
   } catch (e) {
     console.log(`[AI] Parse error: ${e.message}`);
     return null;
@@ -1548,6 +1609,254 @@ async function tickDeclarationCheckbox(page) {
 }
 
 // ΓöÇΓöÇ HANDLE OPTIONAL SECTIONS (Masters, Job Experience) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── JOB EXPERIENCE SECTION (always-visible variant) ─────────────────────────
+// Older Teletalk forms hide the experience block behind a checkbox; newer
+// forms (e.g. Parjatan's Programmer post) render an empty required row.
+// This fills the block from profile.experience when data exists.
+// Supported shape (single object or array of objects):
+//   { organization, designation, employedOn, address, lengthOfService,
+//     description, currentlyWorking }
+async function fillExperienceSection(page, profile) {
+  try {
+    const raw = profile && profile.experience;
+    const entries = Array.isArray(raw)
+      ? raw.filter(Boolean)
+      : raw && (raw.organization || raw.designation || raw.employer)
+        ? [raw]
+        : [];
+
+    const headingCount = await page
+      .locator("text=/job\\s*experienc|employment\\s*histor/i")
+      .first()
+      .count()
+      .catch(() => 0);
+    const addMore = page
+      .locator('button:has-text("ADD MORE"), a:has-text("ADD MORE")')
+      .first();
+    const hasAddMore = await addMore.count().catch(() => 0);
+    if (!headingCount && !hasAddMore) return false;
+
+    if (!entries.length) {
+      console.log(
+        "[Experience] Job Experience section is on this form but profile.experience is empty. The portal may block Submit until it is filled — add your experience to the profile so it can be filled automatically.",
+      );
+      return false;
+    }
+
+    console.log(
+      `[Experience] Filling Job Experience (${entries.length} entr${entries.length === 1 ? "y" : "ies"})...`,
+    );
+
+    // Map every visible label/cell to its form control in one DOM pass.
+    const fields = await page
+      .evaluate(() => {
+        const out = [];
+        let marker = 0;
+        const nodes = Array.from(
+          document.querySelectorAll(
+            "label, .form-label, .col-form-label, td, th",
+          ),
+        ).slice(0, 1500);
+        for (const el of nodes) {
+          const text = (el.innerText || "").replace(/\s+/g, " ").trim();
+          if (!text || text.length > 80) continue;
+          let target = null;
+          if (el.tagName === "LABEL" && el.htmlFor) {
+            target = document.getElementById(el.htmlFor);
+          }
+          if (!target && el.tagName === "LABEL") {
+            target = el.querySelector(
+              "input:not([type=hidden]), select, textarea",
+            );
+          }
+          if (!target && el.nextElementSibling) {
+            const nb = el.nextElementSibling;
+            if (/^(INPUT|SELECT|TEXTAREA)$/.test(nb.tagName)) target = nb;
+            else
+              target = nb.querySelector(
+                "input:not([type=hidden]), select, textarea",
+              );
+          }
+          if (!target && el.parentElement) {
+            target = el.parentElement.querySelector(
+              "input:not([type=hidden]), select, textarea",
+            );
+          }
+          if (!target || target.type === "hidden") continue;
+          let selector;
+          if (target.id) {
+            selector = "#" + CSS.escape(target.id);
+          } else {
+            marker += 1;
+            target.setAttribute("data-ja-exp", String(marker));
+            selector = '[data-ja-exp="' + marker + '"]';
+          }
+          out.push({
+            text,
+            selector,
+            tag: target.tagName.toLowerCase(),
+            type: (target.getAttribute("type") || "").toLowerCase(),
+          });
+        }
+        return out;
+      })
+      .catch(() => []);
+
+    const findField = (re, position) => {
+      const matches = fields.filter((f) => re.test(f.text));
+      if (!matches.length) return null;
+      return position === "last" ? matches[matches.length - 1] : matches[0];
+    };
+
+    const setText = async (el, value) => {
+      if (
+        !el ||
+        value === undefined ||
+        value === null ||
+        String(value).trim() === ""
+      )
+        return false;
+      const v = String(value).trim();
+      await el.click({ force: true }).catch(() => {});
+      const ok = await el
+        .fill(v)
+        .then(() => true)
+        .catch(() => false);
+      if (!ok) {
+        await el
+          .evaluate((node, val) => {
+            node.value = val;
+            node.dispatchEvent(new Event("input", { bubbles: true }));
+            node.dispatchEvent(new Event("change", { bubbles: true }));
+          }, v)
+          .catch(() => {});
+      }
+      return true;
+    };
+
+    const setSelect = async (el, wanted) => {
+      if (!el || !wanted) return false;
+      const picked = await el
+        .evaluate((node, wantedText) => {
+          const n = (s) =>
+            String(s || "")
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, "");
+          const want = n(wantedText);
+          const opts = Array.from(node.options || []);
+          const match =
+            opts.find((o) => n(o.text) === want) ||
+            opts.find((o) => n(o.text).includes(want) && want.length > 2) ||
+            opts.find((o) => want.includes(n(o.text)) && n(o.text).length > 2);
+          if (!match) return null;
+          node.value = match.value;
+          node.dispatchEvent(new Event("input", { bubbles: true }));
+          node.dispatchEvent(new Event("change", { bubbles: true }));
+          return match.text;
+        }, String(wanted))
+        .catch(() => null);
+      if (picked) console.log(`[Experience] Selected "${picked}"`);
+      return Boolean(picked);
+    };
+
+    const setDate = async (el, value, meta) => {
+      if (!el || !value) return false;
+      if (meta && meta.tag === "select") return setSelect(el, value);
+      const v = String(value).trim();
+      const d = new Date(v);
+      const iso = !isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : v;
+      const us = !isNaN(d.getTime())
+        ? `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`
+        : v;
+      const use = meta && meta.type === "date" ? iso : v;
+      const ok = await el
+        .fill(use)
+        .then(() => true)
+        .catch(() => false);
+      if (!ok) await el.fill(us).catch(() => {});
+      return true;
+    };
+
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i] || {};
+      if (i > 0) {
+        if (!hasAddMore) {
+          console.log(
+            "[Experience] No ADD MORE button found — extra entries skipped.",
+          );
+          break;
+        }
+        await addMore.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(800);
+        console.log(`[Experience] Added row #${i + 1}.`);
+      }
+      const position = i > 0 ? "last" : "first";
+
+      const employed = e.employedOn || e.employed_on || e.since || e.from;
+      const org = e.organization || e.employer || e.company;
+      const desig = e.designation || e.designationPost || e.post || e.title;
+      const addr = e.address || e.organizationAddress;
+      const length = e.lengthOfService || e.length_of_service || e.duration;
+      const desc = e.description || e.jobDescription || e.duties;
+
+      if (employed) {
+        const f = findField(/^employed\s*on/i, position);
+        if (f) await setDate(page.locator(f.selector).first(), employed, f);
+        else console.log("[Experience] 'Employed on' control not found.");
+      }
+      if (org) {
+        const f = findField(/^organization\b/i, position);
+        if (f) {
+          await setText(page.locator(f.selector).first(), org);
+          console.log(`[Experience] Organization: ${org}`);
+        } else console.log("[Experience] 'Organization' input not found.");
+      }
+      if (desig) {
+        const f = findField(/^designation/i, position);
+        if (f) {
+          const el = page.locator(f.selector).first();
+          const ok =
+            f.tag === "select" ? await setSelect(el, desig) : await setText(el, desig);
+          if (!ok)
+            console.log(`[Experience] Could not set Designation "${desig}".`);
+        } else console.log("[Experience] 'Designation' control not found.");
+      }
+      if (addr) {
+        const f = findField(/^address\b/i, position);
+        if (f) await setText(page.locator(f.selector).first(), addr);
+      }
+      if (length) {
+        const f = findField(/^length\s*of\s*service/i, position);
+        if (f) {
+          const el = page.locator(f.selector).first();
+          if (f.tag === "select") await setSelect(el, length);
+          else await setText(el, length);
+        }
+      }
+      if (desc) {
+        const f = findField(/^job\s*description/i, position);
+        if (f) await setText(page.locator(f.selector).first(), desc);
+      }
+      if (e.currentlyWorking) {
+        const f = findField(/currently\s*working/i, position);
+        if (f && f.type === "checkbox") {
+          await page
+            .locator(f.selector)
+            .first()
+            .check({ force: true })
+            .catch(() => {});
+          console.log("[Experience] Marked 'Currently working'.");
+        }
+      }
+    }
+    console.log("[Experience] Job Experience section filled from profile.");
+    return true;
+  } catch (e) {
+    console.log(`[Experience] ${e.message}`);
+    return false;
+  }
+}
+
 async function handleOptionalSections(page, profile) {
   try {
     const hasGraduation = Boolean(
@@ -1720,6 +2029,9 @@ async function handleOptionalSections(page, profile) {
         }
       }
     }
+    // Newer Teletalk forms render the Job Experience block directly (no
+    // checkbox), so fill it from profile.experience whenever data exists.
+    await fillExperienceSection(page, profile);
   } catch (e) {
     console.log(`[Optional Sections] ${e.message}`);
   }
@@ -2140,11 +2452,11 @@ Respond ONLY with a valid JSON array (no markdown, no explanation):
       console.log("[AI Scan] No AI response");
       return;
     }
-    const cleaned = raw
-      .replace(/^```[\w]*\n?/gm, "")
-      .replace(/```$/gm, "")
-      .trim();
-    const actionsRaw = JSON.parse(cleaned);
+    const actionsRaw = parseAiJson(raw);
+    if (!actionsRaw || !Array.isArray(actionsRaw)) {
+      console.log("[AI Scan] Response was not a valid JSON array");
+      return;
+    }
 
     const nonSkip = actionsRaw.filter((a) => a.action !== "skip");
     if (nonSkip.length > 0) {
@@ -2526,11 +2838,7 @@ or {"type":"wait","reason":"page loading"}`;
   try {
     const raw = await callAIWithFallback(prompt, base64Screenshot);
     if (!raw) return null;
-    const cleaned = raw
-      .replace(/^```[\w]*\n?/gm, "")
-      .replace(/```$/gm, "")
-      .trim();
-    return JSON.parse(cleaned);
+    return parseAiJson(raw);
   } catch {
     return null;
   }
@@ -2663,7 +2971,15 @@ async function sendVerificationEmail(inferredFields, host) {
 }
 
 // ΓöÇΓöÇ PDF DOWNLOAD + EMAIL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+let lastApplicationEmailAt = 0;
+
 async function downloadAndEmailPdf(page, profile) {
+  if (Date.now() - lastApplicationEmailAt < 120000) {
+    console.log(
+      "[Email] Skipping duplicate PDF email (one was already sent moments ago for this run).",
+    );
+    return;
+  }
   try {
     const dlDir = path.join(__dirname, "..", "data", "downloads");
     await fs.mkdir(dlDir, { recursive: true }).catch(() => {});
@@ -2793,6 +3109,7 @@ async function emailPdfAttachment(pdfPath, filename, profile) {
       </div>`,
     attachments: [{ filename, path: pdfPath, contentType: "application/pdf" }],
   });
+  lastApplicationEmailAt = Date.now();
   console.log(
     `≡ƒôº [Email] Application PDF sent ΓÇö To: ${toStr}${ccStr ? " | Cc: " + ccStr : ""} (From: ${process.env.SMTP_FROM || smtpUser})`,
   );
@@ -3107,11 +3424,7 @@ or {"action":"skip","reason":"field not on this page"}`;
   try {
     const raw = await callAIWithFallback(prompt, screenshot.toString("base64"));
     if (!raw) return null;
-    const cleaned = raw
-      .replace(/^```[\w]*\n?/gm, "")
-      .replace(/```$/gm, "")
-      .trim();
-    return JSON.parse(cleaned);
+    return parseAiJson(raw);
   } catch {
     return null;
   }

@@ -33,7 +33,7 @@ export function getAIConfig() {
       id: "groq",
       name: "Groq (Ultra-Fast)",
       key: process.env.GROQ_API_KEY || "",
-      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+      model: process.env.GROQ_MODEL || "qwen/qwen3.8-27b",
       configured: Boolean(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim()),
       hasVision: true,
       freeTier: "30 RPM Free tier",
@@ -68,7 +68,7 @@ export async function saveAIConfig(newConfig) {
   if (newConfig.openrouterKey !== undefined) updates["OPENROUTER_API_KEY"] = newConfig.openrouterKey.trim();
   if (newConfig.openrouterModel !== undefined) updates["OPENROUTER_MODEL"] = newConfig.openrouterModel.trim();
   if (newConfig.groqKey !== undefined) updates["GROQ_API_KEY"] = newConfig.groqKey.trim();
-  if (newConfig.groqModel !== undefined) updates["GROQ_MODEL"] = newConfig.groqModel.trim() || "llama-3.3-70b-versatile";
+  if (newConfig.groqModel !== undefined) updates["GROQ_MODEL"] = newConfig.groqModel.trim() || "qwen/qwen3.8-27b";
   if (newConfig.cfAccountId !== undefined) updates["CF_ACCOUNT_ID"] = newConfig.cfAccountId.trim();
   if (newConfig.cfApiToken !== undefined) updates["CF_API_TOKEN"] = newConfig.cfApiToken.trim();
   if (newConfig.cfModel !== undefined) updates["CF_MODEL"] = newConfig.cfModel.trim();
@@ -112,7 +112,7 @@ export async function testAIProvider(providerName, overrides = {}) {
       responseText = await callOpenRouterAPI(testPrompt, null, { key: apiKey });
     } else if (providerName === "groq") {
       const apiKey = key !== undefined ? key : process.env.GROQ_API_KEY;
-      const model = overrides.model || process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+      const model = overrides.model || process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
       if (!apiKey) throw new Error("Groq API Key is empty");
       responseText = await callGroqAPI(testPrompt, null, { key: apiKey, model });
     } else if (providerName === "cloudflare") {
@@ -152,7 +152,7 @@ export async function callGeminiAPI(prompt, base64Image = null, opts = {}) {
   let requestedModel = opts.model || process.env.GEMINI_MODEL || "gemini-3.6-flash";
   if (!apiKey) return null;
 
-  const candidateModels = [requestedModel, "gemini-3.6-flash", "gemini-3.7-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"];
+  const candidateModels = [requestedModel, "gemini-3.6-flash", "gemini-3.7-flash", "gemini-flash-latest", "gemini-flash-lite-latest"];
   const uniqueModels = Array.from(new Set(candidateModels.filter(Boolean)));
 
   const parts = [{ text: prompt }];
@@ -187,6 +187,7 @@ export async function callGeminiAPI(prompt, base64Image = null, opts = {}) {
       if (text) return text;
     } catch (e) {
       lastErr = e;
+      if (e.name === "TimeoutError" || e.name === "AbortError") break; // network stall: don't burn 5 x 15s on the remaining models
     }
   }
 
@@ -270,14 +271,15 @@ export async function callGroqAPI(prompt, base64Image = null, opts = {}) {
 
   const modelCandidates = base64Image
     ? [
-        ...(requestedModel ? [requestedModel] : []),
-        "llama-3.2-11b-vision-preview",
-        "llama-3.2-90b-vision-preview",
-        "llama-3.3-70b-versatile"
+        // Groq's current multimodal model (llama-3.2-90b-vision-preview was
+        // decommissioned in 2026). Requested model is tried after the known-good
+        // vision model so a stale GROQ_MODEL pin in .env can't break vision.
+        "qwen/qwen3.8-27b",
+        ...(requestedModel ? [requestedModel] : [])
       ]
     : [
         ...(requestedModel ? [requestedModel] : []),
-        "llama-3.3-70b-versatile",
+        "qwen/qwen3.8-27b",
         "llama-3.1-8b-instant"
       ];
 
@@ -368,6 +370,14 @@ export async function callCloudflareAPI(prompt, base64Image = null, opts = {}) {
 // Tracks providers that have failed this process run so they are never retried.
 // Reset by restarting the script. Exported so callers can also read/clear it.
 export const sessionBlacklist = new Set();
+// Counts failures per provider. A single transient error (429, timeout) must
+// not remove a provider for the whole run; we only blacklist after 2 misses.
+const providerFailureCounts = new Map();
+function recordProviderFailure(name) {
+  const n = (providerFailureCounts.get(name) || 0) + 1;
+  providerFailureCounts.set(name, n);
+  if (n >= 2) sessionBlacklist.add(name);
+}
 
 // ── UNIFIED MULTI-PROVIDER CASCADE ───────────────────────────────────────────
 // Priority order: Gemini → Groq → Cloudflare → OpenRouter
@@ -410,12 +420,12 @@ export async function callAIWithCascade(prompt, base64Image = null, opts = {}) {
         console.log(`[🤖 AI Cascade] ✅ ${name} responded in ${ms}ms!`);
         return result;
       }
-      // Empty response counts as a soft failure — blacklist & try next
-      console.log(`[🤖 AI Cascade] ⚠️ ${name} returned empty response — blacklisting for this session.`);
-      sessionBlacklist.add(name);
+      // Empty response counts as a soft failure — try next provider
+      console.log(`[🤖 AI Cascade] ⚠️ ${name} returned empty response.`);
+      recordProviderFailure(name);
     } catch (err) {
       console.log(`[🤖 AI Cascade] ⚠️ ${name} error: ${err.message}`);
-      sessionBlacklist.add(name);
+      recordProviderFailure(name);
       const remaining = eligible.slice(i + 1).filter(p => !sessionBlacklist.has(p.name));
       if (remaining.length > 0) {
         console.log(`[🤖 AI Cascade] 🔄 Falling back to ${remaining[0].name}...`);
