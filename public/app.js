@@ -1621,6 +1621,14 @@ function startAutofillPolling() {
             badge.textContent = "COMPLETED";
             badge.style.color = "#34d399";
           }
+          // Show the verification screenshot the agent saved after filling.
+          const shot = document.getElementById("cfPlaywrightScreenshotImg");
+          const shotBox = document.getElementById("cfPlaywrightScreenshotContainer");
+          if (shot && shotBox) {
+            shot.onerror = () => { shotBox.style.display = "none"; };
+            shot.src = `/screenshots/autofill-preview.png?t=${Date.now()}`;
+            shotBox.style.display = "block";
+          }
           stopAutofillPolling();
         }
       }
