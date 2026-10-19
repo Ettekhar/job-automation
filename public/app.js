@@ -12,6 +12,21 @@ let defaultNotifyEmail = "";
 let rawAllJobsCache = [];
 let rawAllNoticesCache = [];
 
+// Global session guard: a 401 on any live API call (expired/missing login
+// cookie — e.g. after the public tunnel URL changes) sends the user to the
+// login page instead of leaving buttons silently failing.
+const __nativeFetch = window.fetch.bind(window);
+window.fetch = async function (input, init) {
+  const res = await __nativeFetch(input, init);
+  try {
+    const url = typeof input === "string" ? input : (input && input.url) || "";
+    if (res.status === 401 && url.includes("/api/") && !url.includes("/api/auth/")) {
+      window.location.href = "/login.html";
+    }
+  } catch (_) {}
+  return res;
+};
+
 // Safe JSON fetch with automatic static asset fallback for Cloudflare Pages
 async function safeJsonFetch(primaryUrl, fallbackUrl) {
   try {
@@ -1156,7 +1171,7 @@ async function triggerScrape(dryRun = false) {
     });
     const data = await res.json();
     if (!data.success) {
-      showToast(data.message, "error");
+      showToast(data.error || data.message || "Could not launch the scraper. Please log in again.", "error");
     } else {
       loadOverview();
     }
@@ -1602,7 +1617,7 @@ async function executeDesktopAutofill() {
       showToast("Playwright browser window popped up on your desktop!", "success");
     } else {
       appendAutofillLog(`❌ ${data.message || "Launch failed"}`, "error");
-      showToast(data.message, "error");
+      showToast(data.error || data.message || "Could not launch the autofill browser.", "error");
     }
   } catch (err) {
     appendAutofillLog(`❌ Error: ${err.message}`, "error");

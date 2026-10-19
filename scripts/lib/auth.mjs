@@ -16,7 +16,11 @@ import { SignJWT, jwtVerify } from "jose";
 import { createHash } from "node:crypto";
 
 const COOKIE_NAME = "__session";
-const TOKEN_EXPIRY = "24h";
+// Long-lived session so the dashboard stays usable between visits. Note: the
+// cookie is still per-origin, so a NEW public tunnel URL always requires one
+// fresh login (browsers do not share cookies between different hostnames).
+const TOKEN_EXPIRY = "30d";
+const COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 function getSecret() {
   const s = process.env.AUTH_SECRET;
@@ -52,7 +56,7 @@ export function setSessionCookie(res, token) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: COOKIE_MAX_AGE_MS,
     path: "/",
   });
 }
