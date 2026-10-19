@@ -37,6 +37,13 @@ $env:GIT_TERMINAL_PROMPT = "0"
 $env:GCM_INTERACTIVE = "never"
 # rebase --continue must never try to open an editor in a background run.
 $env:GIT_EDITOR = "true"
+# Git identity for every commit this runner creates (data commits, rebase
+# replays, conflict-resolved continues). Without it, a rebase --continue
+# fails with "Committer identity unknown" on a machine with no git config.
+$env:GIT_AUTHOR_NAME = "bb-local-runner"
+$env:GIT_AUTHOR_EMAIL = "bb-local-runner@users.noreply.github.com"
+$env:GIT_COMMITTER_NAME = "bb-local-runner"
+$env:GIT_COMMITTER_EMAIL = "bb-local-runner@users.noreply.github.com"
 
 $log = Join-Path $repoRoot "data\bb-local-run.log"
 if (-not (Test-Path (Split-Path $log))) { New-Item -ItemType Directory -Path (Split-Path $log) -Force | Out-Null }
@@ -74,7 +81,7 @@ function Resolve-RebaseIfNeeded([string]$context) {
         node (Join-Path $repoRoot "scripts\lib\resolveDataConflict.mjs") 2>&1 |
             ForEach-Object { Add-Content -Path $log -Value "    $_" -Encoding UTF8 }
         Run "git" @("add", "-A") | Out-Null
-        Run "git" @("-c", "core.editor=true", "rebase", "--continue") | Out-Null
+        Run "git" @("-c", "core.editor=true", "-c", "user.name=bb-local-runner", "-c", "user.email=bb-local-runner@users.noreply.github.com", "rebase", "--continue") | Out-Null
         if (-not (Test-RebaseOrMergeInProgress)) { Log "conflicts resolved ($context)"; return }
     }
     Log "could not finish the rebase - aborting it so the repo stays usable ($context)"
@@ -133,7 +140,17 @@ if ($LASTEXITCODE -ne 0) {
     $pushed = $false
     for ($i = 1; $i -le 3; $i++) {
         $pullCode = Run "git" @("pull", "--rebase", "--autostash")
-        if ($pullCode -ne 0) { Resolve-RebaseIfNeeded "push attempt $i" }
+        if ($pullCode -ne 0) {
+            Resolve-RebaseIfNeeded "push attempt $i"
+            # A conflict-merge can leave the derived dashboard files stale;
+            # rebuild them from the merged data before pushing.
+            Run "npm" @("run", "build")
+            Run "git" @("add", "data", "public") | Out-Null
+            & git diff --staged --quiet
+            if ($LASTEXITCODE -ne 0) {
+                Run "git" @("commit", "--amend", "--no-edit") | Out-Null
+            }
+        }
         $code = Run "git" @("push")
         if ($code -eq 0) { Log "push ok (attempt $i)"; $pushed = $true; break }
         Log "push attempt $i failed - retrying in 10s"
