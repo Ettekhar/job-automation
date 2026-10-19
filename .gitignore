@@ -5,6 +5,7 @@ profile.json
 .env.*
 data/downloads/
 data/settings.json
+data/field-audit-*.json
 application/*
 !application/.gitkeep
 config/*.jpg

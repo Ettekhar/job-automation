@@ -61,8 +61,8 @@ const postTitle = getArg("post");
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
-// ΓöÇΓöÇ HOISTED TO MODULE SCOPE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-// ΓöÇΓöÇ SERVER DEPLOYMENT: always headless ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── HOISTED TO MODULE SCOPE ──────────────────────────────────────────────
+// ── SERVER DEPLOYMENT: always headless ───────────────────────────────────
 // Forced to `true` unconditionally -- no local desktop/display is
 // attached on the server, so a visible browser window can never be
 // shown there anyway. The old `--headed` flag is intentionally ignored
@@ -71,7 +71,7 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 let isHeadless = true;
 let selectedPostLabel = "";
 
-// ΓöÇΓöÇ Multi-provider AI cascade (Gemini ΓåÆ Groq ΓåÆ Cloudflare ΓåÆ OpenRouter) ΓöÇΓöÇ
+// ── Multi-provider AI cascade (Gemini → Groq → Cloudflare → OpenRouter) ──
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 const CF_ACCOUNT_ID = process.env.CF_ACCOUNT_ID || "";
@@ -159,19 +159,19 @@ async function preflightCheckUploadFiles(profile) {
     .catch(() => false);
 
   console.log(
-    "\n≡ƒôï [Preflight] Checking photo/signature files in this environment...",
+    "\n📋 [Preflight] Checking photo/signature files in this environment...",
   );
   console.log(
-    `   Photo:     ${photoPath}  ${photoExists ? "Γ£à found" : "Γ¥î MISSING"}`,
+    `   Photo:     ${photoPath}  ${photoExists ? "✅ found" : "❌ MISSING"}`,
   );
   console.log(
-    `   Signature: ${sigPath}  ${sigExists ? "Γ£à found" : "Γ¥î MISSING"}`,
+    `   Signature: ${sigPath}  ${sigExists ? "✅ found" : "❌ MISSING"}`,
   );
 
   if (!photoExists || !sigExists) {
     console.log("");
     console.log(
-      "ΓÜá∩╕Å  [Preflight] One or both files are missing HERE, in the environment actually",
+      "⚠️  [Preflight] One or both files are missing HERE, in the environment actually",
     );
     console.log(
       "    running this script. If you already have these files on your own machine,",
@@ -200,12 +200,12 @@ async function main() {
   // On a local desktop run set AUTOFILL_HEADED=true to launch a VISIBLE
   // Chromium window so you can watch the agent fill the form live.
   isHeadless = process.env.AUTOFILL_HEADED === "true" ? false : true;
-  console.log(`≡ƒÜÇ Launching Playwright Chromium (headless: ${isHeadless})...`);
+  console.log(`🚀 Launching Playwright Chromium (headless: ${isHeadless})...`);
   const browser = await chromium.launch({
     headless: isHeadless,
     args: [
       // "--headless=new" forces Chrome's newer headless mode exclusively and
-      // is ONLY valid when actually heading headless ΓÇö including it in a
+      // is ONLY valid when actually heading headless — including it in a
       // headed (visible-window) run would silently force headless anyway.
       ...(isHeadless
         ? [
@@ -231,7 +231,7 @@ async function main() {
   const page = await context.newPage();
 
   if (startUrl) {
-    console.log(`≡ƒîÉ Navigating to: ${startUrl}`);
+    console.log(`🌐 Navigating to: ${startUrl}`);
     await page.goto(startUrl).catch((e) => {
       console.log(`Page load note: ${e.message}`);
     });
@@ -243,7 +243,7 @@ async function main() {
 
   let formPage = null;
   if (postTitle) {
-    console.log(`\n≡ƒÜÇ Starting smart navigation for "${postTitle}"...`);
+    console.log(`\n🚀 Starting smart navigation for "${postTitle}"...`);
     formPage = await smartNavigate(page, context, postTitle);
   }
 
@@ -255,30 +255,30 @@ async function main() {
   console.log("\n=======================================================");
   console.log(
     isHeadless
-      ? "≡ƒæÇ HEADLESS CHROMIUM RUNNING (no window will open)"
-      : "≡ƒûÑ∩╕Å VISIBLE CHROMIUM WINDOW OPENED ΓÇö watch the agent fill the form live!",
+      ? "👀 HEADLESS CHROMIUM RUNNING (no window will open)"
+      : "🖥️ VISIBLE CHROMIUM WINDOW OPENED — watch the agent fill the form live!",
   );
   console.log("=======================================================\n");
 
   if (!formPage) {
-    console.log("\n≡ƒæë Waiting for application form (#name) in browser...");
+    console.log("\n👉 Waiting for application form (#name) in browser...");
     formPage = await waitForApplicationForm(context);
   }
 
-  console.log("\n≡ƒÄ» Application Form detected! Filling in all details now...");
+  console.log("\n🎯 Application Form detected! Filling in all details now...");
   // Enable "If Applicable" blocks (Graduation / Masters / Experience) BEFORE
   // filling fields, otherwise those inputs are still disabled and stay empty.
   await tickIfApplicableSections(formPage, profile);
 
   try {
     await fillMainForm(formPage, profile);
-    console.log("Γ£à Known fields filled!");
+    console.log("✅ Known fields filled!");
   } catch (err) {
     if (/closed|disconnected|crash/i.test(err.message)) {
       console.log(
-        "ΓÜá∩╕Å The browser window closed while filling the form. If you closed " +
-          "it yourself, leave it open next time until ΓÇ£Γ£à Known fields filled!ΓÇ¥ " +
-          "appears in the dashboard Logs ΓÇö then itΓÇÖs safe to review and submit.",
+        "⚠️ The browser window closed while filling the form. If you closed " +
+          "it yourself, leave it open next time until “✅ Known fields filled!” " +
+          "appears in the dashboard Logs — then it’s safe to review and submit.",
       );
     }
     throw err;
@@ -290,18 +290,41 @@ async function main() {
   // --- Organization Choice dual-list (Available -> Selected) ---
   await fillOrganizationChoices(formPage);
 
+  // --- Address integrity guard ("Same as Present Address" must stay off) ---
+  await ensureAddressIntegrity(formPage, profile).catch((e) =>
+    console.log(`[Address] Guard failed: ${e.message}`),
+  );
+
+  // --- Manual test hook: fill + audit, never CAPTCHA/submit ---
+  if (process.env.AUTOFILL_DRY_RUN === "1") {
+    await tickDeclarationCheckbox(formPage);
+    await ensureAddressIntegrity(formPage, profile).catch(() => {});
+    await auditFormFields(formPage);
+    console.log(
+      "\n🧪 DRY RUN — form filled and audited. Skipping CAPTCHA and submit.",
+    );
+    await browser.close().catch(() => {});
+    process.exit(0);
+  }
+
   if (hasAnyAI) {
-    console.log("≡ƒñû Reading and solving CAPTCHA with AI Vision cascade...");
+    console.log("🤖 Reading and solving CAPTCHA with AI Vision cascade...");
     await solveCaptchaRobust(formPage);
   }
 
   await tickDeclarationCheckbox(formPage);
 
+  // --- Re-verify addresses after the declaration tick (defensive) ---
+  await ensureAddressIntegrity(formPage, profile).catch(() => {});
+
+  // --- Report every field + anything still missing ---
+  await auditFormFields(formPage);
+
   await logInvalidRequiredFields(formPage);
   const submitted = await findAndClickSubmit(formPage);
   if (!submitted) {
     console.log("\n-------------------------------------------------------");
-    console.log("Γ£¿ Form filled! CAPTCHA read, Declaration ticked.");
+    console.log("✨ Form filled! CAPTCHA read, Declaration ticked.");
     console.log("  \u2192 Review in the browser, then click Submit.");
     console.log("  \u2192 Type 'r' in terminal to re-read CAPTCHA if needed.");
     console.log("-------------------------------------------------------\n");
@@ -334,7 +357,7 @@ async function main() {
     await formPage
       .screenshot({ path: shotPath, fullPage: true })
       .catch(() => {});
-    console.log(`≡ƒô╕ Form verification screenshot saved to: ${shotPath}`);
+    console.log(`📸 Form verification screenshot saved to: ${shotPath}`);
   } catch (err) {
     // ignore screenshot failure
   }
@@ -344,7 +367,7 @@ async function main() {
   await keepAlive(browser, formPage);
 }
 
-// ΓöÇΓöÇ ROBUST SUBMIT BUTTON DETECTION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── ROBUST SUBMIT BUTTON DETECTION ───────────────────────────────────────────
 const STRICT_SUBMIT_SEL = [
   "input[type=submit]",
   "button[type=submit]",
@@ -386,7 +409,7 @@ async function verifyCaptchaBeforeSubmit(formPage) {
     if (current && current.trim() === lastSolvedCaptcha) return;
 
     console.log(
-      `[CAPTCHA] ΓÜá∩╕Å Field value ("${current}") doesn't match solved CAPTCHA ("${lastSolvedCaptcha}") -- re-typing before submit...`,
+      `[CAPTCHA] ⚠️ Field value ("${current}") doesn't match solved CAPTCHA ("${lastSolvedCaptcha}") -- re-typing before submit...`,
     );
     await el.scrollIntoViewIfNeeded().catch(() => {});
     await el.click({ force: true }).catch(() => {});
@@ -481,7 +504,7 @@ async function findAndClickSubmit(
     })
     .catch(() => {});
 
-  console.log("≡ƒƒó Submitting form...");
+  console.log("🟢 Submitting form...");
   await formPage.waitForTimeout(600);
 
   const startUrlBeforeClick = formPage.url();
@@ -502,21 +525,21 @@ async function findAndClickSubmit(
     formPage.off("dialog", dialogHandler);
 
     if (formPage.url() !== startUrlBeforeClick) {
-      console.log("Γ£à Form submitted!");
+      console.log("✅ Form submitted!");
       return true;
     }
 
     const rejection = await detectSubmitRejection(formPage, dialogMessage);
     if (rejection) {
-      console.log(`ΓÜá∩╕Å Submit was rejected by the site: "${rejection}"`);
+      console.log(`⚠️ Submit was rejected by the site: "${rejection}"`);
       if (i < maxClicks - 1) {
-        console.log("≡ƒöä Getting a fresh CAPTCHA and retrying submit...");
+        console.log("🔄 Getting a fresh CAPTCHA and retrying submit...");
         const refreshed = await refreshCaptchaImage(formPage).catch(
           () => false,
         );
         if (!refreshed) {
           console.log(
-            "ΓÜá∩╕Å Couldn't find a CAPTCHA refresh control -- re-reading the same image (may repeat the same rejected value).",
+            "⚠️ Couldn't find a CAPTCHA refresh control -- re-reading the same image (may repeat the same rejected value).",
           );
         }
         await solveCaptchaRobust(formPage);
@@ -524,7 +547,7 @@ async function findAndClickSubmit(
         continue;
       }
       console.log(
-        "Γ¥î Ran out of retries -- please solve the CAPTCHA and submit manually in the browser.",
+        "❌ Ran out of retries -- please solve the CAPTCHA and submit manually in the browser.",
       );
       return false;
     }
@@ -533,7 +556,7 @@ async function findAndClickSubmit(
       ? await handle.evaluate((el) => el.isConnected).catch(() => false)
       : await submitBtn.count().catch(() => 0);
     if (!stillAttached) {
-      console.log("Γ£à Form submitted!");
+      console.log("✅ Form submitted!");
       return true;
     }
 
@@ -541,13 +564,13 @@ async function findAndClickSubmit(
   }
 
   console.log(
-    "Γ¥ô Clicked Submit but couldn't confirm it went through (no page change, no error message either) -- please check the browser and submit manually if needed.",
+    "❓ Clicked Submit but couldn't confirm it went through (no page change, no error message either) -- please check the browser and submit manually if needed.",
   );
   return false;
 }
 
 const REJECTION_TEXT_RE =
-  /wrong\s*(verification|captcha|code)|invalid\s*(captcha|code|verification)|(captcha|code|verification).{0,20}(not\s*match|incorrect|invalid|wrong|mismatch)|does not match|αª¡αºüαª▓|αª╕αªáαª┐αªò\s*αª¿αª»αª╝|αªåαª¼αª╛αª░\s*αªÜαºçαª╖αºìαªƒαª╛/i;
+  /wrong\s*(verification|captcha|code)|invalid\s*(captcha|code|verification)|(captcha|code|verification).{0,20}(not\s*match|incorrect|invalid|wrong|mismatch)|does not match|ভুল|সঠিক\s*নয়|আবার\s*চেষ্টা/i;
 
 async function detectSubmitRejection(page, dialogMessage) {
   if (dialogMessage && REJECTION_TEXT_RE.test(dialogMessage))
@@ -666,11 +689,11 @@ function keepAlive(browser, page) {
       }
     } else {
       // Headed (visible-window) runs: keep the browser alive until the user
-      // (or a crash) closes the window ΓÇö no auto-close that would kill the
+      // (or a crash) closes the window — no auto-close that would kill the
       // preview while the user is still reviewing the filled form.
       if (isHeadless) {
         const timer = setTimeout(async () => {
-          console.log("ΓÅ▒∩╕Å Headless session finished. Closing browser.");
+          console.log("⏱️ Headless session finished. Closing browser.");
           await browser.close().catch(() => {});
           resolve();
         }, 180000);
@@ -740,7 +763,7 @@ async function solveCaptcha(page) {
   }
 
   if (!captchaImg) {
-    console.log("ΓÜá∩╕Å Couldn't find a CAPTCHA image on this page.");
+    console.log("⚠️ Couldn't find a CAPTCHA image on this page.");
     return null;
   }
 
@@ -749,18 +772,18 @@ async function solveCaptcha(page) {
     await captchaImg.scrollIntoViewIfNeeded().catch(() => {});
     buffer = await captchaImg.screenshot();
   } catch (err) {
-    console.log(`ΓÜá∩╕Å Couldn't screenshot the CAPTCHA image: ${err.message}`);
+    console.log(`⚠️ Couldn't screenshot the CAPTCHA image: ${err.message}`);
     return null;
   }
 
   const text = await readCaptchaWithAI(buffer.toString("base64"));
   if (!text) {
-    console.log("≡ƒñû AI couldn't read the CAPTCHA -- please type it manually.");
+    console.log("🤖 AI couldn't read the CAPTCHA -- please type it manually.");
     return null;
   }
 
   const cleanedText = text.replace(/[^a-zA-Z0-9]/g, "").trim();
-  console.log(`≡ƒñû CAPTCHA solved: "${cleanedText}" (raw: "${text.trim()}")`);
+  console.log(`🤖 CAPTCHA solved: "${cleanedText}" (raw: "${text.trim()}")`);
 
   const inputSelectors = [
     "#captcha",
@@ -831,10 +854,10 @@ async function solveCaptcha(page) {
     await page.waitForTimeout(200).catch(() => {});
     lastSolvedCaptcha = cleanedText;
     lastCaptchaInputSelector = matchedCaptchaSelector;
-    console.log(`Γ£à CAPTCHA "${cleanedText}" typed into input box.`);
+    console.log(`✅ CAPTCHA "${cleanedText}" typed into input box.`);
     return cleanedText;
   } else {
-    console.log("ΓÜá∩╕Å Could not find CAPTCHA text box to enter code.");
+    console.log("⚠️ Could not find CAPTCHA text box to enter code.");
     return null;
   }
 }
@@ -856,7 +879,7 @@ async function solveCaptchaRobust(page, { minLen = 4, maxAttempts = 3 } = {}) {
     if (result && result.length >= minLen) return result;
     if (attempt < maxAttempts) {
       console.log(
-        `≡ƒñû CAPTCHA read ("${result || ""}") looks too short/unreliable -- refreshing and retrying (${attempt}/${maxAttempts})...`,
+        `🤖 CAPTCHA read ("${result || ""}") looks too short/unreliable -- refreshing and retrying (${attempt}/${maxAttempts})...`,
       );
       const refreshed = await refreshCaptchaImage(page);
       if (!refreshed) break;
@@ -882,7 +905,7 @@ async function readCaptchaWithGemini(base64Image) {
   return await readCaptchaWithAI(base64Image);
 }
 
-// ΓöÇΓöÇ SMART NAVIGATION (Saved Pattern ΓåÆ Deterministic ΓåÆ AI Fallback) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── SMART NAVIGATION (Saved Pattern → Deterministic → AI Fallback) ──────────
 // ── CLOSED-CIRCULAR DETECTION ───────────────────────────────────────────────
 // Teletalk keeps "Ongoing Circular" links online after the deadline, but the
 // circular page then only shows the Advertisement PDF (no application form).
@@ -935,7 +958,7 @@ async function smartNavigate(page, context, targetPost) {
   const savedNav = allPats["__nav"]?.[navKey];
   if (savedNav && savedNav.length) {
     console.log(
-      `[ΓÜí Memory] Found ${savedNav.length}-step saved pattern for "${targetPost}" ΓÇö replaying...`,
+      `[⚡ Memory] Found ${savedNav.length}-step saved pattern for "${targetPost}" — replaying...`,
     );
     let replayPage = page;
     let patternWorked = false;
@@ -967,7 +990,7 @@ async function smartNavigate(page, context, targetPost) {
               .count()
               .catch(() => 0)) > 0
           ) {
-            console.log(`[ΓÜí Memory] Γ£à Form found via saved pattern!`);
+            console.log(`[⚡ Memory] ✅ Form found via saved pattern!`);
             patternWorked = true;
             return p;
           }
@@ -978,7 +1001,7 @@ async function smartNavigate(page, context, targetPost) {
     }
     if (!patternWorked) {
       console.log(
-        `[ΓÜí Memory] Saved pattern didn't reach form ΓÇö trying standard navigation...`,
+        `[⚡ Memory] Saved pattern didn't reach form — trying standard navigation...`,
       );
     }
   }
@@ -1015,7 +1038,7 @@ async function smartNavigate(page, context, targetPost) {
   );
   if (hasAnyAI) {
     console.log(
-      `[≡ƒñû AI Brain] Standard automation finished ΓÇö engaging AI Vision Brain (multi-provider cascade)...`,
+      `[🤖 AI Brain] Standard automation finished — engaging AI Vision Brain (multi-provider cascade)...`,
     );
     return await aiNavigate(page, context, targetPost);
   }
@@ -1023,10 +1046,10 @@ async function smartNavigate(page, context, targetPost) {
   return null;
 }
 
-// ΓöÇΓöÇ DETERMINISTIC TELETALK RULE-BASED NAVIGATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── DETERMINISTIC TELETALK RULE-BASED NAVIGATION ─────────────────────────────
 async function deterministicNavigate(page, context, targetPost) {
   console.log(
-    `[ΓÜí Standard Navigation] Checking standard Teletalk portal steps for "${targetPost}"...`,
+    `[⚡ Standard Navigation] Checking standard Teletalk portal steps for "${targetPost}"...`,
   );
 
   let lastUrl = "";
@@ -1046,7 +1069,7 @@ async function deterministicNavigate(page, context, targetPost) {
           .count()
           .catch(() => 0)) > 0
       ) {
-        console.log(`[ΓÜí Standard Navigation] Γ£à Application Form detected!`);
+        console.log(`[⚡ Standard Navigation] ✅ Application Form detected!`);
         return p;
       }
     }
@@ -1058,7 +1081,7 @@ async function deterministicNavigate(page, context, targetPost) {
       .first();
     if (await ongoingLink.isVisible().catch(() => false)) {
       console.log(
-        `[ΓÜí Standard Navigation] ≡ƒæë Step: Clicking Ongoing Circular link...`,
+        `[⚡ Standard Navigation] 👉 Step: Clicking Ongoing Circular link...`,
       );
       await ongoingLink.click({ force: true, timeout: 5000 }).catch(() => {});
       await page.waitForTimeout(2500);
@@ -1070,7 +1093,7 @@ async function deterministicNavigate(page, context, targetPost) {
 
     const applyBtn = page
       .locator(
-        "a:has-text('Apply Online'), a:has-text('Apply now'), a:has-text('Apply Now'), a:has-text('Online Application'), a:has-text('αªåαª¼αºçαªªαª¿ αªòαª░αºüαª¿'), button:has-text('Apply'), a.btn-apply, a.apply-btn",
+        "a:has-text('Apply Online'), a:has-text('Apply now'), a:has-text('Apply Now'), a:has-text('Online Application'), a:has-text('আবেদন করুন'), button:has-text('Apply'), a.btn-apply, a.apply-btn",
       )
       .first();
     if (
@@ -1084,7 +1107,7 @@ async function deterministicNavigate(page, context, targetPost) {
         !href.includes("alljobs.teletalk.com.bd/jobs")
       ) {
         console.log(
-          `[ΓÜí Standard Navigation] ≡ƒæë Following direct application portal link: ${href}`,
+          `[⚡ Standard Navigation] 👉 Following direct application portal link: ${href}`,
         );
         await page
           .goto(href, { timeout: 15000, waitUntil: "domcontentloaded" })
@@ -1094,7 +1117,7 @@ async function deterministicNavigate(page, context, targetPost) {
         continue;
       }
 
-      console.log(`[ΓÜí Standard Navigation] ≡ƒæë Step: Clicking "Apply" link...`);
+      console.log(`[⚡ Standard Navigation] 👉 Step: Clicking "Apply" link...`);
       applyClickCount++;
       await applyBtn.click({ force: true, timeout: 5000 }).catch(() => {});
       await page.waitForTimeout(2000);
@@ -1110,7 +1133,7 @@ async function deterministicNavigate(page, context, targetPost) {
       .all()
       .catch(() => []);
 
-    // ΓöÇΓöÇ SMART: ignore hidden/disabled radios when deciding how many real
+    // ── SMART: ignore hidden/disabled radios when deciding how many real
     // choices exist. Some Teletalk themes render duplicate/template radio
     // inputs that stay in the DOM but hidden (display:none, a collapsed
     // accordion row, etc). Counting those inflates radios.length and can
@@ -1145,7 +1168,7 @@ async function deterministicNavigate(page, context, targetPost) {
         allLabels.push(labelText.trim().replace(/\s+/g, " "));
       }
 
-      // ΓöÇΓöÇ BUGFIX ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+      // ── BUGFIX ──────────────────────────────────────────────────────
       // Previously this checked the ENTIRE page's text for the word
       // "alljobs" (`/alljobs/i.test(pageText)`) to decide whether the
       // current radio group was the "Are you a Premium Member of
@@ -1166,18 +1189,18 @@ async function deterministicNavigate(page, context, targetPost) {
       // unrelated "alljobs" text elsewhere on the page.
       const looksLikeYesNo =
         allLabels.length > 0 &&
-        allLabels.every((t) => /^(yes|no|αª╣αºìαª»αª╛αªü|αª¿αª╛)$/i.test(t.trim()));
+        allLabels.every((t) => /^(yes|no|হ্যাঁ|না)$/i.test(t.trim()));
       const pageText = await page
         .evaluate(() => document.body.innerText)
         .catch(() => "");
       const isPremiumQuestion =
         looksLikeYesNo &&
         (/premium member/i.test(pageText) || /alljobs/i.test(pageText));
-      // ΓöÇΓöÇ END BUGFIX ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+      // ── END BUGFIX ──────────────────────────────────────────────────
 
       if (isPremiumQuestion) {
         console.log(
-          `[ΓÜí Standard Navigation] ≡ƒæë Step: Answering "No" to Alljobs Premium Member...`,
+          `[⚡ Standard Navigation] 👉 Step: Answering "No" to Alljobs Premium Member...`,
         );
         const noRadio = page
           .locator(
@@ -1195,9 +1218,9 @@ async function deterministicNavigate(page, context, targetPost) {
             .catch(() => {});
         }
       } else if (radios.length === 1) {
-        // ΓöÇΓöÇ SMART SHORTCUT: only one real option on this page ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+        // ── SMART SHORTCUT: only one real option on this page ──────────
         // If there's exactly one (visible/enabled) radio, there is no
-        // actual choice to make ΓÇö this is what "confused, so it asked
+        // actual choice to make — this is what "confused, so it asked
         // AI" used to trip on, because the strict text-matching passes
         // below could fail to match (extra whitespace, a slightly
         // different label format, grade/department suffix, etc.) even
@@ -1206,11 +1229,11 @@ async function deterministicNavigate(page, context, targetPost) {
         matchedRadio = radios[0];
         selectedPostLabel = allLabels[0] || "(only option on this page)";
         console.log(
-          `[ΓÜí Standard Navigation] ≡ƒæë Step: Only one option present ΓÇö selecting it automatically: "${(allLabels[0] || "").slice(0, 80)}"`,
+          `[⚡ Standard Navigation] 👉 Step: Only one option present — selecting it automatically: "${(allLabels[0] || "").slice(0, 80)}"`,
         );
 
         // Still sanity-check it against the requested post when one was
-        // given, purely as a heads-up (never as a reason to stop ΓÇö with
+        // given, purely as a heads-up (never as a reason to stop — with
         // only one option there is nothing else to pick).
         if (targetPost) {
           const targetNorm = targetPost.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -1229,12 +1252,12 @@ async function deterministicNavigate(page, context, targetPost) {
             (words.length > 0 && words.some((w) => labelNorm.includes(w)));
           if (!related) {
             console.log(
-              `[ΓÜá∩╕Å Standard Navigation] Note: the only available option doesn't clearly match requested "${targetPost}" ΓÇö proceeding anyway since there's no alternative, but double-check the confirmation PDF/email.`,
+              `[⚠️ Standard Navigation] Note: the only available option doesn't clearly match requested "${targetPost}" — proceeding anyway since there's no alternative, but double-check the confirmation PDF/email.`,
             );
           }
         }
       } else {
-        // Post selection list ΓÇö match the REQUESTED post exactly and, if
+        // Post selection list — match the REQUESTED post exactly and, if
         // it's missing, abort loudly instead of silently submitting the
         // wrong job.
         if (targetPost) {
@@ -1249,7 +1272,7 @@ async function deterministicNavigate(page, context, targetPost) {
             if (labelNorm && labelNorm.includes(targetNorm)) {
               matchedRadio = r;
               console.log(
-                `[ΓÜí Standard Navigation] ≡ƒæë Step: Selecting post "${allLabels[i].slice(0, 60)}" (full-title match for requested "${targetPost}")...`,
+                `[⚡ Standard Navigation] 👉 Step: Selecting post "${allLabels[i].slice(0, 60)}" (full-title match for requested "${targetPost}")...`,
               );
             }
           });
@@ -1268,7 +1291,7 @@ async function deterministicNavigate(page, context, targetPost) {
               if (labelLower && words.every((w) => labelLower.includes(w))) {
                 matchedRadio = r;
                 console.log(
-                  `[ΓÜí Standard Navigation] ≡ƒæë Step: Selecting post "${allLabels[i].slice(0, 60)}" (all-words match for requested "${targetPost}")...`,
+                  `[⚡ Standard Navigation] 👉 Step: Selecting post "${allLabels[i].slice(0, 60)}" (all-words match for requested "${targetPost}")...`,
                 );
               }
             });
@@ -1311,7 +1334,7 @@ async function deterministicNavigate(page, context, targetPost) {
               ) {
                 matchedRadio = radios[bestIdx];
                 console.log(
-                  `[ΓÜí Standard Navigation] ≡ƒæë Step: Selecting post "${allLabels[bestIdx].slice(0, 60)}" (fuzzy best-match ${Math.round(bestScore * 100)}% for requested "${targetPost}", next-best ${Math.round(secondScore * 100)}%)...`,
+                  `[⚡ Standard Navigation] 👉 Step: Selecting post "${allLabels[bestIdx].slice(0, 60)}" (fuzzy best-match ${Math.round(bestScore * 100)}% for requested "${targetPost}", next-best ${Math.round(secondScore * 100)}%)...`,
                 );
               }
             }
@@ -1320,12 +1343,12 @@ async function deterministicNavigate(page, context, targetPost) {
           // SAFETY: never silently submit a different post than requested.
           if (!matchedRadio) {
             console.log(
-              `[ΓÜá∩╕Å Standard Navigation] Γ¥î No post option confidently matches requested "${targetPost}". Available options:`,
+              `[⚠️ Standard Navigation] ❌ No post option confidently matches requested "${targetPost}". Available options:`,
             );
             for (const l of allLabels)
               console.log(`     - ${l || "(blank label)"}`);
             console.log(
-              `   Γ₧ö Aborting standard navigation ΓÇö the AI Vision agent may take over, but no wrong post will be submitted blindly.`,
+              `   ➔ Aborting standard navigation — the AI Vision agent may take over, but no wrong post will be submitted blindly.`,
             );
             return null;
           }
@@ -1337,13 +1360,13 @@ async function deterministicNavigate(page, context, targetPost) {
             selectedPostLabel =
               allLabels[0] || "first available option (no --post given)";
             console.log(
-              `[ΓÜí Standard Navigation] ≡ƒæë Step: Selecting first active circular/post option (no --post specified)...`,
+              `[⚡ Standard Navigation] 👉 Step: Selecting first active circular/post option (no --post specified)...`,
             );
           }
         }
       }
 
-      // ΓöÇΓöÇ THE CLICK + VERIFICATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+      // ── THE CLICK + VERIFICATION ────────────────────────────────────────
       // Pulled out of the post-selection branch so it runs for EVERY path
       // that sets matchedRadio -- including the single-option smart
       // shortcut above. (The isPremiumQuestion branch handles its own
@@ -1364,20 +1387,20 @@ async function deterministicNavigate(page, context, targetPost) {
 
         if (checkedIdx !== wantedIdx) {
           console.log(
-            `[ΓÜá∩╕Å Standard Navigation] Γ¥î POST SELECTION FAILED VERIFICATION!`,
+            `[⚠️ Standard Navigation] ❌ POST SELECTION FAILED VERIFICATION!`,
           );
           console.log(`   Requested: "${allLabels[wantedIdx] || "(unknown)"}"`);
           console.log(
-            `   Actually checked: ${checkedIdx >= 0 ? `"${allLabels[checkedIdx]}"` : "(nothing ΓÇö the click did not register)"}`,
+            `   Actually checked: ${checkedIdx >= 0 ? `"${allLabels[checkedIdx]}"` : "(nothing — the click did not register)"}`,
           );
           console.log(
-            `   Γ₧ö Aborting ΓÇö will NOT click Next with the wrong/unchecked post. Wrong-post submission prevented.`,
+            `   ➔ Aborting — will NOT click Next with the wrong/unchecked post. Wrong-post submission prevented.`,
           );
           return null;
         }
 
         console.log(
-          `[ΓÜí Standard Navigation] Γ£à Verified: the radio actually checked is "${allLabels[wantedIdx].slice(0, 60)}"`,
+          `[⚡ Standard Navigation] ✅ Verified: the radio actually checked is "${allLabels[wantedIdx].slice(0, 60)}"`,
         );
         if (targetPost) selectedPostLabel = allLabels[wantedIdx].slice(0, 100);
       }
@@ -1385,11 +1408,11 @@ async function deterministicNavigate(page, context, targetPost) {
       // Click "Next" / "Submit" button
       const nextBtn = page
         .locator(
-          "input[value='Next'], button:has-text('Next'), input[type='submit'], button[type='submit'], a:has-text('Next'), input[value='αª¬αª░αª¼αª░αºìαªñαºÇ']",
+          "input[value='Next'], button:has-text('Next'), input[type='submit'], button[type='submit'], a:has-text('Next'), input[value='পরবর্তী']",
         )
         .first();
       if (await nextBtn.isVisible().catch(() => false)) {
-        console.log(`[ΓÜí Standard Navigation] ≡ƒæë Step: Clicking "Next"...`);
+        console.log(`[⚡ Standard Navigation] 👉 Step: Clicking "Next"...`);
         await nextBtn.click({ force: true, timeout: 5000 }).catch(() => {});
         await page.waitForTimeout(2500);
         const pages = context.pages().filter((p) => !p.isClosed());
@@ -1405,7 +1428,7 @@ async function deterministicNavigate(page, context, targetPost) {
   return null;
 }
 
-// ΓöÇΓöÇ AI-DRIVEN VISION NAVIGATION (with Loop Detection & Handback to Basic Pattern) ΓöÇΓöÇΓöÇ
+// ── AI-DRIVEN VISION NAVIGATION (with Loop Detection & Handback to Basic Pattern) ───
 // ── RESILIENT SCREENSHOT FOR AI (never let web-font loading stall a run) ────
 // Playwright's page.screenshot() waits for document.fonts.ready. Some Teletalk
 // pages reference web fonts that never finish loading in headless Chromium, so
@@ -1463,7 +1486,7 @@ async function aiNavigate(page, context, targetPost) {
           .count()
           .catch(() => 0)) > 0
       ) {
-        console.log(`[AI] Γ£à Application Form reached after ${step} steps!`);
+        console.log(`[AI] ✅ Application Form reached after ${step} steps!`);
         if (recordedSteps.length > 0) {
           const pats = await loadPatterns();
           if (!pats["__nav"]) pats["__nav"] = {};
@@ -1473,7 +1496,7 @@ async function aiNavigate(page, context, targetPost) {
             .catch(() => {});
           await fs.writeFile(PATTERNS_PATH, JSON.stringify(pats, null, 2));
           console.log(
-            `[≡ƒÆ╛ Memory] Saved ${recordedSteps.length}-step navigation pattern for "${targetPost}".`,
+            `[💾 Memory] Saved ${recordedSteps.length}-step navigation pattern for "${targetPost}".`,
           );
         }
         return p;
@@ -1507,7 +1530,7 @@ async function aiNavigate(page, context, targetPost) {
     );
     if (!instruction) {
       console.log(
-        "[AI] Couldn't determine next step ΓÇö waiting for manual navigation.",
+        "[AI] Couldn't determine next step — waiting for manual navigation.",
       );
       break;
     }
@@ -1522,10 +1545,10 @@ async function aiNavigate(page, context, targetPost) {
       stagnantCount++;
       if (stagnantCount >= 2) {
         console.log(
-          `[≡ƒñû AI Loop Detected] AI gave the same action twice without page change.`,
+          `[🤖 AI Loop Detected] AI gave the same action twice without page change.`,
         );
         console.log(
-          `[≡ƒñû AI Cascade] ≡ƒöä Blacklisting current provider & trying next AI in cascade...`,
+          `[🤖 AI Cascade] 🔄 Blacklisting current provider & trying next AI in cascade...`,
         );
         stagnantCount = 0;
       }
@@ -1577,12 +1600,12 @@ async function aiNavigate(page, context, targetPost) {
 
     if (actionSucceeded) {
       console.log(
-        `[ΓÜí Hybrid Handback] Testing if basic deterministic pattern can continue from here...`,
+        `[⚡ Hybrid Handback] Testing if basic deterministic pattern can continue from here...`,
       );
       const detResult = await deterministicNavigate(page, context, targetPost);
       if (detResult) {
         console.log(
-          `[ΓÜí Hybrid Handback] Γ£à Basic automation took over and reached the form!`,
+          `[⚡ Hybrid Handback] ✅ Basic automation took over and reached the form!`,
         );
         if (recordedSteps.length > 0) {
           const pats = await loadPatterns();
@@ -1593,13 +1616,13 @@ async function aiNavigate(page, context, targetPost) {
             .catch(() => {});
           await fs.writeFile(PATTERNS_PATH, JSON.stringify(pats, null, 2));
           console.log(
-            `[≡ƒÆ╛ Memory] Saved complete navigation pattern for "${targetPost}".`,
+            `[💾 Memory] Saved complete navigation pattern for "${targetPost}".`,
           );
         }
         return detResult;
       }
       console.log(
-        `[ΓÜí Hybrid Handback] Basic automation needs AI guidance for next step...`,
+        `[⚡ Hybrid Handback] Basic automation needs AI guidance for next step...`,
       );
     }
   }
@@ -1618,15 +1641,15 @@ Focus ONLY on navigating to the application form.
 Look at this screenshot and decide the SINGLE NEXT ACTION to get closer to the application form.
 
 Rules:
-- If you see the application form (fields like Applicant Name, Father Name, Date of Birth) ΓåÆ return action: "done"
-- If you see a button/link to Apply/Apply Online/Apply Now/αªåαª¼αºçαªªαª¿ αªòαª░αºüαª¿ ΓåÆ click it
-- If you see a list of posts/jobs ΓåÆ find and click "${targetPost}" or the closest match
-- If you see a question like "Are you a Premium Member?" / "Premium Member?" ΓåÆ click "No" or "αª¿αª╛"
-- If you see a circular list ΓåÆ click the most recent/relevant circular
-- If you see a Next / αª¬αª░αª¼αª░αºìαªñαºÇ button after answering ΓåÆ click it
+- If you see the application form (fields like Applicant Name, Father Name, Date of Birth) → return action: "done"
+- If you see a button/link to Apply/Apply Online/Apply Now/আবেদন করুন → click it
+- If you see a list of posts/jobs → find and click "${targetPost}" or the closest match
+- If you see a question like "Are you a Premium Member?" / "Premium Member?" → click "No" or "না"
+- If you see a circular list → click the most recent/relevant circular
+- If you see a Next / পরবর্তী button after answering → click it
 - If the page shows BOTH "Advertisement" and "Application Form (Click here to Apply Online)" → click "Application Form (Click here to Apply Online)"
 - NEVER click "Advertisement", "Download", "Applicant's Copy" or any link ending in .pdf — a PDF cannot be filled and breaks the whole flow
-- Do NOT try to close modals or popups ΓÇö they are already handled
+- Do NOT try to close modals or popups — they are already handled
 
 Respond ONLY with valid JSON (no markdown, no explanation):
 {"action": "click_text", "value": "exact visible text to click", "reason": "brief reason"}
@@ -1650,7 +1673,7 @@ or
   }
 }
 
-// ΓöÇΓöÇ MODAL DISMISSAL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── MODAL DISMISSAL ─────────────────────────────────────────────────────────
 async function dismissModals(page) {
   const closeSelectors = [
     "button.close",
@@ -1665,10 +1688,10 @@ async function dismissModals(page) {
     ".modal-footer .btn-secondary",
     "button:has-text('Close')",
     "button:has-text('OK')",
-    "button:has-text('├ù')",
-    "button:has-text('Γ£ò')",
+    "button:has-text('×')",
+    "button:has-text('✕')",
     "a:has-text('Close')",
-    "a:has-text('├ù')",
+    "a:has-text('×')",
   ];
 
   for (const sel of closeSelectors) {
@@ -1687,9 +1710,27 @@ async function dismissModals(page) {
   await page.waitForTimeout(300).catch(() => {});
 }
 
-// ΓöÇΓöÇ TICK ALL VISIBLE CHECKBOXES ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── TICK ALL VISIBLE CHECKBOXES ─────────────────────────────────────────────
 async function tickAllCheckboxes(page) {
   try {
+    const tick = async (el) => {
+      await el
+        .evaluate((e) => {
+          e.checked = true;
+          if (typeof e.onchange === "function") {
+            try {
+              e.onchange();
+            } catch (err) {}
+          }
+          e.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+          e.dispatchEvent(new Event("input", { bubbles: true }));
+          e.dispatchEvent(new Event("change", { bubbles: true }));
+        })
+        .catch(() => {});
+      await el.check({ force: true, timeout: 1000 }).catch(() => {});
+    };
+
+    // 1. Known preview/declaration controls only.
     const previewSelectors = [
       "#info_yes",
       "input[name='info_yes']",
@@ -1697,7 +1738,6 @@ async function tickAllCheckboxes(page) {
       "input[name='agree']",
       "#declaration",
       "input[name='declaration']",
-      "input[type='checkbox']",
     ];
     for (const sel of previewSelectors) {
       const els = await page
@@ -1707,29 +1747,51 @@ async function tickAllCheckboxes(page) {
       for (const el of els) {
         const isVisible = await el.isVisible().catch(() => false);
         if (!isVisible) continue;
-        await el
-          .evaluate((e) => {
-            e.checked = true;
-            if (typeof e.onchange === "function") {
-              try {
-                e.onchange();
-              } catch (err) {}
-            }
-            e.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-            e.dispatchEvent(new Event("input", { bubbles: true }));
-            e.dispatchEvent(new Event("change", { bubbles: true }));
-          })
-          .catch(() => {});
-        await el.check({ force: true, timeout: 1000 }).catch(() => {});
+        await tick(el);
       }
     }
-    console.log("Γ£à Ticked preview declaration checkbox.");
+
+    // 2. Fallback: ONLY agreement-style checkboxes. Never tick address or
+    // section toggles -- "Same as Present Address" copies the present
+    // address over the permanent address when clicked, and "If Applicable"
+    // checkboxes would enable sections we cannot fill.
+    const protectedRe =
+      /same_as_present|same.?as.?present|copy.*address|if_applicable|currently_working|employment|masters|graduation|experience/i;
+    const agreeRe =
+      /agree|declare|declaration|knowledge and belief|correct, true|terms|condition|confirm|next step/i;
+    const cbs = await page
+      .locator("input[type='checkbox']")
+      .all()
+      .catch(() => []);
+    for (const el of cbs) {
+      if (!(await el.isVisible().catch(() => false))) continue;
+      const meta = await el
+        .evaluate((e) => {
+          const label = e.id
+            ? document.querySelector(`label[for="${e.id}"]`)
+            : null;
+          const wrap = e.closest("label");
+          return [
+            e.id,
+            e.name,
+            e.getAttribute("onclick") || "",
+            label ? label.innerText : "",
+            wrap ? wrap.innerText : "",
+          ].join(" ");
+        })
+        .catch(() => "");
+      if (protectedRe.test(meta)) continue;
+      if (!agreeRe.test(meta)) continue;
+      await tick(el);
+    }
+
+    console.log("✅ Ticked preview declaration checkbox.");
   } catch (e) {
     console.log(`[TickAll] ${e.message}`);
   }
 }
 
-// ΓöÇΓöÇ PRECISE DECLARATION CHECKBOX ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── PRECISE DECLARATION CHECKBOX ───────────────────────────────────────────
 async function tickDeclarationCheckbox(page) {
   try {
     const agree = page
@@ -1749,13 +1811,12 @@ async function tickDeclarationCheckbox(page) {
           el.dispatchEvent(new Event("change", { bubbles: true }));
         })
         .catch(() => {});
-      await page
-        .locator("label[for='agree'], label.form-check-label")
-        .first()
-        .click({ force: true, timeout: 1000 })
-        .catch(() => {});
+      // NOTE: do NOT click a generic `label.form-check-label` here. On Teletalk
+      // forms the FIRST such label is usually "Same as Present Address", whose
+      // onclick handler copies the present address over the permanent address
+      // (this silently destroyed the permanent address on BCIC).
       await agree.check({ force: true, timeout: 1000 }).catch(() => {});
-      console.log("Γ£à Declaration checkbox (#agree) ticked.");
+      console.log("✅ Declaration checkbox (#agree) ticked.");
       return;
     }
 
@@ -1763,11 +1824,13 @@ async function tickDeclarationCheckbox(page) {
       .locator("input[type=checkbox]")
       .all()
       .catch(() => []);
+    const protectedRe =
+      /same_as_present|same.?as.?present|copy.*address|if_applicable|currently_working/i;
     for (const cb of checkboxes) {
       const isVisible = await cb.isVisible().catch(() => false);
       if (!isVisible) continue;
 
-      const text = await cb
+      const meta = await cb
         .evaluate((el) => {
           const tr = el.closest("tr");
           const fieldset = el.closest("fieldset");
@@ -1777,6 +1840,9 @@ async function tickDeclarationCheckbox(page) {
             ? document.querySelector(`label[for="${el.id}"]`)
             : null;
           return [
+            el.id || "",
+            el.name || "",
+            el.getAttribute("onclick") || "",
             tr ? tr.innerText : "",
             fieldset ? fieldset.innerText : "",
             div ? div.innerText : "",
@@ -1786,9 +1852,12 @@ async function tickDeclarationCheckbox(page) {
         })
         .catch(() => "");
 
+      // Never touch address-copy or optional-section toggles.
+      if (protectedRe.test(meta)) continue;
+
       if (
         /declare|declaration|knowledge and belief|correct, true|next step|terms|condition/i.test(
-          text,
+          meta,
         )
       ) {
         await cb
@@ -1799,12 +1868,12 @@ async function tickDeclarationCheckbox(page) {
                 el.onchange();
               } catch (e) {}
             }
-            el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+            el.dispatchEvent(new Event("input", { bubbles: true }));
             el.dispatchEvent(new Event("change", { bubbles: true }));
           })
           .catch(() => {});
         await cb.check({ force: true, timeout: 1000 }).catch(() => {});
-        console.log("Γ£à Declaration checkbox ticked.");
+        console.log("✅ Declaration checkbox ticked.");
         return;
       }
     }
@@ -1813,7 +1882,7 @@ async function tickDeclarationCheckbox(page) {
   }
 }
 
-// ΓöÇΓöÇ HANDLE OPTIONAL SECTIONS (Masters, Job Experience) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── HANDLE OPTIONAL SECTIONS (Masters, Job Experience) ───────────────────────
 // ── JOB EXPERIENCE SECTION (always-visible variant) ─────────────────────────
 // Older Teletalk forms hide the experience block behind a checkbox; newer
 // forms (e.g. Parjatan's Programmer post) render an empty required row.
@@ -2301,7 +2370,7 @@ async function handleOptionalSections(page, profile) {
               el.dispatchEvent(new Event("change", { bubbles: true }));
             })
             .catch(() => {});
-          console.log("≡ƒôï Enabled Graduation qualification section checkbox.");
+          console.log("📋 Enabled Graduation qualification section checkbox.");
         } else {
           await cb.uncheck({ force: true }).catch(() => {});
           await cb
@@ -2321,7 +2390,7 @@ async function handleOptionalSections(page, profile) {
               el.dispatchEvent(new Event("change", { bubbles: true }));
             })
             .catch(() => {});
-          console.log("≡ƒöÆ Kept Graduation section unchecked (not in profile).");
+          console.log("🔒 Kept Graduation section unchecked (not in profile).");
         }
       }
 
@@ -2348,7 +2417,7 @@ async function handleOptionalSections(page, profile) {
               el.dispatchEvent(new Event("change", { bubbles: true }));
             })
             .catch(() => {});
-          console.log("≡ƒôï Enabled Masters qualification section.");
+          console.log("📋 Enabled Masters qualification section.");
         } else {
           await cb.uncheck({ force: true }).catch(() => {});
           await cb
@@ -2368,7 +2437,7 @@ async function handleOptionalSections(page, profile) {
               el.dispatchEvent(new Event("change", { bubbles: true }));
             })
             .catch(() => {});
-          console.log("≡ƒöÆ Kept Masters section unchecked (not in profile).");
+          console.log("🔒 Kept Masters section unchecked (not in profile).");
         }
       }
 
@@ -2395,7 +2464,7 @@ async function handleOptionalSections(page, profile) {
               el.dispatchEvent(new Event("change", { bubbles: true }));
             })
             .catch(() => {});
-          console.log("≡ƒôï Enabled Job Experience section.");
+          console.log("📋 Enabled Job Experience section.");
         } else {
           await cb.uncheck({ force: true }).catch(() => {});
           await cb
@@ -2416,7 +2485,7 @@ async function handleOptionalSections(page, profile) {
             })
             .catch(() => {});
           console.log(
-            "≡ƒöÆ Kept Job Experience section unchecked (not in profile).",
+            "🔒 Kept Job Experience section unchecked (not in profile).",
           );
         }
       }
@@ -2429,7 +2498,7 @@ async function handleOptionalSections(page, profile) {
   }
 }
 
-// ΓöÇΓöÇ AUTO-FILL QUALIFICATION QUESTIONS (e.g. Computer Skills) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── AUTO-FILL QUALIFICATION QUESTIONS (e.g. Computer Skills) ───────────────
 async function fillOtherQualifications(page, profile) {
   try {
     const processed = new Set();
@@ -2496,7 +2565,7 @@ async function fillOtherQualifications(page, profile) {
               val === "yes" ||
               val === "1" ||
               txt.includes("yes") ||
-              txt.includes("αª╣αºìαª»αª╛αªü") ||
+              txt.includes("হ্যাঁ") ||
               val === "y"
             ) {
               el.selectedIndex = i;
@@ -2527,7 +2596,7 @@ async function fillOtherQualifications(page, profile) {
 
       if (hasYesOption) {
         console.log(
-          `[Auto-Fill] ≡ƒÆ╗ Selected "${hasYesOption}" for qualification: ${rowText.slice(0, 60).replace(/\s+/g, " ")}`,
+          `[Auto-Fill] 💻 Selected "${hasYesOption}" for qualification: ${rowText.slice(0, 60).replace(/\s+/g, " ")}`,
         );
       }
     }
@@ -2562,7 +2631,7 @@ async function setSelectOptionToYes(selLocator) {
             text.includes("yes") ||
             val === "yes" ||
             val === "1" ||
-            text.includes("αª╣αºìαª»αª╛αªü") ||
+            text.includes("হ্যাঁ") ||
             val === "y"
           ) {
             chosenIndex = i;
@@ -2577,7 +2646,7 @@ async function setSelectOptionToYes(selLocator) {
             if (
               !text.includes("select") &&
               !text.includes("no") &&
-              !text.includes("αª¿αª╛") &&
+              !text.includes("না") &&
               val !== "0" &&
               val !== "no" &&
               val !== "2"
@@ -2623,7 +2692,7 @@ async function setSelectOptionToYes(selLocator) {
 
     if (result) {
       console.log(
-        `[Auto-Fill] Γ£à Selected "${result.text}" (value: "${result.value}")`,
+        `[Auto-Fill] ✅ Selected "${result.text}" (value: "${result.value}")`,
       );
       await selLocator
         .selectOption({ index: result.index }, { timeout: 1000 })
@@ -2634,7 +2703,7 @@ async function setSelectOptionToYes(selLocator) {
   }
 }
 
-// ΓöÇΓöÇ ROBUST SELECT WITH NATIVE EVENT DISPATCH ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── ROBUST SELECT WITH NATIVE EVENT DISPATCH ────────────────────────────────
 async function selectRobust(page, locatorOrSelector, wanted) {
   const el =
     typeof locatorOrSelector === "string"
@@ -2708,7 +2777,7 @@ async function scanAndFillUnknownFields(page, profile) {
   }
   if (appliedFromMemory)
     console.log(
-      `[Memory] ΓÜí Applied ${appliedFromMemory} learned field(s) instantly.`,
+      `[Memory] ⚡ Applied ${appliedFromMemory} learned field(s) instantly.`,
     );
 
   if (!hasAnyAI) return;
@@ -2787,7 +2856,7 @@ async function scanAndFillUnknownFields(page, profile) {
   }
 
   console.log(
-    `[AI Scan] ≡ƒöÄ Found ${truly_new.length} unfilled unknown field(s) ΓÇö asking Gemini to infer values...`,
+    `[AI Scan] 🔎 Found ${truly_new.length} unfilled unknown field(s) — asking Gemini to infer values...`,
   );
 
   const profileSummary = JSON.stringify(
@@ -2878,7 +2947,7 @@ Respond ONLY with a valid JSON array (no markdown, no explanation):
           value: String(action.value),
           label: action.label,
         };
-        console.log(`[AI Scan] Γ£Å∩╕Å  "${action.label}" ΓåÆ "${action.value}"`);
+        console.log(`[AI Scan] ✏️  "${action.label}" → "${action.value}"`);
         filled++;
       } else if (action.action === "select") {
         await el.selectOption({ label: action.option }).catch(() => {});
@@ -2888,7 +2957,7 @@ Respond ONLY with a valid JSON array (no markdown, no explanation):
           label: action.label,
         };
         console.log(
-          `[AI Scan] ≡ƒôï "${action.label}" ΓåÆ selected "${action.option}"`,
+          `[AI Scan] 📋 "${action.label}" → selected "${action.option}"`,
         );
         filled++;
       }
@@ -2903,7 +2972,7 @@ Respond ONLY with a valid JSON array (no markdown, no explanation):
         .catch(() => {});
       await fs.writeFile(PATTERNS_PATH, JSON.stringify(allPatterns, null, 2));
       console.log(
-        `[Memory] ≡ƒÆ╛ Saved ${filled} new inferred field(s) for future runs.`,
+        `[Memory] 💾 Saved ${filled} new inferred field(s) for future runs.`,
       );
     }
   } catch (e) {
@@ -2911,7 +2980,7 @@ Respond ONLY with a valid JSON array (no markdown, no explanation):
   }
 }
 
-// ΓöÇΓöÇ POST-SUBMIT AUTONOMOUS AGENT ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── POST-SUBMIT AUTONOMOUS AGENT ─────────────────────────────────────────────────
 async function detectStepType(page, { debug = false } = {}) {
   try {
     const info = await page.evaluate(() => {
@@ -2946,7 +3015,7 @@ async function detectStepType(page, { debug = false } = {}) {
 
     if (debug) {
       console.log(
-        `[detectStepType] ΓåÆ "${stepType}" | mainForm=${info.hasMainForm}${info.mainFormMatchTag ? ` (matched ${info.mainFormMatchTag})` : ""} | fileInputs=${info.fileInputCount}${info.fileInputCount ? ` [${info.fileInputIds.join(", ")}]` : ""} | agree=${info.hasAgree} | captcha=${info.hasCaptcha}`,
+        `[detectStepType] → "${stepType}" | mainForm=${info.hasMainForm}${info.mainFormMatchTag ? ` (matched ${info.mainFormMatchTag})` : ""} | fileInputs=${info.fileInputCount}${info.fileInputCount ? ` [${info.fileInputIds.join(", ")}]` : ""} | agree=${info.hasAgree} | captcha=${info.hasCaptcha}`,
       );
     }
 
@@ -2959,7 +3028,7 @@ async function detectStepType(page, { debug = false } = {}) {
 
 async function shutdownAfterSuccess(browser) {
   console.log(
-    "\n≡ƒÅü Application submitted and confirmation PDF emailed. Closing browser and exiting...\n",
+    "\n🏁 Application submitted and confirmation PDF emailed. Closing browser and exiting...\n",
   );
   await browser.close().catch(() => {});
   process.exit(0);
@@ -2968,7 +3037,7 @@ async function shutdownAfterSuccess(browser) {
 async function postSubmitAgent(browser, context, startPage, profile) {
   if (!hasAnyAI) return;
   console.log(
-    "≡ƒñû [Post-Submit Agent] Watching for next steps after submission...",
+    "🤖 [Post-Submit Agent] Watching for next steps after submission...",
   );
 
   let lastUrl = startPage.url();
@@ -3032,12 +3101,12 @@ async function postSubmitAgent(browser, context, startPage, profile) {
     idleCount = 0;
     pendingAttempts++;
     console.log(
-      `≡ƒôì [Post-Submit] Handling step (attempt ${pendingAttempts}/${MAX_PENDING_ATTEMPTS}, ${curStepType}): ${curUrl}`,
+      `📍 [Post-Submit] Handling step (attempt ${pendingAttempts}/${MAX_PENDING_ATTEMPTS}, ${curStepType}): ${curUrl}`,
     );
 
     if (curStepType === "upload") {
       console.log(
-        "≡ƒô╕ [Post-Submit] Upload step detected ΓÇö filling photo/signature directly...",
+        "📸 [Post-Submit] Upload step detected — filling photo/signature directly...",
       );
       await handleImageUpload(page, [], profile);
       await tickAllCheckboxes(page);
@@ -3065,7 +3134,7 @@ async function postSubmitAgent(browser, context, startPage, profile) {
     const savedSteps = postFlow[urlKey] || postFlow[pathname];
     if (savedSteps) {
       console.log(
-        `[ΓÜí Memory] Replaying saved steps for ${postFlow[urlKey] ? urlKey : pathname}`,
+        `[⚡ Memory] Replaying saved steps for ${postFlow[urlKey] ? urlKey : pathname}`,
       );
       const reachedFinal = await replayPostSteps(page, savedSteps, profile);
       pendingStepKey = null;
@@ -3082,13 +3151,13 @@ async function postSubmitAgent(browser, context, startPage, profile) {
     );
     if (!decision) {
       console.log(
-        `[Post-Submit AI] ΓÜá∩╕Å Couldn't classify this page (attempt ${pendingAttempts}/${MAX_PENDING_ATTEMPTS}) -- every AI provider may be failing right now. Will retry.`,
+        `[Post-Submit AI] ⚠️ Couldn't classify this page (attempt ${pendingAttempts}/${MAX_PENDING_ATTEMPTS}) -- every AI provider may be failing right now. Will retry.`,
       );
       continue;
     }
 
     console.log(
-      `[Post-Submit AI] ≡ƒñö Detected: ${decision.type} ΓÇö ${decision.reason || ""}`,
+      `[Post-Submit AI] 🤔 Detected: ${decision.type} — ${decision.reason || ""}`,
     );
     pendingStepKey = null;
 
@@ -3096,7 +3165,7 @@ async function postSubmitAgent(browser, context, startPage, profile) {
 
     if (decision.type === "success") {
       console.log(
-        `≡ƒÄë [SUCCESS] ${decision.message || "Application submitted successfully!"}`,
+        `🎉 [SUCCESS] ${decision.message || "Application submitted successfully!"}`,
       );
       await downloadAndEmailPdf(page, profile).catch(() => {});
       return await shutdownAfterSuccess(browser);
@@ -3132,7 +3201,7 @@ async function postSubmitAgent(browser, context, startPage, profile) {
       });
     } else if (decision.type === "new_form") {
       console.log(
-        `≡ƒô¥ [Post-Submit] New form detected ΓÇö filling with profile data...`,
+        `📝 [Post-Submit] New form detected — filling with profile data...`,
       );
       await fillMainForm(page, profile);
       await scanAndFillUnknownFields(page, profile);
@@ -3162,7 +3231,7 @@ async function postSubmitAgent(browser, context, startPage, profile) {
         .mkdir(path.join(__dirname, "..", "data"), { recursive: true })
         .catch(() => {});
       await fs.writeFile(PATTERNS_PATH, JSON.stringify(updPats, null, 2));
-      console.log(`[≡ƒÆ╛ Memory] Saved post-submit steps for ${urlKey}`);
+      console.log(`[💾 Memory] Saved post-submit steps for ${urlKey}`);
     }
 
     if (isFinalConfirmationUrl(curUrl)) {
@@ -3170,12 +3239,12 @@ async function postSubmitAgent(browser, context, startPage, profile) {
       return await shutdownAfterSuccess(browser);
     } else {
       console.log(
-        `[Post-Submit] ΓÅ¡∩╕Å  Not a final confirmation page (${curUrl}) ΓÇö skipping PDF email for now.`,
+        `[Post-Submit] ⏳  Not a final confirmation page (${curUrl}) — skipping PDF email for now.`,
       );
     }
   }
 
-  console.log("[≡ƒñû Post-Submit Agent] Monitoring complete.");
+  console.log("[🤖 Post-Submit Agent] Monitoring complete.");
 }
 
 async function replayPostSteps(page, steps, profile) {
@@ -3208,7 +3277,7 @@ async function replayPostSteps(page, steps, profile) {
     return true;
   } else {
     console.log(
-      `[Post-Submit] ΓÅ¡∩╕Å  Not a final confirmation page (${page.url()}) ΓÇö skipping PDF email for now.`,
+      `[Post-Submit] ⏳  Not a final confirmation page (${page.url()}) — skipping PDF email for now.`,
     );
     return false;
   }
@@ -3301,16 +3370,16 @@ async function uploadFile(inputLocator, filePath, label) {
   try {
     await fs.access(filePath);
     await inputLocator.setInputFiles(filePath);
-    console.log(`≡ƒô╕ [Image] Uploaded ${label}: ${path.basename(filePath)}`);
+    console.log(`📸 [Image] Uploaded ${label}: ${path.basename(filePath)}`);
   } catch {
-    console.log(`ΓÜá∩╕Å  [Image] ${label} file not found at: ${filePath}`);
-    console.log(`   Γ₧ö Place your files at:`);
+    console.log(`⚠️  [Image] ${label} file not found at: ${filePath}`);
+    console.log(`   ➔ Place your files at:`);
     console.log(`     application/Applicant.jpg         (photo)`);
     console.log(`     application/applicant_signature.jpg (signature)`);
   }
 }
 
-// ΓöÇΓöÇ EMAIL NOTIFICATION HELPER ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── EMAIL NOTIFICATION HELPER ───────────────────────────────────────────────────
 async function sendVerificationEmail(inferredFields, host) {
   const smtpHost = process.env.SMTP_HOST;
   const smtpUser = process.env.SMTP_USER;
@@ -3337,11 +3406,11 @@ async function sendVerificationEmail(inferredFields, host) {
     await transporter.sendMail({
       from: process.env.SMTP_FROM || smtpUser,
       to: notifyEmail,
-      subject: `≡ƒñû AI Inferred Form Fields ΓÇö ${host}`,
+      subject: `🤖 AI Inferred Form Fields — ${host}`,
       html: `
         <div style="font-family:sans-serif;max-width:600px;margin:auto">
           <div style="background:#1a1a2e;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">
-            <h2 style="margin:0">≡ƒñû AI Auto-Filled Unknown Fields</h2>
+            <h2 style="margin:0">🤖 AI Auto-Filled Unknown Fields</h2>
             <p style="margin:6px 0 0;opacity:.7">Portal: ${host}</p>
           </div>
           <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;padding:20px 24px;border-radius:0 0 8px 8px">
@@ -3355,14 +3424,14 @@ async function sendVerificationEmail(inferredFields, host) {
         </div>`,
     });
     console.log(
-      `≡ƒôº [Email] Verification email sent to ${notifyEmail} with ${inferredFields.length} inferred field(s).`,
+      `📧 [Email] Verification email sent to ${notifyEmail} with ${inferredFields.length} inferred field(s).`,
     );
   } catch (e) {
     console.log(`[Email] Could not send verification email: ${e.message}`);
   }
 }
 
-// ΓöÇΓöÇ PDF DOWNLOAD + EMAIL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── PDF DOWNLOAD + EMAIL ───────────────────────────────────────────────────
 let lastApplicationEmailAt = 0;
 
 async function downloadAndEmailPdf(page, profile) {
@@ -3388,7 +3457,7 @@ async function downloadAndEmailPdf(page, profile) {
 
     if (hasDl) {
       console.log(
-        "\ud83d\udce5 [PDF] Download button found ΓÇö trying file download...",
+        "\ud83d\udce5 [PDF] Download button found — trying file download...",
       );
       try {
         const dlEvent = page.waitForEvent("download", { timeout: 5000 });
@@ -3400,7 +3469,7 @@ async function downloadAndEmailPdf(page, profile) {
         await download.saveAs(savePath);
         console.log(`\ud83d\udcce [PDF] Downloaded: ${suggestedName}`);
       } catch (_) {
-        // Download event didn't fire (likely window.print()) ΓÇö fall through to page.pdf()
+        // Download event didn't fire (likely window.print()) — fall through to page.pdf()
       }
     }
 
@@ -3449,7 +3518,7 @@ async function emailPdfAttachment(pdfPath, filename, profile) {
     }
   } else if (notifyEmail) {
     console.log(
-      `[Email] ΓÜá∩╕Å  profile.email is empty ΓÇö falling back to NOTIFY_EMAIL ("${notifyEmail}") as recipient. Add "email" to config/profile.json to send the PDF to the applicant directly.`,
+      `[Email] ⚠️  profile.email is empty — falling back to NOTIFY_EMAIL ("${notifyEmail}") as recipient. Add "email" to config/profile.json to send the PDF to the applicant directly.`,
     );
     toList = [notifyEmail];
   } else {
@@ -3484,18 +3553,18 @@ async function emailPdfAttachment(pdfPath, filename, profile) {
     from: process.env.SMTP_FROM || smtpUser,
     to: toStr,
     cc: ccStr || undefined,
-    subject: `≡ƒÄë Application Submitted ΓÇö ${applicantName}${requestedPost ? ` ΓÇö ${requestedPost}` : ""} (PDF Attached)`,
+    subject: `🎉 Application Submitted — ${applicantName}${requestedPost ? ` — ${requestedPost}` : ""} (PDF Attached)`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:auto">
         <div style="background:#16a34a;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">
-          <h2 style="margin:0">≡ƒÄë Application Successfully Submitted!</h2>
+          <h2 style="margin:0">🎉 Application Successfully Submitted!</h2>
         </div>
         <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;padding:20px 24px;border-radius:0 0 8px 8px">
           <p style="color:#555">The job application for <strong>${applicantName}</strong> has been submitted successfully.</p>
-          ${requestedPost ? `<p style="color:#555">≡ƒô¥ <strong>Requested post (from dashboard):</strong> ${requestedPost}</p>` : ""}
-          ${filledPost ? `<p style="color:#555"><strong>Post actually selected on portal:</strong> ${filledPost}</p>` : `<p style="color:#555"><strong>Post actually selected on portal:</strong> (not recorded ΓÇö verify the attached PDF)</p>`}
-          ${!postMatch ? `<p style="color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;padding:12px;border-radius:6px">ΓÜá∩╕Å <strong>Mismatch detected:</strong> the portal selected a different post than the one requested. Verify the attached PDF before paying any fee or submitting payment!</p>` : ""}
-          <p style="color:#555">≡ƒôÄ Confirmation file: <strong>${filename}</strong></p>
+          ${requestedPost ? `<p style="color:#555">📝 <strong>Requested post (from dashboard):</strong> ${requestedPost}</p>` : ""}
+          ${filledPost ? `<p style="color:#555"><strong>Post actually selected on portal:</strong> ${filledPost}</p>` : `<p style="color:#555"><strong>Post actually selected on portal:</strong> (not recorded — verify the attached PDF)</p>`}
+          ${!postMatch ? `<p style="color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;padding:12px;border-radius:6px">⚠️ <strong>Mismatch detected:</strong> the portal selected a different post than the one requested. Verify the attached PDF before paying any fee or submitting payment!</p>` : ""}
+          <p style="color:#555">📎 Confirmation file: <strong>${filename}</strong></p>
           <p style="color:#555">The application PDF is attached to this email for your records.</p>
         </div>
       </div>`,
@@ -3503,7 +3572,7 @@ async function emailPdfAttachment(pdfPath, filename, profile) {
   });
   lastApplicationEmailAt = Date.now();
   console.log(
-    `≡ƒôº [Email] Application PDF sent ΓÇö To: ${toStr}${ccStr ? " | Cc: " + ccStr : ""} (From: ${process.env.SMTP_FROM || smtpUser})`,
+    `📧 [Email] Application PDF sent — To: ${toStr}${ccStr ? " | Cc: " + ccStr : ""} (From: ${process.env.SMTP_FROM || smtpUser})`,
   );
 }
 
@@ -3576,7 +3645,7 @@ async function fillRevealedIdField(page, selectSel, inputSel, value) {
             val === "yes" ||
             val === "1" ||
             txt.includes("yes") ||
-            txt.includes("αª╣αºìαª»αª╛αªü") ||
+            txt.includes("হ্যাঁ") ||
             val === "y"
           ) {
             chosen = i;
@@ -3590,7 +3659,7 @@ async function fillRevealedIdField(page, selectSel, inputSel, value) {
             val === "2" ||
             val === "na" ||
             txt.includes("no") ||
-            txt.includes("αª¿αª╛") ||
+            txt.includes("না") ||
             val === "n"
           ) {
             chosen = i;
@@ -3665,6 +3734,225 @@ async function fillAddressBlock(page, prefix, address) {
   if (districtOk) {
     await waitForOptions(page, upazilaSel, 2, 8000);
     await selectFuzzy(page, upazilaSel, address.upazila);
+  }
+}
+
+// ── ADDRESS INTEGRITY GUARD ─────────────────────────────────────────────────
+// Teletalk's "Same as Present Address" checkbox runs an onclick handler that
+// copies every present-address field into the permanent-address block. If any
+// generic checkbox helper clicks it (or the form itself re-syncs), the
+// permanent address is silently replaced by the present one -- confirmed on
+// BCIC. This guard unchecks it and restores both blocks from the profile
+// whenever they drift.
+async function ensureAddressIntegrity(page, profile) {
+  if (!profile?.present_address && !profile?.permanent_address) return;
+
+  const same = page
+    .locator("#same_as_present, input[name='same_as_present']")
+    .first();
+  if (await same.count().catch(() => 0)) {
+    const checked = await same.isChecked().catch(() => false);
+    if (checked) {
+      await same
+        .evaluate((el) => {
+          el.checked = false;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+        })
+        .catch(() => {});
+      console.log(
+        "⚠️ [Address] 'Same as Present Address' was ticked — unchecked it so the permanent address stays independent.",
+      );
+    }
+  }
+
+  const differs = await page
+    .evaluate((prof) => {
+      const norm = (s) =>
+        String(s ?? "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toLowerCase();
+      const check = (prefix, addr) => {
+        if (!addr) return false;
+        const textPairs = [
+          [`${prefix}_careof`, addr.care_of],
+          [`${prefix}_village`, addr.village_road_house],
+          [`${prefix}_post`, addr.post_office],
+          [`${prefix}_postcode`, addr.post_code],
+        ];
+        for (const [id, wanted] of textPairs) {
+          const el = document.getElementById(id);
+          if (!el || wanted === undefined || wanted === null || wanted === "")
+            continue;
+          if (norm(el.value) !== norm(wanted)) return true;
+        }
+        for (const [id, wanted] of [
+          [`${prefix}_district`, addr.district],
+          [`${prefix}_upazila`, addr.upazila],
+        ]) {
+          const el = document.getElementById(id);
+          if (!el || !wanted) continue;
+          if (el.selectedIndex <= 0) return true;
+          const shown = norm(el.options[el.selectedIndex].text);
+          const want = norm(wanted);
+          if (shown !== want && !shown.includes(want) && !want.includes(shown))
+            return true;
+        }
+        return false;
+      };
+      return {
+        present: check("present", prof.present_address),
+        permanent: check("permanent", prof.permanent_address),
+      };
+    }, profile)
+    .catch(() => ({ present: false, permanent: false }));
+
+  if (differs.present) {
+    console.log(
+      "🛠️ [Address] Present address drifted from profile — restoring...",
+    );
+    await fillAddressBlock(page, "present", profile.present_address);
+  }
+  if (differs.permanent) {
+    console.log(
+      "🛠️ [Address] Permanent address drifted from profile — restoring...",
+    );
+    await fillAddressBlock(page, "permanent", profile.permanent_address);
+  }
+}
+
+// ── FORM FIELD AUDIT ────────────────────────────────────────────────────────
+// Logs a compact inventory right before submit: how many fields exist, which
+// required ones are still empty, and which optional ones were left blank.
+// This is how new Teletalk conditions surface instead of being skipped.
+async function auditFormFields(page) {
+  try {
+    const audit = await page.evaluate(() => {
+      const clean = (s) =>
+        String(s || "")
+          .replace(/\s+/g, " ")
+          .trim();
+      const visible = (el) => {
+        const r = el.getBoundingClientRect();
+        const st = window.getComputedStyle(el);
+        return (
+          r.width > 0 &&
+          r.height > 0 &&
+          st.display !== "none" &&
+          st.visibility !== "hidden"
+        );
+      };
+      const labelFor = (el) => {
+        if (el.id) {
+          const l = document.querySelector(
+            `label[for="${CSS.escape(el.id)}"]`,
+          );
+          if (l) return clean(l.innerText);
+        }
+        const wrap = el.closest("label");
+        if (wrap) return clean(wrap.innerText);
+        const group = el.closest("tr, .form-group, .row, li");
+        if (group) {
+          const clone = group.cloneNode(true);
+          clone
+            .querySelectorAll("input,select,textarea,button,option")
+            .forEach((n) => n.remove());
+          const t = clean(clone.innerText);
+          if (t) return t.slice(0, 100);
+        }
+        return "";
+      };
+      const fields = [];
+      document.querySelectorAll("input,select,textarea").forEach((el) => {
+        const type = (el.type || el.tagName).toLowerCase();
+        if (
+          ["hidden", "submit", "button", "reset", "image", "file", "radio"].includes(
+            type,
+          )
+        )
+          return;
+        if (
+          type === "checkbox" &&
+          /same_as_present|if_applicable|currently_working/i.test(
+            `${el.id} ${el.name}`,
+          )
+        )
+          return;
+        if (!visible(el) || el.disabled) return;
+        const name = el.name || el.id || "";
+        if (/captcha/i.test(name)) return;
+        const empty =
+          el.tagName === "SELECT"
+            ? el.selectedIndex <= 0
+            : type === "checkbox"
+              ? !el.checked
+              : !String(el.value).trim();
+        fields.push({
+          name,
+          type,
+          required: !!el.required,
+          empty,
+          label: labelFor(el),
+        });
+      });
+      return {
+        total: fields.length,
+        filled: fields.filter((f) => !f.empty).length,
+        missingRequired: fields.filter((f) => f.required && f.empty),
+        emptyOptional: fields.filter((f) => !f.required && f.empty),
+      };
+    });
+
+    console.log(
+      `\n🔍 [Field Audit] ${audit.total} active fields · ${audit.filled} filled · ${audit.missingRequired.length} required missing · ${audit.emptyOptional.length} optional empty`,
+    );
+    if (audit.missingRequired.length) {
+      console.log(
+        "   ❗ Required fields still empty (fill these in Profile or the form will not submit):",
+      );
+      for (const f of audit.missingRequired.slice(0, 15)) {
+        console.log(
+          `     - ${f.label || f.name} [${f.name}] (${f.type})`,
+        );
+      }
+    }
+    if (audit.emptyOptional.length) {
+      console.log("   ℹ️ Optional fields left empty:");
+      for (const f of audit.emptyOptional.slice(0, 10)) {
+        console.log(
+          `     - ${f.label || f.name} [${f.name}] (${f.type})`,
+        );
+      }
+    }
+    if (!audit.missingRequired.length && !audit.emptyOptional.length) {
+      console.log("   ✅ Every visible field is filled.");
+    }
+
+    // Persist a per-host snapshot so new Teletalk conditions are easy to spot later.
+    try {
+      const host = await getPageHost(page);
+      const dir = path.join(process.cwd(), "data");
+      await fs.mkdir(dir, { recursive: true });
+      const file = path.join(
+        dir,
+        `field-audit-${host.replace(/[^a-z0-9.-]/gi, "_")}.json`,
+      );
+      await fs.writeFile(
+        file,
+        JSON.stringify(
+          { host, url: page.url(), at: new Date().toISOString(), ...audit },
+          null,
+          2,
+        ),
+      );
+      console.log(`   💾 Audit saved: ${file}`);
+    } catch (_) {}
+
+    return audit;
+  } catch (e) {
+    console.log(`[Field Audit] ${e.message}`);
+    return null;
   }
 }
 
@@ -3753,7 +4041,7 @@ async function fillResultType(page, prefix, level, resultKeywordRe, kind) {
   await input.fill(String(level.gpa)).catch(() => {});
 }
 
-// ΓöÇΓöÇ PATTERN MEMORY SYSTEM ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── PATTERN MEMORY SYSTEM ───────────────────────────────────────────────────
 async function loadPatterns() {
   try {
     const raw = await fs.readFile(PATTERNS_PATH, "utf-8");
@@ -3771,7 +4059,7 @@ async function savePattern(host, fieldKey, pattern) {
     .mkdir(path.join(__dirname, "..", "data"), { recursive: true })
     .catch(() => {});
   await fs.writeFile(PATTERNS_PATH, JSON.stringify(all, null, 2));
-  console.log(`[Memory] ≡ƒÆ╛ Saved pattern for "${fieldKey}" on ${host}`);
+  console.log(`[Memory] 💾 Saved pattern for "${fieldKey}" on ${host}`);
 }
 
 async function getPageHost(page) {
@@ -3791,7 +4079,7 @@ async function aiFixField(page, fieldKey, value, hint) {
   )
     return null;
   console.log(
-    `[AI] ≡ƒñö Field "${fieldKey}" failed normally ΓÇö trying AI fallback...`,
+    `[AI] 🤔 Field "${fieldKey}" failed normally — trying AI fallback...`,
   );
 
   const screenshot = await takeAiScreenshot(page);
