@@ -1,5 +1,5 @@
 {
-  "_comment": "Keywords are matched as whole words/phrases against the post title (case-insensitive, Bangla included) -- 'programmer' won't match inside another word, and 'it officer' won't match inside 'audit officer'. This list is intentionally narrow: genuine programming/CSE roles only. It deliberately EXCLUDES 'computer operator', 'data entry operator', 'steno-typist', etc. -- those are clerical/typing posts that happen to mention 'computer' but aren't programming jobs. Add more terms here if you want to broaden it (e.g. 'network engineer', 'system analyst').",
+  "_comment": "Keywords are matched as whole words/phrases against the post title (case-insensitive, Bangla included) -- 'programmer' won't match inside another word, and 'it officer' won't match inside 'audit officer'. This list is intentionally narrow: genuine programming/CSE/IT roles only. It deliberately EXCLUDES 'computer operator', 'data entry operator', 'steno-typist', etc. -- those are clerical/typing posts that happen to mention 'computer' but aren't programming jobs. The 'it'/'cse'/'ict' tokens catch CSE/IT field markers like 'Sub Assistant Engineer (Computer/IT)' or 'Assistant Manager (CSE/IT)'.",
   "keywords": [
     "programmer",
     "প্রোগ্রামার",
@@ -13,6 +13,16 @@
     "সিস্টেম এনালিস্ট",
     "database administrator",
     "programming officer",
-    "it officer"
+    "it officer",
+    "it",
+    "cse",
+    "ict",
+    "computer/it",
+    "cse/it",
+    "computer science",
+    "information technology",
+    "আইটি",
+    "সিএসই",
+    "আইসিটি"
   ]
 }
