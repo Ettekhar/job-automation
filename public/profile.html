@@ -766,6 +766,51 @@
         </div>
       </div>
 
+      <!-- 8b. OPTIONAL: JOB EXPERIENCE -->
+      <div class="section-card">
+        <div class="optional-toggle-banner">
+          <div>
+            <div style="font-weight: 700; font-size: 14px; color: var(--text-main);">8b. Job Experience (optional)</div>
+            <div style="font-size: 12px; color: var(--text-muted);">Some Teletalk forms (e.g. Parjatan) render a required Job Experience row. Fill this in and the autofill completes that row automatically. Leave blank if you have none.</div>
+          </div>
+        </div>
+
+        <div class="form-grid-3" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="exp_org">Organization / Employer</label>
+            <input type="text" id="exp_org" name="experience.organization" placeholder="e.g. ABC Ltd.">
+          </div>
+          <div class="form-field">
+            <label for="exp_desig">Designation / Post</label>
+            <input type="text" id="exp_desig" name="experience.designation" placeholder="e.g. Software Engineer">
+          </div>
+          <div class="form-field">
+            <label for="exp_employed_on">Employed On (date)</label>
+            <input type="date" id="exp_employed_on" name="experience.employedOn">
+          </div>
+        </div>
+        <div class="form-grid-3" style="margin-bottom: 14px;">
+          <div class="form-field">
+            <label for="exp_address">Organization Address</label>
+            <input type="text" id="exp_address" name="experience.address" placeholder="Company address">
+          </div>
+          <div class="form-field">
+            <label for="exp_length">Length of Service</label>
+            <input type="text" id="exp_length" name="experience.lengthOfService" placeholder="e.g. 2 years 3 months">
+          </div>
+          <div class="form-field">
+            <label style="display: flex; align-items: center; gap: 8px; padding-top: 9px;">
+              <input type="checkbox" id="exp_current" name="experience.currentlyWorking">
+              <span>Currently working here</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="exp_desc">Job Description / Duties</label>
+          <textarea id="exp_desc" name="experience.description" rows="3" placeholder="Short description of duties"></textarea>
+        </div>
+      </div>
+
       <!-- 9. COMPUTER SKILLS & ADDITIONAL QUALIFICATIONS -->
       <div class="section-card">
         <div class="section-header">

@@ -2703,3 +2703,24 @@ body {
   from { opacity: 0; transform: scale(0.9); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+/* ── Inline card terminal (Autofill) ──────────────────────────────────────
+   The old box was locked at 90px tall with 11px text, which made live logs
+   unreadable on desktop and mobile. It now scales with the viewport and can
+   be dragged taller with the resize handle. */
+.inline-term-text {
+  min-height: 240px;
+  max-height: 48vh;
+  overflow-y: auto;
+  resize: vertical;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 4px 2px;
+}
+@media (max-width: 640px) {
+  .inline-term-text {
+    min-height: 300px;
+    max-height: 62vh;
+    font-size: 12.5px;
+  }
+}

@@ -268,6 +268,19 @@ function populateForm(p) {
     mastersContainer.style.display = "none";
   }
 
+  // Job Experience (optional)
+  const exp = p.experience && !Array.isArray(p.experience) ? p.experience : null;
+  if (exp) {
+    setVal("exp_org", exp.organization);
+    setVal("exp_desig", exp.designation);
+    setVal("exp_employed_on", exp.employedOn);
+    setVal("exp_address", exp.address);
+    setVal("exp_length", exp.lengthOfService);
+    setVal("exp_desc", exp.description);
+    const expCurrent = document.getElementById("exp_current");
+    if (expCurrent) expCurrent.checked = Boolean(exp.currentlyWorking);
+  }
+
   updateLiveJsonAndBookmarklet();
 }
 
@@ -387,6 +400,25 @@ function serializeForm() {
       year: getVal("mas_year"),
       scale: "4",
     };
+  }
+
+  // Optional Job Experience
+  if (getVal("exp_org") || getVal("exp_desig")) {
+    profile.experience = {
+      organization: getVal("exp_org"),
+      designation: getVal("exp_desig"),
+      employedOn: getVal("exp_employed_on"),
+      address: getVal("exp_address"),
+      lengthOfService: getVal("exp_length"),
+      description: getVal("exp_desc"),
+      currentlyWorking: Boolean(
+        document.getElementById("exp_current")?.checked,
+      ),
+    };
+  } else if (currentProfileData && currentProfileData.experience) {
+    // Preserve experience data that isn't editable through these fields
+    // (e.g. an array of multiple entries added by hand to profile.json).
+    profile.experience = currentProfileData.experience;
   }
 
   return profile;
