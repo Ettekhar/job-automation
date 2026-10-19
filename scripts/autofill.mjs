@@ -290,6 +290,7 @@ async function main() {
 
   await tickDeclarationCheckbox(formPage);
 
+  await logInvalidRequiredFields(formPage);
   const submitted = await findAndClickSubmit(formPage);
   if (!submitted) {
     console.log("\n-------------------------------------------------------");
@@ -393,6 +394,49 @@ async function verifyCaptchaBeforeSubmit(formPage) {
   } catch (e) {
     console.log(`[CAPTCHA] Re-check failed: ${e.message}`);
   }
+}
+
+// ── REQUIRED-FIELD DIAGNOSTIC ───────────────────────────────────────────────
+// New portal sections (Job Experience, Masters, ...) can add required fields
+// that the autofill has no data for. Chrome's native validation bubble is not
+// in the DOM, so a blocked submit used to show nothing useful. Before every
+// submit click we list the fields that will block it.
+async function logInvalidRequiredFields(page) {
+  try {
+    const invalid = await page
+      .evaluate(() => {
+        const out = [];
+        const nodes = Array.from(
+          document.querySelectorAll("input, select, textarea"),
+        );
+        for (const el of nodes) {
+          if (!el.willValidate || el.checkValidity()) continue;
+          let label = "";
+          if (el.id) {
+            const l = document.querySelector('label[for="' + el.id + '"]');
+            if (l) label = (l.innerText || "").trim();
+          }
+          if (!label && el.closest("td, th")) {
+            label = (el.closest("td, th").parentElement.innerText || "").trim();
+          }
+          out.push({
+            name: el.name || el.id || el.tagName.toLowerCase(),
+            label: label.replace(/\s+/g, " ").slice(0, 70),
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      })
+      .catch(() => []);
+    if (invalid.length) {
+      console.log(
+        `[Check] ${invalid.length} required field(s) are still empty - the browser will block Submit:`,
+      );
+      invalid.forEach((f) => console.log(`   - ${f.label || f.name}`));
+    } else {
+      console.log("[Check] All required fields validate - submitting.");
+    }
+  } catch (_) {}
 }
 
 async function findAndClickSubmit(
