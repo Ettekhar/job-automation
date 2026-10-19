@@ -584,8 +584,47 @@ async function waitForApplicationForm(context) {
         .count()
         .catch(() => 0);
       if (found > 0) return p;
+      // Closed circular? Then no form will ever appear -- exit with a clear
+      // message instead of burning the whole 8-minute wait.
+      const closed = await detectClosedCircular(p);
+      if (closed) {
+        console.log(`\n⛔ Application window CLOSED (${closed}) — there is no form to fill.`);
+        console.log(
+          "   The portal only shows the advertisement PDF after the deadline. Pick an open job.",
+        );
+        try {
+          const b = context.browser();
+          if (b) await b.close();
+        } catch (_) {}
+        process.exit(3);
+      }
     }
     tick++;
+    // Every ~30s, if we're still stuck, retry the rule-based Teletalk
+    // navigation from whatever page is currently open. This recovers from a
+    // bad AI click (e.g. the circular PDF) or a navigation that gave up.
+    if (tick % 20 === 0) {
+      const openPages = context.pages().filter((p) => !p.isClosed());
+      const current = openPages[openPages.length - 1];
+      if (current) {
+        if (/\.pdf($|\?)/i.test(current.url())) {
+          console.log("[Recovery] Detected a PDF tab — returning to the portal...");
+          await current
+            .goBack({ waitUntil: "domcontentloaded", timeout: 15000 })
+            .catch(() => {});
+        } else if (postTitle) {
+          console.log(
+            "[Recovery] Still no form — retrying standard Teletalk navigation...",
+          );
+          const recovered = await deterministicNavigate(
+            current,
+            context,
+            postTitle,
+          ).catch(() => null);
+          if (recovered) return recovered;
+        }
+      }
+    }
     if (tick % 5 === 0) {
       const waitedMin = ((Date.now() - startedAt) / 60000).toFixed(1);
       console.log(
@@ -844,6 +883,43 @@ async function readCaptchaWithGemini(base64Image) {
 }
 
 // ΓöÇΓöÇ SMART NAVIGATION (Saved Pattern ΓåÆ Deterministic ΓåÆ AI Fallback) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── CLOSED-CIRCULAR DETECTION ───────────────────────────────────────────────
+// Teletalk keeps "Ongoing Circular" links online after the deadline, but the
+// circular page then only shows the Advertisement PDF (no application form).
+// Without this check the autofill waits 8 minutes for a form that can never
+// appear. Returns a reason string when the circular is definitely closed.
+async function detectClosedCircular(page) {
+  try {
+    if (page.isClosed()) return null;
+    const url = page.url();
+    if (!url || url === "about:blank" || /\.pdf($|\?)/i.test(url)) return null;
+    const text = await page
+      .evaluate(() => (document.body ? document.body.innerText : ""))
+      .catch(() => "");
+    if (!text) return null;
+    // If the page offers any way to start an application, it is NOT closed.
+    // (Note: "Online Application" alone is only a heading on closed pages --
+    // the real link text is "Application Form" / "Apply Online".)
+    if (
+      /application\s*form|apply\s*online|apply\s*now|আবেদন\s*করুন/i.test(text)
+    )
+      return null;
+    const m = text.match(
+      /deadline\s*:\s*([0-9]{1,2}\s+[A-Za-z]{3,9}\s+[0-9]{4}(?:\s+[0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?\s*(?:AM|PM)?)?)/i,
+    );
+    if (!m) return null;
+    const when = new Date(m[1].replace(/\s+/g, " "));
+    if (isNaN(when.getTime())) return null;
+    // 6h slack: the portal's own deadline text is the only source here.
+    if (when.getTime() < Date.now() - 6 * 3600 * 1000) {
+      return `deadline was ${m[1].trim()}`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function smartNavigate(page, context, targetPost) {
   for (const p of context.pages()) {
     if (p.isClosed()) continue;
@@ -909,6 +985,27 @@ async function smartNavigate(page, context, targetPost) {
 
   const detResult = await deterministicNavigate(page, context, targetPost);
   if (detResult) return detResult;
+
+  // 2b. If the circular is closed, the portal only shows the advertisement PDF
+  // -- no AI navigation can conjure up an application form. Fail fast + clear.
+  for (const p of context.pages().slice().reverse()) {
+    if (p.isClosed()) continue;
+    const closed = await detectClosedCircular(p);
+    if (closed) {
+      console.log(`\n⛔ Application window CLOSED for "${targetPost}" (${closed}).`);
+      console.log(
+        "   The portal still lists the circular but only shows the advertisement PDF,",
+      );
+      console.log(
+        "   so there is no application form to fill. Pick a job whose deadline is still open.",
+      );
+      try {
+        const b = context.browser();
+        if (b) await b.close();
+      } catch (_) {}
+      process.exit(3);
+    }
+  }
 
   const hasAnyAI = Boolean(
     process.env.GEMINI_API_KEY ||
@@ -1309,6 +1406,46 @@ async function deterministicNavigate(page, context, targetPost) {
 }
 
 // ΓöÇΓöÇ AI-DRIVEN VISION NAVIGATION (with Loop Detection & Handback to Basic Pattern) ΓöÇΓöÇΓöÇ
+// ── RESILIENT SCREENSHOT FOR AI (never let web-font loading stall a run) ────
+// Playwright's page.screenshot() waits for document.fonts.ready. Some Teletalk
+// pages reference web fonts that never finish loading in headless Chromium, so
+// the call sits for 30s and (previously) aborted AI navigation entirely. Try a
+// short Playwright screenshot first, then fall back to a raw CDP capture which
+// does not wait for fonts at all.
+async function takeAiScreenshot(page, { fullPage = false } = {}) {
+  let timer = null;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error("screenshot timed out after 12s")),
+      12000,
+    );
+  });
+  try {
+    return await Promise.race([
+      page.screenshot({ type: "png", fullPage, timeout: 10000 }),
+      timeout,
+    ]);
+  } catch (e) {
+    console.log(
+      `[AI] Fast screenshot failed (${String(e.message).split("\n")[0]}) — using CDP fallback...`,
+    );
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+  try {
+    const client = await page.context().newCDPSession(page);
+    const shot = await client.send("Page.captureScreenshot", {
+      format: "png",
+      captureBeyondViewport: false,
+    });
+    await client.detach().catch(() => {});
+    if (shot && shot.data) return Buffer.from(shot.data, "base64");
+  } catch (e) {
+    console.log(`[AI] CDP screenshot failed: ${String(e.message).split("\n")[0]}`);
+  }
+  return null;
+}
+
 async function aiNavigate(page, context, targetPost) {
   const maxSteps = 15;
   const navKey = `nav_pattern::${new URL(page.url()).hostname}::${targetPost}`;
@@ -1345,12 +1482,22 @@ async function aiNavigate(page, context, targetPost) {
 
     await dismissModals(page);
 
-    let screenshot;
-    try {
-      screenshot = await page.screenshot({ type: "png", fullPage: false });
-    } catch (e) {
-      console.log(`[AI] Screenshot failed: ${e.message}`);
-      break;
+    // PDF guard: the AI sometimes clicks "Advertisement" which opens the
+    // circular PDF in Chrome's viewer, where no selectors exist. Go back.
+    if (/\.pdf($|\?)/i.test(page.url())) {
+      console.log("[AI] Landed on a PDF page — going back to the portal...");
+      await page
+        .goBack({ waitUntil: "domcontentloaded", timeout: 15000 })
+        .catch(() => {});
+      await page.waitForTimeout(1500).catch(() => {});
+      continue;
+    }
+
+    const screenshot = await takeAiScreenshot(page);
+    if (!screenshot) {
+      console.log("[AI] No screenshot available — retrying in 3s...");
+      await page.waitForTimeout(3000).catch(() => {});
+      continue;
     }
 
     const instruction = await askAINavigation(
@@ -1477,6 +1624,8 @@ Rules:
 - If you see a question like "Are you a Premium Member?" / "Premium Member?" ΓåÆ click "No" or "αª¿αª╛"
 - If you see a circular list ΓåÆ click the most recent/relevant circular
 - If you see a Next / αª¬αª░αª¼αª░αºìαªñαºÇ button after answering ΓåÆ click it
+- If the page shows BOTH "Advertisement" and "Application Form (Click here to Apply Online)" → click "Application Form (Click here to Apply Online)"
+- NEVER click "Advertisement", "Download", "Applicant's Copy" or any link ending in .pdf — a PDF cannot be filled and breaks the whole flow
 - Do NOT try to close modals or popups ΓÇö they are already handled
 
 Respond ONLY with valid JSON (no markdown, no explanation):
@@ -2924,7 +3073,7 @@ async function postSubmitAgent(browser, context, startPage, profile) {
       continue;
     }
 
-    const screenshot = await page.screenshot({ type: "png" }).catch(() => null);
+    const screenshot = await takeAiScreenshot(page);
     if (!screenshot) continue;
 
     const decision = await geminiDecidePage(
@@ -3645,12 +3794,8 @@ async function aiFixField(page, fieldKey, value, hint) {
     `[AI] ≡ƒñö Field "${fieldKey}" failed normally ΓÇö trying AI fallback...`,
   );
 
-  let screenshot;
-  try {
-    screenshot = await page.screenshot({ type: "png", fullPage: false });
-  } catch {
-    return null;
-  }
+  const screenshot = await takeAiScreenshot(page);
+  if (!screenshot) return null;
 
   const prompt = `You are helping fill a Bangladeshi government job application form.
 Field to fill: "${fieldKey}"
