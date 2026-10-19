@@ -1346,6 +1346,8 @@ async function loadBookmarklet() {
   }
 }
 
+let activeInlineAutofillPoller = null;
+
 window.runInlineAutofill = async function (safeId, url, postTitle) {
   const pill = document.getElementById(`term-pill-${safeId}`);
   const wrap = document.getElementById(`wrap-term-${safeId}`);
@@ -1407,48 +1409,78 @@ window.runInlineAutofill = async function (safeId, url, postTitle) {
   appendInlineTerm(`🚀 Starting autofill for "${postTitle || "Job"}"...`);
   appendInlineTerm(`🌐 Target Portal: ${url}`);
 
-  const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let handledLocal = false;
 
-  if (isLocalHost) {
-    try {
-      const res = await fetch("/api/autofill/launch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, postTitle }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.success && !data.isCloud) {
-          handledLocal = true;
-          appendInlineTerm("🖥️ Local Playwright Chrome window opened! Streaming stdout...");
-          showToast("Playwright browser window popped up on your desktop!", "success");
+  // Always try the home-server autofill agent first: it is reachable both
+  // from localhost and through tunnels (Cloudflare, etc.). Only when this
+  // endpoint is unavailable (e.g. a static Cloudflare Pages deployment) do
+  // we fall back to the cloud edge isolate below.
+  if (activeInlineAutofillPoller) {
+    clearInterval(activeInlineAutofillPoller);
+    activeInlineAutofillPoller = null;
+  }
+  try {
+    const res = await fetch("/api/autofill/launch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, postTitle }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && !data.isCloud) {
+        handledLocal = true;
+        appendInlineTerm("🖥️ Server autofill agent launched — filling the form now...");
+        showToast("Server autofill agent launched — live progress below.", "success");
 
+        // Stream progress by polling (proxies/tunnels buffer SSE streams).
+        let renderedCount = 0;
+        let finished = false;
+        const pollTick = async () => {
+          if (finished) return;
           try {
-            const sse = new EventSource("/api/autofill/events");
-            sse.onmessage = (e) => {
-              try {
-                const payload = JSON.parse(e.data);
-                if (payload.line) appendInlineTerm(payload.line, payload.done, payload.type === "error");
-                if (payload.done) {
-                  sse.close();
+            const logRes = await fetch(`/api/autofill/logs?t=${Date.now()}`);
+            if (!logRes.ok) return;
+            const logData = await logRes.json();
+            const logs = Array.isArray(logData.logs) ? logData.logs : [];
+            if (logs.length < renderedCount) renderedCount = 0;
+            for (let i = renderedCount; i < logs.length; i++) {
+              const entry = logs[i];
+              if (!entry || !entry.line) continue;
+              const isErr = entry.type === "error";
+              appendInlineTerm(entry.line, Boolean(entry.done) && !isErr, isErr);
+              if (entry.done && !finished) {
+                finished = true;
+                if (activeInlineAutofillPoller) {
+                  clearInterval(activeInlineAutofillPoller);
+                  activeInlineAutofillPoller = null;
+                }
+                if (isErr) {
+                  if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `🤖 Autofill`;
+                  }
+                } else {
                   if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = `✅ Filled`;
                   }
+                  if (textEl) {
+                    const shotLine = document.createElement("div");
+                    shotLine.innerHTML = `[${new Date().toLocaleTimeString()}] 📸 <a href="/screenshots/autofill-preview.png" target="_blank" style="color: #38bdf8; text-decoration: underline;">View verification screenshot</a>`;
+                    textEl.appendChild(shotLine);
+                    textEl.scrollTop = textEl.scrollHeight;
+                  }
                 }
-              } catch (_) {
-                appendInlineTerm(e.data);
               }
-            };
-            sse.onerror = () => {
-              sse.close();
-            };
+            }
+            renderedCount = logs.length;
           } catch (_) {}
-        }
+        };
+        activeInlineAutofillPoller = setInterval(pollTick, 1500);
+        pollTick();
       }
-    } catch (_) {}
-  }
+    }
+  } catch (_) {}
 
   // If local server launch wasn't available (e.g. running on Cloudflare), run Cloudflare Edge autofill
   if (!handledLocal) {
@@ -1645,7 +1677,7 @@ async function executeDesktopAutofill() {
   const btn = document.getElementById("btnLaunchPlaywrightBrowser");
   const statusBadge = document.getElementById("autofillConsoleStatus");
   btn.disabled = true;
-  btn.textContent = "Opening Window...";
+  btn.textContent = "Launching agent...";
 
   clearAutofillLogs();
   if (statusBadge) {
@@ -1677,7 +1709,7 @@ async function executeDesktopAutofill() {
     showToast("Error launching autofill: " + err.message, "error");
   } finally {
     btn.disabled = false;
-    btn.textContent = "🚀 Pop Up Chrome Window Now";
+    btn.textContent = "🤖 Run Server-Side Autofill Agent";
   }
 }
 
