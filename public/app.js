@@ -823,39 +823,60 @@ window.trackJobAsApplied = async function (jobId, title, org) {
 // -------------------------------------------------------------
 // Live SSE Logs
 // -------------------------------------------------------------
-function connectLiveLogEvents() {
-  if (sseSource) sseSource.close();
-  sseSource = new EventSource("/api/scrape/events");
+// Live scrape console. Polls a small JSON endpoint instead of using SSE:
+// proxies/tunnels (e.g. Cloudflare) can buffer event streams, which leaves
+// the terminal empty even while a scan is actually running.
+let logPollTimer = null;
+let lastRenderedLogsKey = "";
+let lastCompletionKey = "";
 
+function connectLiveLogEvents() {
   const terminalLogs = document.getElementById("terminalLogs");
   const bannerLog = document.getElementById("scraperBannerLog");
 
-  sseSource.onmessage = (e) => {
-    try {
-      const data = JSON.parse(e.data);
+  const render = (logs) => {
+    if (!terminalLogs) return;
+    const key = (logs || []).map((l) => `${l.time}|${l.message}|${l.isComplete ? 1 : 0}`).join("\n");
+    if (key === lastRenderedLogsKey) return;
+    lastRenderedLogsKey = key;
+
+    terminalLogs.innerHTML = "";
+    (logs || []).forEach((data) => {
       if (!data.message) return;
-
       if (bannerLog) bannerLog.textContent = data.message;
-
       const logEl = document.createElement("div");
-      logEl.className = `log-entry ${data.isError ? 'error' : data.message.includes('MATCH') ? 'match' : ''}`;
+      logEl.className = `log-entry ${data.isError ? "error" : data.message.includes("MATCH") ? "match" : ""}`;
       logEl.textContent = `[${data.time || new Date().toLocaleTimeString()}] ${data.message}`;
       terminalLogs.appendChild(logEl);
+    });
 
-      const autoScroll = document.getElementById("chkAutoScroll").checked;
-      if (autoScroll) {
-        terminalLogs.scrollTop = terminalLogs.scrollHeight;
-      }
+    const autoScroll = document.getElementById("chkAutoScroll");
+    if (!autoScroll || autoScroll.checked) {
+      terminalLogs.scrollTop = terminalLogs.scrollHeight;
+    }
 
-      if (data.isComplete) {
-        loadOverview();
-        loadJobs();
-        showToast("Scrape completed successfully!", "success");
-      }
-    } catch (err) {
-      console.error("SSE parse error:", err);
+    const doneEntry = (logs || []).find((l) => l.isComplete);
+    const doneKey = doneEntry ? `${doneEntry.time}|${doneEntry.message}` : "";
+    if (doneEntry && doneKey !== lastCompletionKey) {
+      lastCompletionKey = doneKey;
+      loadOverview();
+      loadJobs();
+      showToast("Scrape completed successfully!", "success");
     }
   };
+
+  const tick = async () => {
+    try {
+      const res = await fetch("/api/scrape/logs");
+      if (!res.ok) return;
+      const data = await res.json();
+      render(data.logs);
+    } catch (_) {}
+  };
+
+  if (logPollTimer) clearInterval(logPollTimer);
+  logPollTimer = setInterval(tick, 2000);
+  tick();
 }
 
 // -------------------------------------------------------------
@@ -1564,6 +1585,53 @@ function clearAutofillLogs() {
   }
 }
 
+// Autofill console polling — same reason as the scrape console. SSE can be
+// buffered by the tunnel, so poll the log history instead.
+let autofillPollTimer = null;
+let autofillRenderedCount = 0;
+let autofillFinished = false;
+
+function stopAutofillPolling() {
+  if (autofillPollTimer) {
+    clearInterval(autofillPollTimer);
+    autofillPollTimer = null;
+  }
+}
+
+function startAutofillPolling() {
+  stopAutofillPolling();
+  autofillRenderedCount = 0;
+  autofillFinished = false;
+
+  const tick = async () => {
+    try {
+      const res = await fetch("/api/autofill/logs");
+      if (!res.ok) return;
+      const data = await res.json();
+      const logs = Array.isArray(data.logs) ? data.logs : [];
+      if (logs.length < autofillRenderedCount) autofillRenderedCount = 0;
+
+      for (let i = autofillRenderedCount; i < logs.length; i++) {
+        const entry = logs[i];
+        if (entry && entry.line) appendAutofillLog(entry.line, entry.type || "info");
+        if (entry && entry.done && !autofillFinished) {
+          autofillFinished = true;
+          const badge = document.getElementById("autofillConsoleStatus");
+          if (badge) {
+            badge.textContent = "COMPLETED";
+            badge.style.color = "#34d399";
+          }
+          stopAutofillPolling();
+        }
+      }
+      autofillRenderedCount = logs.length;
+    } catch (_) {}
+  };
+
+  autofillPollTimer = setInterval(tick, 1500);
+  tick();
+}
+
 async function executeDesktopAutofill() {
   const { url, postTitle } = currentAutofillJob;
   const btn = document.getElementById("btnLaunchPlaywrightBrowser");
@@ -1580,30 +1648,6 @@ async function executeDesktopAutofill() {
   appendAutofillLog(`🚀 Launching Chromium window for "${postTitle || "Job"}"...`, "info");
   appendAutofillLog(`🌐 Target: ${url}`, "info");
 
-  // Connect to SSE stream for live terminal stdout/stderr
-  try {
-    if (autofillEventSource) autofillEventSource.close();
-    autofillEventSource = new EventSource("/api/autofill/events");
-    autofillEventSource.onmessage = (e) => {
-      try {
-        const payload = JSON.parse(e.data);
-        if (payload.line) appendAutofillLog(payload.line, payload.type || "info");
-        if (payload.done) {
-          if (statusBadge) {
-            statusBadge.textContent = "COMPLETED";
-            statusBadge.style.color = "#34d399";
-          }
-          if (autofillEventSource) autofillEventSource.close();
-        }
-      } catch (_) {
-        appendAutofillLog(e.data);
-      }
-    };
-    autofillEventSource.onerror = () => {
-      // In static / cloudflare mode, SSE might not be active; fall back smoothly
-    };
-  } catch (_) {}
-
   try {
     showToast(`Launching Chromium window for "${postTitle}"...`, "info");
     const res = await fetch("/api/autofill/launch", {
@@ -1612,9 +1656,10 @@ async function executeDesktopAutofill() {
       body: JSON.stringify({ url, postTitle }),
     });
     const data = await res.json();
+    startAutofillPolling();
     if (data.success) {
       appendAutofillLog(`✅ ${data.message}`, "success");
-      showToast("Playwright browser window popped up on your desktop!", "success");
+      showToast("Playwright browser launched — live progress is streaming below.", "success");
     } else {
       appendAutofillLog(`❌ ${data.message || "Launch failed"}`, "error");
       showToast(data.error || data.message || "Could not launch the autofill browser.", "error");

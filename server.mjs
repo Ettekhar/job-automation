@@ -790,6 +790,13 @@ app.get("/api/scrape/events", (req, res) => {
   });
 });
 
+// Polling fallback for the live console: proxies/tunnels (e.g. Cloudflare)
+// can buffer SSE streams, leaving the dashboard terminal empty even while a
+// scan is running. The UI polls this small JSON endpoint instead.
+app.get("/api/scrape/logs", (req, res) => {
+  res.json({ isScraping, logs: liveLogs });
+});
+
 // 6. Scrape history
 app.get("/api/scrape/history", async (req, res) => {
   try {
@@ -950,6 +957,11 @@ app.get("/api/autofill/events", (req, res) => {
   req.on("close", () => {
     autofillSseClients = autofillSseClients.filter((c) => c !== res);
   });
+});
+
+// Polling fallback for the autofill console (same tunnel-buffering reason).
+app.get("/api/autofill/logs", (req, res) => {
+  res.json({ logs: autofillLogsHistory });
 });
 
 // 12. Launch Autofill Script with live terminal streaming
