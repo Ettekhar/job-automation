@@ -16,22 +16,13 @@ cp -r data "../data-backup-$(date +%Y%m%d-%H%M%S)"
 git fetch origin
 git checkout -f -B server-live origin/server-live
 
-# 3) Keep the app's OWN scanner off (duplicate-email protection).
-#    Linux / macOS / WSL:
-grep -n autoScrapeEnabled data/settings.json 2>/dev/null || echo "no settings.json -> scanner is off by default"
-sed -i 's/"autoScrapeEnabled": *true/"autoScrapeEnabled": false/' data/settings.json 2>/dev/null || true
-
-# 4) Rebuild and restart
-docker compose up -d --build        # older Docker: docker-compose up -d --build
+# 3) Rebuild and restart
+docker compose up -d --build
 ```
 
-On Windows PowerShell, step 3 is instead:
-
-```powershell
-(Get-Content data\settings.json) -replace '"autoScrapeEnabled": *true','"autoScrapeEnabled": false' | Set-Content data\settings.json
-```
-
-(or simply open the dashboard -> Settings and switch auto-scrape off).
+Step 3 is only needed when `package.json` / `package-lock.json` changed;
+otherwise `docker compose up -d` is enough. The app code is bind-mounted, so
+code and data updates are visible without a rebuild.
 
 ## Verify after the update
 
@@ -41,14 +32,41 @@ Open the dashboard and check:
 - searching "Petrobangla" lists `Sub Assistant Engineer(Computer/IT)` and
   `Assistant Manager(CSE/IT)`
 
-## Why keep its scanner off
+## Email policy on this host (already configured)
 
-This app has its **own** background scanner (dashboard -> Settings ->
-auto-scrape) and its **own** "already sent" list, separate from the
-GitHub + PC systems. If it also runs scans, the same job can be emailed
-twice. GitHub + the PC's scheduled task are the only senders.
+The server is the **view/apply station** — it must never send its own
+job-alert emails, or a job could reach your inbox twice (GitHub + PC are the
+single source of alerts). This is enforced by a small untracked file next to
+`docker-compose.yml`:
+
+```yaml
+# docker-compose.override.yml
+services:
+  job-automation:
+    environment:
+      - JOB_ALERTS_DISABLED=1
+```
+
+With this flag the app can still scan and highlight matches ("Scan now"), but
+it will never email a job alert. The application-PDF email sent by the
+1-click autofill is NOT affected.
+
+Keep auto-scrape OFF anyway (dashboard -> Settings) — GitHub + the PC's
+scheduled task are the only senders.
+
+## Automatic freshness (already configured)
+
+`~/scripts/sync-job-automation.sh` runs every 3 hours via cron:
+
+    30 */3 * * * $HOME/scripts/sync-job-automation.sh
+
+It pulls the newest code + data from GitHub (`server-live` branch). It never
+scans and never emails. The dashboard reads the data files live, so new jobs
+appear without a restart. If a future update changes dependencies, the script
+rebuilds the Docker image automatically.
 
 ## Notes
 
 - `.env` and `data/settings.json` are git-ignored: the commands never touch them.
+- `docker-compose.override.yml` is untracked too — updates keep it.
 - The old runtime data is kept in `../data-backup-<timestamp>/`.

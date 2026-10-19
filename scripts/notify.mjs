@@ -86,6 +86,26 @@ export async function testSmtpConnection(customConfig = null, recipientEmail = n
 }
 
 export async function notifyJob(job, customEmailTo = null) {
+  // Host-level policy switch: the home server ("view/apply station") runs with
+  // JOB_ALERTS_DISABLED=1 so it can scan and highlight matches but never send
+  // its own job-alert emails — the GitHub + PC runners are the single source of
+  // alerts, which guarantees the same job can never be emailed twice.
+  // (Application-PDF emails from autofill.mjs are NOT affected by this flag.)
+  if (process.env.JOB_ALERTS_DISABLED === "1") {
+    console.log(`[Email] Job alerts are disabled on this host (JOB_ALERTS_DISABLED=1) — skipped: "${job.title}"`);
+    return {
+      results: [
+        {
+          channel: "host-policy",
+          success: true,
+          info: "job alerts disabled on this host (JOB_ALERTS_DISABLED=1)",
+        },
+      ],
+      errors: [],
+      skipped: true,
+    };
+  }
+
   const results = [];
   const errors = [];
 
