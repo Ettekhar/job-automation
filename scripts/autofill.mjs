@@ -211,6 +211,19 @@ async function main() {
   // --- Organization Choice dual-list (Available -> Selected) ---
   await fillOrganizationChoices(formPage);
 
+  // --- Address integrity guard ("Same as Present Address" must stay off) ---
+  await ensureAddressIntegrity(formPage, profile).catch((e) => console.log(`[Address] Guard failed: ${e.message}`));
+
+  // --- Manual test hook: fill + audit, never CAPTCHA/submit ---
+  if (process.env.AUTOFILL_DRY_RUN === "1") {
+    await tickDeclarationCheckbox(formPage);
+    await ensureAddressIntegrity(formPage, profile).catch(() => { });
+    await auditFormFields(formPage);
+    console.log("\n🧪 DRY RUN — form filled and audited. Skipping CAPTCHA and submit.");
+    await browser.close().catch(() => { });
+    process.exit(0);
+  }
+
   // --- CAPTCHA ---
   if (hasAnyAI) {
     console.log("🤖 Reading and solving CAPTCHA with AI Vision cascade...");
@@ -219,6 +232,12 @@ async function main() {
 
   // --- Tick ONLY the declaration checkbox at the bottom ---
   await tickDeclarationCheckbox(formPage);
+
+  // --- Re-verify addresses after the declaration tick (defensive) ---
+  await ensureAddressIntegrity(formPage, profile).catch(() => { });
+
+  // --- Report every field + anything still missing ---
+  await auditFormFields(formPage);
 
   // --- Auto-submit the form ---
   await logInvalidRequiredFields(formPage);
@@ -1363,22 +1382,47 @@ async function dismissModals(page) {
 // Used in post-submit flows (e.g. preview.php) where the page asks you to tick all agreements.
 async function tickAllCheckboxes(page) {
   try {
-    const previewSelectors = ["#info_yes", "input[name='info_yes']", "#agree", "input[name='agree']", "#declaration", "input[name='declaration']", "input[type='checkbox']"];
+    const tick = async (el) => {
+      await el.evaluate(e => {
+        e.checked = true;
+        if (typeof e.onchange === "function") { try { e.onchange(); } catch (err) { } }
+        e.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        e.dispatchEvent(new Event("input", { bubbles: true }));
+        e.dispatchEvent(new Event("change", { bubbles: true }));
+      }).catch(() => { });
+      await el.check({ force: true, timeout: 1000 }).catch(() => { });
+    };
+
+    // 1. Known preview/declaration controls only.
+    const previewSelectors = ["#info_yes", "input[name='info_yes']", "#agree", "input[name='agree']", "#declaration", "input[name='declaration']"];
     for (const sel of previewSelectors) {
       const els = await page.locator(sel).all().catch(() => []);
       for (const el of els) {
         const isVisible = await el.isVisible().catch(() => false);
         if (!isVisible) continue;
-        await el.evaluate(e => {
-          e.checked = true;
-          if (typeof e.onchange === "function") { try { e.onchange(); } catch (err) { } }
-          e.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-          e.dispatchEvent(new Event("input", { bubbles: true }));
-          e.dispatchEvent(new Event("change", { bubbles: true }));
-        }).catch(() => { });
-        await el.check({ force: true, timeout: 1000 }).catch(() => { });
+        await tick(el);
       }
     }
+
+    // 2. Fallback: ONLY agreement-style checkboxes. Never tick address or
+    // section toggles -- "Same as Present Address" copies the present
+    // address over the permanent address when clicked, and "If Applicable"
+    // checkboxes would enable sections we cannot fill.
+    const protectedRe = /same_as_present|same.?as.?present|copy.*address|if_applicable|currently_working|employment|masters|graduation|experience/i;
+    const agreeRe = /agree|declare|declaration|knowledge and belief|correct, true|terms|condition|confirm|next step/i;
+    const cbs = await page.locator("input[type='checkbox']").all().catch(() => []);
+    for (const el of cbs) {
+      if (!(await el.isVisible().catch(() => false))) continue;
+      const meta = await el.evaluate(e => {
+        const label = e.id ? document.querySelector(`label[for="${e.id}"]`) : null;
+        const wrap = e.closest("label");
+        return [e.id, e.name, e.getAttribute("onclick") || "", label ? label.innerText : "", wrap ? wrap.innerText : ""].join(" ");
+      }).catch(() => "");
+      if (protectedRe.test(meta)) continue;
+      if (!agreeRe.test(meta)) continue;
+      await tick(el);
+    }
+
     console.log("✅ Ticked preview declaration checkbox.");
   } catch (e) {
     console.log(`[TickAll] ${e.message}`);
@@ -1399,7 +1443,10 @@ async function tickDeclarationCheckbox(page) {
         el.dispatchEvent(new Event("input", { bubbles: true }));
         el.dispatchEvent(new Event("change", { bubbles: true }));
       }).catch(() => { });
-      await page.locator("label[for='agree'], label.form-check-label").first().click({ force: true, timeout: 1000 }).catch(() => { });
+      // NOTE: do NOT click a generic `label.form-check-label` here. On Teletalk
+      // forms the FIRST such label is usually "Same as Present Address", whose
+      // onclick handler copies the present address over the permanent address
+      // (this silently destroyed the permanent address on BCIC).
       await agree.check({ force: true, timeout: 1000 }).catch(() => { });
       console.log("✅ Declaration checkbox (#agree) ticked.");
       return;
@@ -1407,17 +1454,21 @@ async function tickDeclarationCheckbox(page) {
 
     // 2. Search for checkbox with declaration text keywords in surrounding DOM
     const checkboxes = await page.locator("input[type=checkbox]").all().catch(() => []);
+    const protectedRe = /same_as_present|same.?as.?present|copy.*address|if_applicable|currently_working/i;
     for (const cb of checkboxes) {
       const isVisible = await cb.isVisible().catch(() => false);
       if (!isVisible) continue;
 
-      const text = await cb.evaluate(el => {
+      const meta = await cb.evaluate(el => {
         const tr = el.closest("tr");
         const fieldset = el.closest("fieldset");
         const div = el.closest("div.form-group, div.row, div, p, form");
         const parent = el.parentElement;
         const label = el.id ? document.querySelector(`label[for="${el.id}"]`) : null;
         return [
+          el.id || "",
+          el.name || "",
+          el.getAttribute("onclick") || "",
           tr ? tr.innerText : "",
           fieldset ? fieldset.innerText : "",
           div ? div.innerText : "",
@@ -1426,11 +1477,14 @@ async function tickDeclarationCheckbox(page) {
         ].join(" ");
       }).catch(() => "");
 
-      if (/declare|declaration|knowledge and belief|correct, true|next step|terms|condition/i.test(text)) {
+      // Never touch address-copy or optional-section toggles.
+      if (protectedRe.test(meta)) continue;
+
+      if (/declare|declaration|knowledge and belief|correct, true|next step|terms|condition/i.test(meta)) {
         await cb.evaluate(el => {
           el.checked = true;
           if (typeof el.onchange === 'function') { try { el.onchange(); } catch (e) { } }
-          el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+          el.dispatchEvent(new Event("input", { bubbles: true }));
           el.dispatchEvent(new Event("change", { bubbles: true }));
         }).catch(() => { });
         await cb.check({ force: true, timeout: 1000 }).catch(() => { });
@@ -3011,6 +3065,154 @@ async function fillAddressBlock(page, prefix, address) {
   if (districtOk) {
     await waitForOptions(page, upazilaSel, 2, 8000);
     await selectFuzzy(page, upazilaSel, address.upazila);
+  }
+}
+
+// ── ADDRESS INTEGRITY GUARD ─────────────────────────────────────────────────
+// Teletalk's "Same as Present Address" checkbox runs an onclick handler that
+// copies every present-address field into the permanent-address block. If any
+// generic checkbox helper clicks it (or the form itself re-syncs), the
+// permanent address is silently replaced by the present one -- confirmed on
+// BCIC. This guard unchecks it and restores both blocks from the profile
+// whenever they drift.
+async function ensureAddressIntegrity(page, profile) {
+  if (!profile?.present_address && !profile?.permanent_address) return;
+
+  const same = page.locator("#same_as_present, input[name='same_as_present']").first();
+  if (await same.count().catch(() => 0)) {
+    const checked = await same.isChecked().catch(() => false);
+    if (checked) {
+      await same.evaluate(el => {
+        el.checked = false;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      }).catch(() => { });
+      console.log("⚠️ [Address] 'Same as Present Address' was ticked — unchecked it so the permanent address stays independent.");
+    }
+  }
+
+  const differs = await page.evaluate((prof) => {
+    const norm = (s) => String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    const check = (prefix, addr) => {
+      if (!addr) return false;
+      const textPairs = [
+        [`${prefix}_careof`, addr.care_of],
+        [`${prefix}_village`, addr.village_road_house],
+        [`${prefix}_post`, addr.post_office],
+        [`${prefix}_postcode`, addr.post_code],
+      ];
+      for (const [id, wanted] of textPairs) {
+        const el = document.getElementById(id);
+        if (!el || wanted === undefined || wanted === null || wanted === "") continue;
+        if (norm(el.value) !== norm(wanted)) return true;
+      }
+      for (const [id, wanted] of [[`${prefix}_district`, addr.district], [`${prefix}_upazila`, addr.upazila]]) {
+        const el = document.getElementById(id);
+        if (!el || !wanted) continue;
+        if (el.selectedIndex <= 0) return true;
+        const shown = norm(el.options[el.selectedIndex].text);
+        const want = norm(wanted);
+        if (shown !== want && !shown.includes(want) && !want.includes(shown)) return true;
+      }
+      return false;
+    };
+    return {
+      present: check("present", prof.present_address),
+      permanent: check("permanent", prof.permanent_address),
+    };
+  }, profile).catch(() => ({ present: false, permanent: false }));
+
+  if (differs.present) {
+    console.log("🛠️ [Address] Present address drifted from profile — restoring...");
+    await fillAddressBlock(page, "present", profile.present_address);
+  }
+  if (differs.permanent) {
+    console.log("🛠️ [Address] Permanent address drifted from profile — restoring...");
+    await fillAddressBlock(page, "permanent", profile.permanent_address);
+  }
+}
+
+// ── FORM FIELD AUDIT ────────────────────────────────────────────────────────
+// Logs a compact inventory right before submit: how many fields exist, which
+// required ones are still empty, and which optional ones were left blank.
+// This is how new Teletalk conditions surface instead of being skipped.
+async function auditFormFields(page) {
+  try {
+    const audit = await page.evaluate(() => {
+      const clean = (s) => String(s || "").replace(/\s+/g, " ").trim();
+      const visible = (el) => {
+        const r = el.getBoundingClientRect();
+        const st = window.getComputedStyle(el);
+        return r.width > 0 && r.height > 0 && st.display !== "none" && st.visibility !== "hidden";
+      };
+      const labelFor = (el) => {
+        if (el.id) {
+          const l = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
+          if (l) return clean(l.innerText);
+        }
+        const wrap = el.closest("label");
+        if (wrap) return clean(wrap.innerText);
+        const group = el.closest("tr, .form-group, .row, li");
+        if (group) {
+          const clone = group.cloneNode(true);
+          clone.querySelectorAll("input,select,textarea,button,option").forEach(n => n.remove());
+          const t = clean(clone.innerText);
+          if (t) return t.slice(0, 100);
+        }
+        return "";
+      };
+      const fields = [];
+      document.querySelectorAll("input,select,textarea").forEach(el => {
+        const type = (el.type || el.tagName).toLowerCase();
+        if (["hidden", "submit", "button", "reset", "image", "file", "radio"].includes(type)) return;
+        if (type === "checkbox" && /same_as_present|if_applicable|currently_working/i.test(`${el.id} ${el.name}`)) return;
+        if (!visible(el) || el.disabled) return;
+        const name = el.name || el.id || "";
+        if (/captcha/i.test(name)) return;
+        const empty = el.tagName === "SELECT"
+          ? el.selectedIndex <= 0
+          : (type === "checkbox" ? !el.checked : !String(el.value).trim());
+        fields.push({ name, type, required: !!el.required, empty, label: labelFor(el) });
+      });
+      return {
+        total: fields.length,
+        filled: fields.filter(f => !f.empty).length,
+        missingRequired: fields.filter(f => f.required && f.empty),
+        emptyOptional: fields.filter(f => !f.required && f.empty),
+      };
+    });
+
+    console.log(`\n🔍 [Field Audit] ${audit.total} active fields · ${audit.filled} filled · ${audit.missingRequired.length} required missing · ${audit.emptyOptional.length} optional empty`);
+    if (audit.missingRequired.length) {
+      console.log("   ❗ Required fields still empty (fill these in Profile or the form will not submit):");
+      for (const f of audit.missingRequired.slice(0, 15)) {
+        console.log(`     - ${f.label || f.name} [${f.name}] (${f.type})`);
+      }
+    }
+    if (audit.emptyOptional.length) {
+      console.log("   ℹ️ Optional fields left empty:");
+      for (const f of audit.emptyOptional.slice(0, 10)) {
+        console.log(`     - ${f.label || f.name} [${f.name}] (${f.type})`);
+      }
+    }
+    if (!audit.missingRequired.length && !audit.emptyOptional.length) {
+      console.log("   ✅ Every visible field is filled.");
+    }
+
+    // Persist a per-host snapshot so new Teletalk conditions are easy to spot later.
+    try {
+      const host = await getPageHost(page);
+      const dir = path.join(process.cwd(), "data");
+      await fs.mkdir(dir, { recursive: true });
+      const file = path.join(dir, `field-audit-${host.replace(/[^a-z0-9.-]/gi, "_")}.json`);
+      await fs.writeFile(file, JSON.stringify({ host, url: page.url(), at: new Date().toISOString(), ...audit }, null, 2));
+      console.log(`   💾 Audit saved: ${file}`);
+    } catch (_) { }
+
+    return audit;
+  } catch (e) {
+    console.log(`[Field Audit] ${e.message}`);
+    return null;
   }
 }
 
