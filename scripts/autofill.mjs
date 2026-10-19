@@ -3820,6 +3820,29 @@ async function ensureAddressIntegrity(page, profile) {
     );
     await fillAddressBlock(page, "permanent", profile.permanent_address);
   }
+
+  // Always report what the two address blocks actually contain, so a silent
+  // swap/copy can never pass unnoticed again.
+  await page.waitForTimeout(400).catch(() => {});
+  const verified = await page
+    .evaluate(() => {
+      const label = (prefix) => {
+        const d = document.getElementById(`${prefix}_district`);
+        const u = document.getElementById(`${prefix}_upazila`);
+        const dt =
+          d && d.selectedIndex >= 0 ? d.options[d.selectedIndex].text : "?";
+        const ut =
+          u && u.selectedIndex >= 0 ? u.options[u.selectedIndex].text : "?";
+        return `${dt} / ${ut}`;
+      };
+      return { present: label("present"), permanent: label("permanent") };
+    })
+    .catch(() => null);
+  if (verified) {
+    console.log(
+      `✅ [Address] Verified — Present: ${verified.present} · Permanent: ${verified.permanent}`,
+    );
+  }
 }
 
 // ── FORM FIELD AUDIT ────────────────────────────────────────────────────────
@@ -3884,7 +3907,9 @@ async function auditFormFields(page) {
         if (/captcha/i.test(name)) return;
         const empty =
           el.tagName === "SELECT"
-            ? el.selectedIndex <= 0
+            ? el.multiple
+              ? el.selectedOptions.length === 0
+              : el.selectedIndex <= 0
             : type === "checkbox"
               ? !el.checked
               : !String(el.value).trim();
