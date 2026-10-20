@@ -3267,6 +3267,16 @@ async function fillLevelWithGroup(page, prefix, level) {
 async function fillGraduation(page, grad) {
   if (!grad) return;
 
+  // Some posts don't include the Graduation section at all (e.g. BOGMC
+  // Sub Assistant Engineer). Bail out before selectFuzzy() falls through
+  // to the AI cascade for every field, which is slow and burns quota.
+  const graExamField = page.locator("#gra_exam");
+  const graExamCount = await graExamField.count().catch(() => 0);
+  if (!graExamCount) {
+    console.log("[Graduation] Section is not on this form — skipping.");
+    return;
+  }
+
   // 1. Enable the Graduation "If Applicable" checkbox if it exists
   //    The checkbox ID varies by employer; try common Teletalk patterns.
   const gradCbSel = [
@@ -3288,6 +3298,16 @@ async function fillGraduation(page, grad) {
     await cb.check({ force: true }).catch(() => { });
     await page.waitForTimeout(300);
     break;
+  }
+
+  // The section can still be hidden or disabled when this post has no
+  // graduation requirement. Skip instead of letting the AI cascade fire.
+  if (
+    !(await graExamField.isVisible().catch(() => false)) ||
+    (await graExamField.isDisabled().catch(() => false))
+  ) {
+    console.log("[Graduation] Section is hidden/disabled for this post — skipping.");
+    return;
   }
 
   // 2. Examination type (B.Sc Engineering etc) - triggers AJAX for institute list
