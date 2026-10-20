@@ -586,6 +586,7 @@ async function completePreviewStage(page, profile) {
     // The portal uploads via onchange/AJAX and refreshes its preview boxes.
     await page.waitForTimeout(2500).catch(() => {});
   }
+  await tickAllCheckboxes(page);
   await tickDeclarationCheckbox(page);
   await ensureAddressIntegrity(page, profile).catch(() => {});
   await logInvalidRequiredFields(page).catch(() => {});
