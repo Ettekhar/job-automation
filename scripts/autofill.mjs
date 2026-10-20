@@ -4006,6 +4006,16 @@ async function fillLevelWithGroup(page, prefix, level) {
 async function fillGraduation(page, grad) {
   if (!grad) return;
 
+  // Some posts don't include the Graduation section at all (e.g. BOGMC
+  // Sub Assistant Engineer). Bail out before selectFuzzy() falls through
+  // to the AI cascade for every field, which is slow and burns quota.
+  const graExamField = page.locator("#gra_exam");
+  const graExamCount = await graExamField.count().catch(() => 0);
+  if (!graExamCount) {
+    console.log("[Graduation] Section is not on this form — skipping.");
+    return;
+  }
+
   const gradCbSel = [
     "input[type=checkbox]#gra_applicable",
     "input[type=checkbox][name*='gra_app']",
@@ -4038,6 +4048,16 @@ async function fillGraduation(page, grad) {
     await cb.check({ force: true }).catch(() => {});
     await page.waitForTimeout(300);
     break;
+  }
+
+  // The section can still be hidden or disabled when this post has no
+  // graduation requirement. Skip instead of letting the AI cascade fire.
+  if (
+    !(await graExamField.isVisible().catch(() => false)) ||
+    (await graExamField.isDisabled().catch(() => false))
+  ) {
+    console.log("[Graduation] Section is hidden/disabled for this post — skipping.");
+    return;
   }
 
   const examOk = await selectFuzzy(page, "#gra_exam", grad.examination);
