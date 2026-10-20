@@ -218,6 +218,12 @@ async function main() {
   // --- Address integrity guard ("Same as Present Address" must stay off) ---
   await ensureAddressIntegrity(formPage, profile).catch((e) => console.log(`[Address] Guard failed: ${e.message}`));
 
+  // --- Critical field verification: identity + education must match profile ---
+  const criticalVerify = await verifyCriticalFields(formPage, profile).catch((e) => {
+    console.log(`[Verify] Could not run critical verification: ${e.message}`);
+    return { ok: true, errors: [] };
+  });
+
   // --- Manual test hook: fill + audit, never CAPTCHA/submit ---
   if (process.env.AUTOFILL_DRY_RUN === "1") {
     await tickDeclarationCheckbox(formPage);
@@ -225,10 +231,18 @@ async function main() {
     await auditFormFields(formPage);
     console.log("\n🧪 DRY RUN — form filled and audited. Skipping CAPTCHA and submit.");
     await browser.close().catch(() => { });
-    process.exit(0);
+    process.exit(criticalVerify.ok ? 0 : 2);
   }
 
   // --- CAPTCHA ---
+  // --- Refuse to submit a form whose critical fields do not match the profile ---
+  if (!criticalVerify.ok) {
+    console.log("\n⛔ [Verify] Critical form fields do not match your profile — refusing to submit.");
+    console.log("   The application was NOT sent. Fix the mismatches above (or data/field-patterns.json) and run Autofill again.");
+    await browser.close().catch(() => {});
+    process.exit(3);
+  }
+
   if (hasAnyAI) {
     console.log("🤖 Reading and solving CAPTCHA with AI Vision cascade...");
     await solveCaptchaRobust(formPage);
@@ -3549,20 +3563,14 @@ async function fillText(page, selector, value, fieldKey) {
 // Checks memory → fuzzy match → AI fallback → saves pattern.
 // Selects an option by fuzzy text match: strips everything but letters and
 // digits before comparing, so "S.S.C" matches "SSC", "Dhaka" matches "Dhaka ", etc.
-async function selectFuzzy(page, selector, wanted, fieldKey) {
+async function selectFuzzy(page, selector, wanted, fieldKey, opts = {}) {
   if (wanted === undefined || wanted === null || String(wanted).trim() === "") return false;
   const host = await getPageHost(page);
   const key = fieldKey || selector;
 
-  // 1. Check memory for a previously AI-solved option
-  const patterns = await loadPatterns();
-  const mem = patterns[host]?.[key];
-  if (mem && mem.action === "select") {
-    const ok = await page.locator(mem.selector).selectOption({ label: mem.option }).then(() => true).catch(() => false);
-    if (ok) return true;
-  }
-
-  // 2. Normal fuzzy match
+  // 1. Normal fuzzy match first — the profile value must always win over a
+  //    previously learned option. (A stale BOGMC memory once selected
+  //    "Diploma-in-Engineering" for #hsc_exam even though the profile says HSC.)
   const select = page.locator(selector);
   if (!(await select.count())) {
     // selector not found — try AI
@@ -3614,7 +3622,17 @@ async function selectFuzzy(page, selector, wanted, fieldKey) {
     return true;
   }
 
-  // 3. No fuzzy match — AI fallback
+  // 3. Memory fallback: only when the page's current options have no fuzzy
+  //    match. A stale learned option (e.g. BOGMC #hsc_exam ->
+  //    "Diploma-in-Engineering") must never override a clear profile match.
+  const patterns = await loadPatterns();
+  const mem = patterns[host]?.[key];
+  if (!opts.ignoreMemory && mem && mem.action === "select") {
+    const ok = await page.locator(mem.selector).selectOption({ label: mem.option }).then(() => true).catch(() => false);
+    if (ok) return true;
+  }
+
+  // 4. No fuzzy match — AI fallback
   const allOpts = options.join(" | ");
   const fix = await aiFixField(page, key, String(wanted),
     `Dropdown "${selector}" has no match for "${wanted}". Available options: ${allOpts.slice(0, 300)}`);
@@ -3625,6 +3643,152 @@ async function selectFuzzy(page, selector, wanted, fieldKey) {
     return ok;
   }
   return false;
+}
+
+// ── CRITICAL FIELD VERIFICATION ─────────────────────────────────────────────
+// Reads back the fields that determine whether the application is correct
+// (identity + education) after the normal fill pass. Education is where a
+// stale "learned" option once produced "Diploma-in-Engineering / Computer
+// Science" instead of "H.S.C / Science" on a real BOGMC submission.
+// A mismatch is corrected once (memory bypassed); if it still mismatches,
+// the run aborts instead of submitting a wrong application.
+async function verifyCriticalFields(page, profile) {
+  const normalize = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const normalizeLoose = (s) => normalize(s).replace(/and|of|the/g, "");
+  const digits = (s) => String(s ?? "").replace(/[^0-9]/g, "");
+  const numEq = (a, b) => {
+    const x = parseFloat(String(a ?? "").replace(/[^0-9.]/g, ""));
+    const y = parseFloat(String(b ?? "").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) < 0.005;
+  };
+
+  async function readField(selector) {
+    const el = page.locator(selector).first();
+    if (!(await el.count().catch(() => 0))) return null;
+    return el.evaluate((e) => ({
+      tag: e.tagName,
+      value: e.value ?? "",
+      selectedText: e.tagName === "SELECT" ? (e.options[e.selectedIndex]?.text || "") : "",
+      disabled: !!e.disabled,
+      hidden: e.offsetParent === null,
+    })).catch(() => null);
+  }
+
+  const checks = [];
+  const add = (key, selector, expected, mode) => {
+    if (expected === undefined || expected === null || String(expected).trim() === "") return;
+    checks.push({ key, selector, expected: String(expected), mode });
+  };
+
+  // Identity
+  add("name", "#name", profile.name_en, "exact");
+  add("father", "#father", profile.father_en, "exact");
+  add("mother", "#mother", profile.mother_en, "exact");
+  add("national_id", "#nid", profile.national_id, "digits");
+  add("mobile", "#mobile", profile.mobile, "digits");
+
+  // SSC
+  if (profile.ssc) {
+    add("ssc_exam", "#ssc_exam", profile.ssc.examination, "select-exact");
+    add("ssc_board", "#ssc_board", profile.ssc.board, "select-contains");
+    add("ssc_roll", "#ssc_roll", profile.ssc.roll, "digits");
+    add("ssc_group", "#ssc_group", profile.ssc.group, "select-exact");
+    add("ssc_result_type", "#ssc_result_type", "GPA", "select-contains");
+    add("ssc_result", "#ssc_result", profile.ssc.gpa, "number");
+    add("ssc_year", "#ssc_year", profile.ssc.year, "select-number-or-contains");
+  }
+
+  // HSC — on Teletalk forms this dropdown also offers "Diploma-in-Engineering";
+  // the selected exam MUST still match the profile's HSC entry.
+  if (profile.hsc) {
+    add("hsc_exam", "#hsc_exam", profile.hsc.examination, "select-exact");
+    add("hsc_board", "#hsc_board", profile.hsc.board, "select-contains");
+    add("hsc_roll", "#hsc_roll", profile.hsc.roll, "digits");
+    add("hsc_group", "#hsc_group", profile.hsc.group, "select-exact");
+    add("hsc_result_type", "#hsc_result_type", "GPA", "select-contains");
+    add("hsc_result", "#hsc_result", profile.hsc.gpa, "number");
+    add("hsc_year", "#hsc_year", profile.hsc.year, "select-number-or-contains");
+  }
+
+  // Graduation
+  if (profile.graduation) {
+    add("gra_exam", "#gra_exam", profile.graduation.examination, "select-exact");
+    add("gra_institute", "#gra_institute", profile.graduation.institute, "select-contains-loose");
+    add("gra_subject", "#gra_subject", profile.graduation.subject, "select-contains-loose");
+    add("gra_result_type", "#gra_result_type", "CGPA", "select-contains");
+    add("gra_result", "#gra_result", profile.graduation.gpa, "number");
+    add("gra_year", "#gra_year", profile.graduation.year, "select-number-or-contains");
+    add("gra_duration", "#gra_duration", profile.graduation.duration, "select-number-or-contains");
+  }
+
+  const errors = [];
+  for (const c of checks) {
+    const f = await readField(c.selector).catch(() => null);
+    if (!f || f.hidden || f.disabled) continue;
+    const got = f.tag === "SELECT" ? (f.selectedText || f.value) : f.value;
+    if (!got || !String(got).trim()) {
+      errors.push({ ...c, got: "(empty)", corrected: false });
+      continue;
+    }
+    let ok = false;
+    switch (c.mode) {
+      case "exact": ok = normalize(got) === normalize(c.expected); break;
+      case "digits": ok = digits(got) === digits(c.expected); break;
+      case "number": ok = numEq(got, c.expected); break;
+      case "select-exact": ok = normalize(got) === normalize(c.expected); break;
+      case "select-contains": ok = normalize(got).includes(normalize(c.expected)) && normalize(c.expected).length > 2; break;
+      case "select-contains-loose": {
+        const g = normalizeLoose(got);
+        const e = normalizeLoose(c.expected);
+        ok = g === e || (g.includes(e) && e.length > 2) || (e.includes(g) && g.length > 2);
+        break;
+      }
+      case "select-number-or-contains": ok = numEq(got, c.expected) || normalize(got).includes(normalize(c.expected)); break;
+      default: ok = normalize(got) === normalize(c.expected);
+    }
+    if (!ok) errors.push({ ...c, got: String(got).trim(), corrected: false });
+  }
+
+  if (!errors.length) {
+    console.log("✅ [Verify] Critical fields match the profile (identity + education).");
+    return { ok: true, errors: [] };
+  }
+
+  console.log("");
+  console.log(`⚠️ [Verify] ${errors.length} critical field(s) do not match the profile — trying to correct...`);
+  for (const e of errors) console.log(`   ❌ ${e.key}: expected "${e.expected}" but found "${e.got}"`);
+
+  for (const e of errors) {
+    const f = await readField(e.selector).catch(() => null);
+    if (!f || f.tag !== "SELECT") continue;
+    const fixed = await selectFuzzy(page, e.selector, e.expected, e.selector, { ignoreMemory: true }).catch(() => false);
+    if (!fixed) continue;
+    await page.waitForTimeout(250).catch(() => {});
+    const after = await readField(e.selector).catch(() => null);
+    const gotAfter = after ? (after.selectedText || after.value) : "";
+    let okAfter = false;
+    switch (e.mode) {
+      case "select-exact": okAfter = normalize(gotAfter) === normalize(e.expected); break;
+      case "select-contains": okAfter = normalize(gotAfter).includes(normalize(e.expected)); break;
+      case "select-contains-loose": okAfter = normalizeLoose(gotAfter).includes(normalizeLoose(e.expected)); break;
+      case "select-number-or-contains": okAfter = numEq(gotAfter, e.expected) || normalize(gotAfter).includes(normalize(e.expected)); break;
+      default: okAfter = normalize(gotAfter) === normalize(e.expected);
+    }
+    if (okAfter) {
+      e.corrected = true;
+      console.log(`   🔧 ${e.key}: corrected to "${String(gotAfter).trim()}"`);
+    }
+  }
+
+  const remaining = errors.filter((e) => !e.corrected);
+  if (!remaining.length) {
+    console.log("✅ [Verify] All critical mismatches were auto-corrected.");
+    return { ok: true, errors: [] };
+  }
+  console.log("");
+  console.log(`⛔ [Verify] ${remaining.length} critical mismatch(es) remain after auto-correction:`);
+  for (const e of remaining) console.log(`   ❌ ${e.key}: expected "${e.expected}" but found "${e.got}"`);
+  return { ok: false, errors: remaining };
 }
 
 // Waits for a <select> to have at least `minCount` options -- used for
