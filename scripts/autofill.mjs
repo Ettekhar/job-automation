@@ -4473,16 +4473,19 @@ async function verifyCriticalFields(page, profile) {
   }
 
   const checks = [];
-  const add = (key, selector, expected, mode) => {
+  const add = (key, selector, expected, mode, options = {}) => {
     if (expected === undefined || expected === null || String(expected).trim() === "") return;
-    checks.push({ key, selector, expected: String(expected), mode });
+    checks.push({ key, selector, expected: String(expected), mode, ...options });
   };
 
   // Identity
   add("name", "#name", profile.name_en, "exact");
   add("father", "#father", profile.father_en, "exact");
   add("mother", "#mother", profile.mother_en, "exact");
-  add("national_id", "#nid", profile.national_id, "digits");
+  // BOGMC uses #nid for a Yes/No select ("NID provided?") and #nid_no for
+  // the actual number. Never compare a Yes/No select against the NID digits.
+  add("national_id", "#nid_no", profile.national_id, "digits", { skipSelect: true });
+  add("national_id_alt", "#nid", profile.national_id, "digits", { skipSelect: true });
   add("mobile", "#mobile", profile.mobile, "digits");
 
   // SSC
@@ -4523,6 +4526,7 @@ async function verifyCriticalFields(page, profile) {
   for (const c of checks) {
     const f = await readField(c.selector).catch(() => null);
     if (!f || f.hidden || f.disabled) continue;
+    if (c.skipSelect && f.tag === "SELECT") continue;
     const got = f.tag === "SELECT" ? (f.selectedText || f.value) : f.value;
     if (!got || !String(got).trim()) {
       errors.push({ ...c, got: "(empty)", corrected: false });
