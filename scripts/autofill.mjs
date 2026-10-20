@@ -70,6 +70,10 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 // accidentally try to pop a window on a machine with no display.
 let isHeadless = true;
 let selectedPostLabel = "";
+// Set when we have already clicked the preview page's FINAL Submit. Used to
+// stop the post-submit agent from clicking Submit a second time (duplicate
+// applications are forbidden) when confirmation could not be verified.
+let previewFinalAttempted = false;
 
 // ── Multi-provider AI cascade (Gemini → Groq → Cloudflare → OpenRouter) ──
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
@@ -320,17 +324,30 @@ async function main() {
   // --- Report every field + anything still missing ---
   await auditFormFields(formPage);
 
+  // --- Auto-submit the form (stage 1) ---
   await logInvalidRequiredFields(formPage);
-  const submitted = await findAndClickSubmit(formPage);
+  const formClicked = await findAndClickSubmit(formPage);
+  let submitted = false;
+  if (formClicked) {
+    // Teletalk adds a second "Application Preview" stage: the first Submit
+    // only opens a review page that still has photo/signature inputs, an
+    // unticked declaration, and its OWN Submit button. A URL change alone is
+    // not proof of submission — finish that stage and verify the receipt.
+    submitted = await completePreviewStage(formPage, profile).catch((e) => {
+      console.log(`[Preview] Could not complete the final stage: ${e.message}`);
+      return false;
+    });
+  }
+
   if (!submitted) {
     console.log("\n-------------------------------------------------------");
-    console.log("✨ Form filled! CAPTCHA read, Declaration ticked.");
-    console.log("  \u2192 Review in the browser, then click Submit.");
-    console.log("  \u2192 Type 'r' in terminal to re-read CAPTCHA if needed.");
+    console.log("⚠️ Application submission was NOT confirmed.");
+    console.log("  → No PDF email was sent (a preview page is not proof of submission).");
+    console.log("  → Review the portal and submit manually if needed.");
     console.log("-------------------------------------------------------\n");
   }
 
-  // --- Email the application PDF as soon as submission is confirmed ---
+  // --- Email the application PDF only after the FINAL confirmation ---
   // Previously the PDF email only fired when the post-submit AI agent
   // recognised a later "download / applicant copy" step, so a successful
   // submission could end with no email at all.
@@ -362,7 +379,15 @@ async function main() {
     // ignore screenshot failure
   }
 
-  postSubmitAgent(browser, context, formPage, profile);
+  // --- Post-submit agent: fallback for pages we could not finish synchronously ---
+  if (!submitted) {
+    if (previewFinalAttempted) {
+      console.log("⚠️ [Post-Submit] Final Submit was already attempted — not clicking it again automatically (duplicate applications are forbidden).");
+      console.log("   ➔ Check the portal; if the application is still on the preview page, re-run after editing.");
+    } else {
+      postSubmitAgent(browser, context, formPage, profile);
+    }
+  }
 
   await keepAlive(browser, formPage);
 }
@@ -569,8 +594,75 @@ async function findAndClickSubmit(
   return false;
 }
 
-const REJECTION_TEXT_RE =
-  /wrong\s*(verification|captcha|code)|invalid\s*(captcha|code|verification)|(captcha|code|verification).{0,20}(not\s*match|incorrect|invalid|wrong|mismatch)|does not match|ভুল|সঠিক\s*নয়|আবার\s*চেষ্টা/i;
+// Teletalk's real flow is two-stage: the form's Submit opens an
+// "Application Preview" review page that still has photo/signature inputs,
+// an unticked declaration, and ITS OWN Submit button. Clicking the first
+// Submit only proves the form was accepted for review — not that the
+// application was registered. This finishes that second stage and returns
+// true only when the portal shows a real confirmation/applicant copy.
+async function completePreviewStage(page, profile) {
+  if (isFinalConfirmationUrl(page.url())) return true;
+
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  const fileInputs = await page.locator("input[type=file]").count().catch(() => 0);
+  const submitBtn = page
+    .locator("input[type=submit], button[type=submit], input[value*='Submit' i]")
+    .first();
+  const hasSubmit = await submitBtn.isVisible().catch(() => false);
+
+  const successRe = /application\s+(?:has\s+been\s+)?(?:submitted|received)|successfully\s+(?:submitted|applied)|আবেদন\s+সফল/i;
+  const isPreview =
+    /application\s*preview|change\s*needed\?.*edit\s*the\s*application/i.test(bodyText) ||
+    (fileInputs > 0 && hasSubmit);
+
+  if (!isPreview) {
+    // Some portals confirm in one step without a matching URL. Accept only
+    // an explicit success message — never a generic "Download" link, because
+    // the preview page's header also contains "Download Applicant's Copy".
+    if (successRe.test(bodyText)) {
+      console.log("✅ [Preview] Portal shows an explicit submission-success message.");
+      return true;
+    }
+    return false;
+  }
+
+  if (!hasSubmit) {
+    console.log("⚠️ [Preview] Review page has no final Submit button — not treating it as submitted.");
+    return false;
+  }
+
+  console.log("\n📝 [Preview] Application Preview detected — uploading photo/signature, ticking the declaration, and clicking the FINAL Submit...");
+  if (fileInputs > 0) {
+    await handleImageUpload(page, [], profile);
+    // The portal uploads via onchange/AJAX and refreshes its preview boxes.
+    await page.waitForTimeout(2500).catch(() => {});
+  }
+  await tickDeclarationCheckbox(page);
+  await ensureAddressIntegrity(page, profile).catch(() => {});
+  await logInvalidRequiredFields(page).catch(() => {});
+
+  console.log("🟢 [Preview] Clicking final Submit...");
+  previewFinalAttempted = true;
+  await findAndClickSubmit(page, { timeoutMs: 10000, maxClicks: 3 }).catch(() => false);
+  await page.waitForLoadState("domcontentloaded", { timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(1800).catch(() => {});
+
+  const finalUrl = page.url();
+  const finalBody = await page.locator("body").innerText().catch(() => "");
+  const confirmed = isFinalConfirmationUrl(finalUrl) || successRe.test(finalBody);
+  if (confirmed) {
+    console.log(`✅ [Preview] FINAL submission confirmed: ${finalUrl}`);
+  } else {
+    console.log(`❌ [Preview] Final Submit was clicked but confirmation was not detected (${finalUrl}).`);
+    console.log("   ➔ The application may still be sitting on the preview page. Check the portal before re-running.");
+  }
+  return confirmed;
+}
+
+// Looks for signs the site rejected the submission: either the alert()
+// dialog message we captured, or common inline error text that appears
+// near the CAPTCHA/verification fields after a failed attempt.
+const REJECTION_TEXT_RE = /wrong\s*(verification|captcha|code)|invalid\s*(captcha|code|verification)|(captcha|code|verification).{0,20}(not\s*match|incorrect|invalid|wrong|mismatch)|does not match|ভুল|সঠিক\s*নয়|আবার\s*চেষ্টা/i;
 
 async function detectSubmitRejection(page, dialogMessage) {
   if (dialogMessage && REJECTION_TEXT_RE.test(dialogMessage))
