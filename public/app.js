@@ -420,7 +420,11 @@ function createJobCardHtml(job) {
 
         <div class="meta-row">
           <span>Deadline: <strong class="deadline-tag">${escapeHtml(deadlineStr)}</strong></span>
-          ${job.notifiedAt ? `<span class="alert-status-badge">${isEligibilityRestricted ? "⛔ Warning Sent" : "✅ Alert Sent"}</span>` : `<span style="color: var(--text-dim);">⏳ Not Sent</span>`}
+          ${job.eligibility?.warningSentAt
+            ? `<span class="alert-status-badge">⛔ Warning Sent</span>`
+            : job.notifiedAt
+              ? `<span class="alert-status-badge">✅ Alert Sent</span>`
+              : `<span style="color: var(--text-dim);">⏳ Not Sent</span>`}
         </div>
       </div>
 
