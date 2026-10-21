@@ -521,6 +521,45 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hide-expired-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.hide-expired-toggle:hover {
+  color: var(--text-main);
+  border-color: rgba(99, 102, 241, 0.45);
+}
+.hide-expired-toggle input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.hide-expired-toggle input:checked + span {
+  color: var(--text-main);
+}
+
 .filter-tabs {
   display: flex;
   gap: 6px;
@@ -2251,6 +2290,17 @@ body {
     gap: 12px;
     padding-bottom: 12px;
     margin-bottom: 14px;
+  }
+
+  .toolbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .hide-expired-toggle {
+    justify-content: center;
   }
 
   .filter-tabs {
