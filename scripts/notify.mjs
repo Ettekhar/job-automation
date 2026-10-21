@@ -149,6 +149,278 @@ export async function notifyJob(job, customEmailTo = null) {
   return { results, errors };
 }
 
+/**
+ * Send a warning when the application form itself contains a hard requirement
+ * that may make the post ineligible (diploma-only education row, minimum
+ * experience, etc.). This deliberately does NOT claim a final rejection: the
+ * user gets the exact requirement plus the apply link so they can verify.
+ */
+export async function notifyEligibilityWarning(job, warnings, customEmailTo = null) {
+  if (process.env.JOB_ALERTS_DISABLED === "1") {
+    console.log(
+      `[Email] Job alerts are disabled on this host (JOB_ALERTS_DISABLED=1) — skipped eligibility warning: "${job.title}"`
+    );
+    return {
+      results: [
+        {
+          channel: "host-policy",
+          success: true,
+          info: "job alerts disabled on this host (JOB_ALERTS_DISABLED=1)",
+        },
+      ],
+      errors: [],
+      skipped: true,
+    };
+  }
+
+  const list = Array.isArray(warnings)
+    ? warnings.map((warning) => (typeof warning === "string" ? warning : warning?.text)).filter(Boolean)
+    : [];
+  if (list.length === 0) {
+    return { results: [], errors: ["No eligibility warnings to send"] };
+  }
+
+  const html = buildEligibilityWarningHtml(job, list);
+  // Keep the subject ASCII-only: some mail clients mis-decode emoji in
+  // subjects, and the warning is clearer as plain text anyway.
+  const subject = `Eligibility warning: ${job.title} (${job.category || "Govt"})`;
+  const results = [];
+  const errors = [];
+
+  // 1. SMTP Email (Titan Email or custom)
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      const transporter = createSmtpTransporter();
+      if (!transporter) throw new Error("SMTP transporter could not be created");
+      const to = customEmailTo || process.env.NOTIFY_EMAIL || process.env.SMTP_USER;
+      const from = process.env.SMTP_FROM || `"Teletalk Job Alert" <${process.env.SMTP_USER}>`;
+      const info = await transporter.sendMail({ from, to, subject, html });
+      results.push({ channel: "smtp", success: true, info: info.messageId });
+      console.log(
+        `[SMTP] Eligibility warning sent to ${to} for job "${job.title}". Message ID: ${info.messageId}`
+      );
+    } catch (err) {
+      results.push({ channel: "smtp", success: false, info: err.message });
+      errors.push(`SMTP failed: ${err.message}`);
+    }
+  }
+
+  // 2. Resend API Email (if configured)
+  if (process.env.RESEND_API_KEY && (customEmailTo || process.env.NOTIFY_EMAIL)) {
+    try {
+      const to = customEmailTo || process.env.NOTIFY_EMAIL;
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Teletalk Job Alert <onboarding@resend.dev>",
+          to: [to],
+          subject,
+          html,
+        }),
+      });
+      const ok = res.ok;
+      results.push({ channel: "resend", success: ok, info: ok ? "sent" : `HTTP ${res.status}` });
+      if (!ok) errors.push(`Resend failed: HTTP ${res.status} ${await res.text().catch(() => "")}`);
+    } catch (err) {
+      results.push({ channel: "resend", success: false, info: err.message });
+      errors.push(`Resend failed: ${err.message}`);
+    }
+  }
+
+  if (results.length === 0 && errors.length === 0) {
+    errors.push(
+      "No notification channel configured (set SMTP credentials or RESEND_API_KEY+NOTIFY_EMAIL)."
+    );
+  }
+
+  return { results, errors };
+}
+
+export function buildEligibilityWarningHtml(job, warnings) {
+  const list = Array.isArray(warnings) ? warnings : [];
+  const matchedKeywords = Array.isArray(job.matchedKeywords)
+    ? job.matchedKeywords.join(", ")
+    : job.matchedKeywords || "";
+  const verifyUrl = job.eligibility?.verifyUrl || job.applyUrl;
+
+  return `
+    <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #0f172a; color: #f8fafc; border-radius: 16px; overflow: hidden; border: 1px solid #7f1d1d; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+      <div style="background: linear-gradient(135deg, #991b1b 0%, #ea580c 100%); padding: 28px 24px; text-align: center;">
+        <div style="display: inline-block; background: rgba(255, 255, 255, 0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #ffffff; margin-bottom: 12px;">
+          &#9940; Eligibility Warning
+        </div>
+        <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; line-height: 1.3;">
+          ${escapeHtml(job.title)}
+        </h1>
+        <p style="margin: 8px 0 0 0; color: #ffedd5; font-size: 16px; font-weight: 500;">
+          ${escapeHtml(job.category || "Teletalk Government Portal")}
+        </p>
+      </div>
+
+      <div style="padding: 28px 24px;">
+        <p style="font-size: 15px; line-height: 1.6; color: #e2e8f0; margin-top: 0;">
+          This post matched your keywords, but its application form has a requirement that may make it
+          <strong style="color: #fca5a5;">not for you</strong>. Please read this before opening the form.
+        </p>
+
+        <div style="background: #1e293b; border-left: 4px solid #f97316; padding: 18px 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0 0 10px 0; font-weight: 700; color: #fdba74; font-size: 15px;">
+            Why this may not be for you:
+          </p>
+          <ul style="margin: 0; padding-left: 22px; color: #f8fafc; font-size: 14px; line-height: 1.8;">
+            ${list.map((warning) => `<li style="margin-bottom: 8px;">${escapeHtml(warning)}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div style="background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; margin-bottom: 22px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr>
+              <td style="padding: 8px 0; color: #94a3b8; width: 130px; font-weight: 500;">Job ID:</td>
+              <td style="padding: 8px 0; color: #f8fafc; font-weight: 600;"><code>${escapeHtml(job.id || "N/A")}</code></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Organization:</td>
+              <td style="padding: 8px 0; color: #38bdf8; font-weight: 600;">${escapeHtml(job.category || "Government Organization")}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Deadline:</td>
+              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(formatDeadline(job.deadline))}</td>
+            </tr>
+            ${matchedKeywords ? `
+            <tr>
+              <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Matched Terms:</td>
+              <td style="padding: 8px 0; color: #a78bfa; font-weight: 600;">${escapeHtml(matchedKeywords)}</td>
+            </tr>` : ""}
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin: 0 0 20px 0;">
+          No application was submitted by this alert. This is a pre-check of the public application form,
+          not a rejection. If you think you meet the requirement, verify it yourself in the form.
+        </p>
+
+        <div style="text-align: center; margin: 28px 0 10px 0;">
+          <a href="${escapeHtml(verifyUrl)}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 16px; padding: 14px 30px; border-radius: 10px; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4); margin: 0 8px 12px 8px;">
+            &#128270; Open the form and verify yourself
+          </a>
+          ${job.pdfUrl ? `
+          <a href="${escapeHtml(job.pdfUrl)}" style="display: inline-block; background: #334155; color: #f1f5f9; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 24px; border-radius: 10px; border: 1px solid #475569; margin: 0 8px 12px 8px;">
+            &#128196; View Circular PDF
+          </a>` : ""}
+        </div>
+      </div>
+
+      <div style="background: #090d16; padding: 18px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #1e293b;">
+        <p style="margin: 0 0 4px 0;">Automated eligibility warning from Teletalk Job Notifier</p>
+        <p style="margin: 0;">Portal home: <a href="${escapeHtml(job.applyUrl)}" style="color: #fb923c; text-decoration: none;">${escapeHtml(job.applyUrl)}</a></p>
+      </div>
+    </div>
+  `;
+}
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function formatClock(hourText, minuteText, ampmText) {
+  let hour = Number(hourText);
+  const minutes = String(minuteText || "00").padStart(2, "0");
+  const suffix = ampmText ? String(ampmText).toUpperCase() : hour >= 12 ? "PM" : "AM";
+
+  if (ampmText) {
+    if (hour === 0) hour = 12;
+    else if (hour > 12) hour -= 12;
+  } else {
+    hour = hour % 12 || 12;
+  }
+
+  return `${hour}:${minutes} ${suffix}`;
+}
+
+/**
+ * Convert scraper deadline strings such as
+ *   "Application Deadline: 2026-11-17 5:00 PM"
+ * into a human date:
+ *   "17 November 2026, 5:00 PM"
+ *
+ * Also handles BB's "25/10/2026" and date-only values. Unknown formats are
+ * returned unchanged so the email never loses information.
+ */
+export function formatDeadline(value) {
+  if (!value) return "Check circular";
+
+  let text = String(value).replace(/\s+/g, " ").trim();
+  text = text.replace(/^Application Deadline:\s*/i, "").trim();
+  if (!text) return "Check circular";
+  if (/^(check|n\/a|unknown|not available)\b/i.test(text)) return text;
+
+  // 2026-11-17 [5:00 PM] / 2026-11-17 [17:00]
+  let match = text.match(
+    /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?)?$/i
+  );
+  if (match) {
+    const day = Number(match[3]);
+    const month = MONTH_NAMES[Number(match[2]) - 1];
+    if (month && day >= 1 && day <= 31) {
+      const date = `${day} ${month} ${match[1]}`;
+      return match[4] !== undefined
+        ? `${date}, ${formatClock(match[4], match[5], match[6])}`
+        : date;
+    }
+  }
+
+  // 25/10/2026 [5:00 PM] or 25-10-2026
+  match = text.match(
+    /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ ,]+(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?)?$/i
+  );
+  if (match) {
+    const day = Number(match[1]);
+    const month = MONTH_NAMES[Number(match[2]) - 1];
+    if (month && day >= 1 && day <= 31) {
+      const date = `${day} ${month} ${match[3]}`;
+      return match[4] !== undefined
+        ? `${date}, ${formatClock(match[4], match[5], match[6])}`
+        : date;
+    }
+  }
+
+  // 17 Nov 2026 [04:59:59 PM] / 17 November 2026
+  match = text.match(
+    /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})(?:[ ,]+(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?)?$/i
+  );
+  if (match) {
+    const day = Number(match[1]);
+    const monthName = match[2].toLowerCase();
+    const monthIndex = MONTH_NAMES.findIndex(
+      (name) =>
+        name.toLowerCase() === monthName || name.slice(0, 3).toLowerCase() === monthName
+    );
+    if (monthIndex >= 0 && day >= 1 && day <= 31) {
+      const date = `${day} ${MONTH_NAMES[monthIndex]} ${match[3]}`;
+      return match[4] !== undefined
+        ? `${date}, ${formatClock(match[4], match[5], match[6])}`
+        : date;
+    }
+  }
+
+  return text;
+}
+
 async function sendEmailSmtp(job, customEmailTo = null) {
   const transporter = createSmtpTransporter();
   if (!transporter) return { success: false, error: "SMTP transporter could not be created" };
@@ -185,7 +457,7 @@ async function sendEmailSmtp(job, customEmailTo = null) {
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Deadline:</td>
-              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${job.deadline || "Check circular"}</td>
+              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(formatDeadline(job.deadline))}</td>
             </tr>
             ${job.matchedKeywords ? `
             <tr>
@@ -246,7 +518,7 @@ async function sendEmailResend(job, customEmailTo = null) {
       html: `
         <p><strong>${job.title}</strong></p>
         <p>Organization: ${job.category || "N/A"}</p>
-        ${job.deadline ? `<p>Deadline: ${job.deadline}</p>` : ""}
+        ${job.deadline ? `<p>Deadline: ${escapeHtml(formatDeadline(job.deadline))}</p>` : ""}
         <p><a href="${job.applyUrl}">Apply online</a></p>
         ${job.pdfUrl ? `<p><a href="${job.pdfUrl}">Circular PDF</a></p>` : ""}
       `,
@@ -263,7 +535,7 @@ async function sendTelegram(job) {
   const text = [
     `*New job match:* ${escapeMd(job.title)}`,
     job.category ? `Organization: ${escapeMd(job.category)}` : null,
-    job.deadline ? escapeMd(job.deadline) : null,
+    job.deadline ? escapeMd(formatDeadline(job.deadline)) : null,
     `Apply: ${job.applyUrl}`,
     job.pdfUrl ? `PDF: ${job.pdfUrl}` : null,
   ]
