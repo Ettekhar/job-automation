@@ -186,9 +186,15 @@ async function loadOverview() {
     if (mDrawerNoticesCount) mDrawerNoticesCount.textContent = noticesCount.toLocaleString();
 
     if (data.stats.lastScrape) {
-      const timeStr = formatRelativeTime(data.stats.lastScrape.timestamp);
-      document.getElementById("statLastScrapedTime").textContent = timeStr;
-      document.getElementById("statLastScrapedSub").textContent = `Duration: ${data.stats.lastScrape.durationSeconds || 120}s (${data.stats.lastScrape.status || 'OK'})`;
+      const lastScrapeTimestamp = data.stats.lastScrape.timestamp;
+      const lastScrapeDate = formatDate(lastScrapeTimestamp, { dateOnly: true });
+      const lastScrapeTime = formatTime(lastScrapeTimestamp);
+      const relativeTime = formatRelativeTime(lastScrapeTimestamp);
+      const lastScrapedEl = document.getElementById("statLastScrapedTime");
+      lastScrapedEl.textContent = lastScrapeDate === "Check circular" ? "Never" : lastScrapeDate;
+      lastScrapedEl.title = formatDate(lastScrapeTimestamp);
+      document.getElementById("statLastScrapedSub").textContent =
+        `${lastScrapeTime || relativeTime} • ${data.stats.lastScrape.durationSeconds || 120}s (${data.stats.lastScrape.status || 'OK'})`;
       if (data.stats.lastScrape.circularsScanned) {
         document.getElementById("statCircularsSub").textContent = `${data.stats.lastScrape.circularsScanned} circulars scanned`;
       }
@@ -356,7 +362,7 @@ function createJobCardHtml(job) {
   const isBB = job.source === "bb";
 
   // Format the scraper's raw deadline into a human date.
-  const deadlineStr = formatDeadline(job.deadline);
+  const deadlineStr = formatDate(job.deadline);
 
   // BB-specific metadata section
   const bbMeta = isBB ? `
@@ -505,11 +511,11 @@ function createNoticeCardHtml(notice) {
         <div class="notice-meta-grid">
           <div class="notice-date-item">
             <span class="notice-date-label">Published</span>
-            <strong class="notice-date-val">${escapeHtml(notice.publishDate || "N/A")}</strong>
+            <strong class="notice-date-val">${escapeHtml(formatDate(notice.publishDate || "N/A"))}</strong>
           </div>
           <div class="notice-date-item">
             <span class="notice-date-label">Exam / Deadline</span>
-            <strong class="notice-date-val ${isMatch ? 'text-gold' : ''}">${escapeHtml(notice.closeDate || "N/A")}</strong>
+            <strong class="notice-date-val ${isMatch ? 'text-gold' : ''}">${escapeHtml(formatDate(notice.closeDate || "N/A"))}</strong>
           </div>
         </div>
       </div>
@@ -679,8 +685,8 @@ function renderModalNotices() {
             </div>
             <div class="modal-notice-meta">
               <div class="notice-meta-dates">
-                <span>📅 <strong>${escapeHtml(n.publishDate || "N/A")}</strong></span>
-                <span>⏰ Exam: <strong>${escapeHtml(n.closeDate || "N/A")}</strong></span>
+                <span>📅 <strong>${escapeHtml(formatDate(n.publishDate || "N/A"))}</strong></span>
+                <span>⏰ Exam: <strong>${escapeHtml(formatDate(n.closeDate || "N/A"))}</strong></span>
                 ${n.appliedJobRoll ? `<span>Roll: <strong style="color: #fbbf24;">${escapeHtml(n.appliedJobRoll)}</strong></span>` : ""}
               </div>
               ${kwBadges ? `<div class="notice-kw-row">${kwBadges}</div>` : ""}
@@ -740,7 +746,7 @@ function renderTrackedAppliedJobsList() {
             <div style="display: flex; gap: 14px; font-size: 11.5px; color: var(--text-dim); flex-wrap: wrap;">
               ${app.rollNo ? `<span>Roll No: <strong style="color: #cbd5e1;">${escapeHtml(app.rollNo)}</strong></span>` : ""}
               ${app.trackingNo ? `<span>Tracking No: <strong style="color: #cbd5e1;">${escapeHtml(app.trackingNo)}</strong></span>` : ""}
-              <span>Applied: <strong>${escapeHtml(app.appliedDate || "Recorded")}</strong></span>
+              <span>Applied: <strong>${escapeHtml(formatDate(app.appliedDate || "Recorded"))}</strong></span>
               ${matchingCount > 0 ? `<span style="color: #fbbf24; font-weight: 700;">🎯 ${matchingCount} Official Notice(s) Found!</span>` : `<span style="color: #94a3b8;">No notices published yet</span>`}
             </div>
           </div>
@@ -1157,7 +1163,7 @@ async function openHistoryModal() {
             .map(
               (h) => `
             <tr>
-              <td>${new Date(h.timestamp).toLocaleString()}</td>
+              <td>${escapeHtml(formatDate(h.timestamp))}</td>
               <td>${h.dryRun ? '<span style="color: #eab308;">Dry Run</span>' : '<span style="color: #34d399;">Live</span>'}</td>
               <td>${h.circularsScanned || 0}</td>
               <td>${h.totalPostsFound || 0}</td>
@@ -2445,8 +2451,9 @@ function escapeHtml(str) {
 
 // Keep this formatter in sync with scripts/notify.mjs. It turns
 // "Application Deadline: 2026-11-17 5:00 PM" into
-// "17 November 2026, 5:00 PM" and also handles BB's "25/10/2026".
-const DEADLINE_MONTH_NAMES = [
+// "17 November 2026, 5:00 PM" and also handles BB's "25/10/2026" and ISO
+// timestamps. ISO timestamps are shown in Bangladesh time (UTC+6).
+const DATE_MONTH_NAMES = [
   "January",
   "February",
   "March",
@@ -2461,40 +2468,74 @@ const DEADLINE_MONTH_NAMES = [
   "December",
 ];
 
-function formatDeadlineClock(hourText, minuteText, ampmText) {
+function formatDateClock(hourText, minuteText, ampmText) {
   let hour = Number(hourText);
-  const minutes = String(minuteText || "00").padStart(2, "0");
-  const suffix = ampmText ? String(ampmText).toUpperCase() : hour >= 12 ? "PM" : "AM";
+  const minutes = String(minuteText ?? "00").padStart(2, "0");
+  let suffix;
 
   if (ampmText) {
+    suffix = String(ampmText).toUpperCase();
     if (hour === 0) hour = 12;
     else if (hour > 12) hour -= 12;
   } else {
+    suffix = hour >= 12 ? "PM" : "AM";
     hour = hour % 12 || 12;
   }
 
   return `${hour}:${minutes} ${suffix}`;
 }
 
-function formatDeadline(value) {
-  if (!value) return "Check circular";
+function parseDateParts(value) {
+  if (value === null || value === undefined) return null;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    value = value.toISOString();
+  } else if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
+    value = new Date(value).toISOString();
+  }
 
   let text = String(value).replace(/\s+/g, " ").trim();
   text = text.replace(/^Application Deadline:\s*/i, "").trim();
-  if (!text) return "Check circular";
-  if (/^(check|n\/a|unknown|not available)\b/i.test(text)) return text;
+  if (!text) return null;
+
+  if (/^(check|n\/a|unknown|not available|recent|recorded|never)\b/i.test(text)) {
+    return { text };
+  }
+
+  if (
+    /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:?\d{2})$/i.test(
+      text
+    )
+  ) {
+    const parsed = new Date(text.replace(" ", "T"));
+    if (!Number.isNaN(parsed.getTime())) {
+      const dhaka = new Date(parsed.getTime() + 6 * 60 * 60 * 1000);
+      return {
+        year: dhaka.getUTCFullYear(),
+        month: dhaka.getUTCMonth(),
+        day: dhaka.getUTCDate(),
+        hour: dhaka.getUTCHours(),
+        minute: dhaka.getUTCMinutes(),
+      };
+    }
+  }
 
   let match = text.match(
     /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?)?$/i
   );
   if (match) {
     const day = Number(match[3]);
-    const month = DEADLINE_MONTH_NAMES[Number(match[2]) - 1];
-    if (month && day >= 1 && day <= 31) {
-      const date = `${day} ${month} ${match[1]}`;
-      return match[4] !== undefined
-        ? `${date}, ${formatDeadlineClock(match[4], match[5], match[6])}`
-        : date;
+    const month = Number(match[2]) - 1;
+    if (DATE_MONTH_NAMES[month] && day >= 1 && day <= 31) {
+      const parts = { year: Number(match[1]), month, day };
+      if (match[4] !== undefined) {
+        parts.hour = Number(match[4]);
+        parts.minute = Number(match[5]);
+        parts.ampm = match[6] || null;
+      }
+      return parts;
     }
   }
 
@@ -2503,12 +2544,15 @@ function formatDeadline(value) {
   );
   if (match) {
     const day = Number(match[1]);
-    const month = DEADLINE_MONTH_NAMES[Number(match[2]) - 1];
-    if (month && day >= 1 && day <= 31) {
-      const date = `${day} ${month} ${match[3]}`;
-      return match[4] !== undefined
-        ? `${date}, ${formatDeadlineClock(match[4], match[5], match[6])}`
-        : date;
+    const month = Number(match[2]) - 1;
+    if (DATE_MONTH_NAMES[month] && day >= 1 && day <= 31) {
+      const parts = { year: Number(match[3]), month, day };
+      if (match[4] !== undefined) {
+        parts.hour = Number(match[4]);
+        parts.minute = Number(match[5]);
+        parts.ampm = match[6] || null;
+      }
+      return parts;
     }
   }
 
@@ -2518,19 +2562,45 @@ function formatDeadline(value) {
   if (match) {
     const day = Number(match[1]);
     const monthName = match[2].toLowerCase();
-    const monthIndex = DEADLINE_MONTH_NAMES.findIndex(
+    const month = DATE_MONTH_NAMES.findIndex(
       (name) =>
         name.toLowerCase() === monthName || name.slice(0, 3).toLowerCase() === monthName
     );
-    if (monthIndex >= 0 && day >= 1 && day <= 31) {
-      const date = `${day} ${DEADLINE_MONTH_NAMES[monthIndex]} ${match[3]}`;
-      return match[4] !== undefined
-        ? `${date}, ${formatDeadlineClock(match[4], match[5], match[6])}`
-        : date;
+    if (month >= 0 && day >= 1 && day <= 31) {
+      const parts = { year: Number(match[3]), month, day };
+      if (match[4] !== undefined) {
+        parts.hour = Number(match[4]);
+        parts.minute = Number(match[5]);
+        parts.ampm = match[6] || null;
+      }
+      return parts;
     }
   }
 
-  return text;
+  return { text };
+}
+
+function formatDate(value, options = {}) {
+  if (value === null || value === undefined || value === "") return "Check circular";
+
+  const parsed = parseDateParts(value);
+  if (!parsed) return "Check circular";
+  if (parsed.text !== undefined) return parsed.text;
+
+  const date = `${parsed.day} ${DATE_MONTH_NAMES[parsed.month]} ${parsed.year}`;
+  if (options.dateOnly || parsed.hour === undefined) return date;
+  return `${date}, ${formatDateClock(parsed.hour, parsed.minute, parsed.ampm)}`;
+}
+
+function formatTime(value) {
+  const parsed = parseDateParts(value);
+  if (!parsed || parsed.text !== undefined || parsed.hour === undefined) return "";
+  return formatDateClock(parsed.hour, parsed.minute, parsed.ampm);
+}
+
+// Backwards-compatible alias for code that still calls the old name.
+function formatDeadline(value) {
+  return formatDate(value);
 }
 
 // Returns true when the application deadline has clearly passed (with a
