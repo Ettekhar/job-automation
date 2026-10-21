@@ -181,7 +181,9 @@ export async function notifyEligibilityWarning(job, warnings, customEmailTo = nu
   }
 
   const html = buildEligibilityWarningHtml(job, list);
-  const subject = `⛔ Check before applying: ${job.title} (${job.category || "Govt"})`;
+  // Keep the subject ASCII-only: some mail clients mis-decode emoji in
+  // subjects, and the warning is clearer as plain text anyway.
+  const subject = `Eligibility warning: ${job.title} (${job.category || "Govt"})`;
   const results = [];
   const errors = [];
 
@@ -249,7 +251,7 @@ export function buildEligibilityWarningHtml(job, warnings) {
     <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #0f172a; color: #f8fafc; border-radius: 16px; overflow: hidden; border: 1px solid #7f1d1d; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
       <div style="background: linear-gradient(135deg, #991b1b 0%, #ea580c 100%); padding: 28px 24px; text-align: center;">
         <div style="display: inline-block; background: rgba(255, 255, 255, 0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #ffffff; margin-bottom: 12px;">
-          ⛔ Eligibility Warning
+          &#9940; Eligibility Warning
         </div>
         <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; line-height: 1.3;">
           ${escapeHtml(job.title)}
@@ -303,11 +305,11 @@ export function buildEligibilityWarningHtml(job, warnings) {
 
         <div style="text-align: center; margin: 28px 0 10px 0;">
           <a href="${escapeHtml(verifyUrl)}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 16px; padding: 14px 30px; border-radius: 10px; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4); margin: 0 8px 12px 8px;">
-            🔎 Open the form and verify yourself
+            &#128269; Open the form and verify yourself
           </a>
           ${job.pdfUrl ? `
           <a href="${escapeHtml(job.pdfUrl)}" style="display: inline-block; background: #334155; color: #f1f5f9; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 24px; border-radius: 10px; border: 1px solid #475569; margin: 0 8px 12px 8px;">
-            📄 View Circular PDF
+            &#128196; View Circular PDF
           </a>` : ""}
         </div>
       </div>
