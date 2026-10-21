@@ -43,6 +43,35 @@ You can test your SMTP connection and send a sample email directly from the **SM
 
 ---
 
+## ⛔ Eligibility pre-check for new matches
+
+Before sending an "Apply now" email for a new Teletalk match, the scraper opens
+that organization's **public application form** and reads the form's own hard
+requirements. This is necessary because the official circular PDFs use legacy
+Bijoy encoding and cannot be parsed reliably.
+
+- It **never fills or submits** an application. It only navigates to the form,
+  reads the education dropdowns and requirement notices, then closes the page.
+- If a hard restriction is found, the email becomes an **Eligibility warning**
+  instead of a normal apply alert. It states the exact requirement and still
+  includes the **Open the form and verify yourself** link.
+- Current checks:
+  - **Diploma-only HSC/Equivalent level** — e.g. the form only offers
+    `Diploma-in-Engineering` (BOGMC SAE).
+  - **Mandatory minimum experience** — e.g. `Minimum 4 year(s) of experience is
+    mandatory` (Parjatan Programmer).
+- If the form cannot be reached (portal error, unknown layout, non-Teletalk
+  portal), the check returns `unknown` and the normal apply alert is sent. No
+  guess is made.
+- The job's `eligibility` result is saved in `data/jobs.json`; the dashboard
+  shows a **CHECK REQUIREMENTS** badge and a **Warning Sent** status.
+- Disable the check with `ELIGIBILITY_CHECK=0` in `.env` / the runner env.
+
+The check runs only in the GitHub Actions Teletalk scan, not in the BB-only
+local runner and not on the home server (`JOB_ALERTS_DISABLED=1`).
+
+---
+
 ## 🛠️ CLI Commands
 
 ```bash

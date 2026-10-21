@@ -354,6 +354,10 @@ function createJobCardHtml(job) {
   const kwBadges = kwList.map((k) => `<span class="kw-tag">${escapeHtml(k)}</span>`).join("");
   const isMatch = Boolean(job.isMatch);
   const isBB = job.source === "bb";
+  const eligibilityWarnings = Array.isArray(job.eligibility?.warnings)
+    ? job.eligibility.warnings.map((w) => (typeof w === "string" ? w : w?.text)).filter(Boolean)
+    : [];
+  const isEligibilityRestricted = job.eligibility?.status === "restricted" && eligibilityWarnings.length > 0;
 
   // Format clean deadline string
   let deadlineStr = job.deadline || "Check circular";
@@ -402,6 +406,7 @@ function createJobCardHtml(job) {
           <span class="job-id-badge">${escapeHtml(job.id || "N/A")}</span>
           ${isBB ? `<span class="source-badge-bb">🏦 Bangladesh Bank</span>` : ""}
           ${isMatch ? `<span class="match-badge">🎯 CSE / IT MATCH</span>` : ""}
+          ${isEligibilityRestricted ? `<span class="match-badge" title="${escapeHtml(eligibilityWarnings.join(" | "))}" style="background: rgba(127, 29, 29, 0.35); color: #fca5a5; border: 1px solid #7f1d1d;">⛔ CHECK REQUIREMENTS</span>` : ""}
         </div>
 
         <h3 class="job-title">${escapeHtml(job.title)}</h3>
@@ -415,7 +420,7 @@ function createJobCardHtml(job) {
 
         <div class="meta-row">
           <span>Deadline: <strong class="deadline-tag">${escapeHtml(deadlineStr)}</strong></span>
-          ${job.notifiedAt ? `<span class="alert-status-badge">✅ Alert Sent</span>` : `<span style="color: var(--text-dim);">⏳ Not Sent</span>`}
+          ${job.notifiedAt ? `<span class="alert-status-badge">${isEligibilityRestricted ? "⛔ Warning Sent" : "✅ Alert Sent"}</span>` : `<span style="color: var(--text-dim);">⏳ Not Sent</span>`}
         </div>
       </div>
 

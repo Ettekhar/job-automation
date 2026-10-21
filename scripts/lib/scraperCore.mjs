@@ -1,7 +1,8 @@
 import "dotenv/config";
 import { chromium } from "playwright";
 import fs from "node:fs/promises";
-import { notifyJob } from "../notify.mjs";
+import { notifyJob, notifyEligibilityWarning } from "../notify.mjs";
+import { inspectJobEligibility } from "./eligibility.mjs";
 import {
   SEEN_PATH,
   readJson,
@@ -120,6 +121,10 @@ export async function runScraper(options = {}) {
     bbJobsFound: 0,
     bbMatchedPosts: 0,
     bbNewMatches: 0,
+    eligibilityChecked: 0,
+    eligibilityRestricted: 0,
+    eligibilityUnknown: 0,
+    warningNotificationsSent: 0,
     errors: [],
   };
 
@@ -274,24 +279,90 @@ export async function runScraper(options = {}) {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ─── Eligibility pre-check for new Teletalk matches ─────────────────────
+    // The public application form is the only reliable place to see hard
+    // restrictions (diploma-only education rows, mandatory experience). This
+    // only reads the form; it never fills or submits it. Any failure is treated
+    // as "unknown" and the normal apply alert is still sent.
+    const shouldCheckEligibility =
+      !dryRun &&
+      process.env.ELIGIBILITY_CHECK !== "0" &&
+      process.env.JOB_ALERTS_DISABLED !== "1" &&
+      newMatches.length > 0;
+
+    if (shouldCheckEligibility) {
+      log(`🔎 Pre-checking ${newMatches.length} new matching application form(s) for eligibility restrictions...`);
+      for (const job of newMatches) {
+        let eligPage = null;
+        try {
+          eligPage = await newFastPage(browser);
+          const verdict = await inspectJobEligibility(eligPage, job, { log });
+          job.eligibility = verdict;
+          stats.eligibilityChecked++;
+          if (verdict.status === "restricted") {
+            stats.eligibilityRestricted++;
+            log(`⛔ [Eligibility] Restriction found for "${job.title}" — an eligibility warning will be emailed instead of an apply alert.`);
+          } else if (verdict.status === "unknown") {
+            stats.eligibilityUnknown++;
+            log(`⚠️ [Eligibility] Could not verify "${job.title}": ${verdict.note || "unknown reason"} — sending the normal apply alert.`, { silent: true });
+          }
+        } catch (e) {
+          job.eligibility = {
+            status: "unknown",
+            warnings: [],
+            checkedAt: new Date().toISOString(),
+            source: "application-form",
+            note: e.message,
+          };
+          stats.eligibilityUnknown++;
+          log(`⚠️ [Eligibility] Check failed for "${job.title}": ${e.message} — sending the normal apply alert.`, { silent: true });
+        } finally {
+          if (eligPage) await eligPage.close().catch(() => {});
+        }
+      }
+    } else if (newMatches.length > 0) {
+      log("⏩ Eligibility pre-check skipped (dry run, disabled, or alerts disabled).", { silent: true });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Notifications phase — sent sequentially to avoid hammering the mail provider,
     // but this is cheap relative to scraping so it's left as-is.
     if (newMatches.length > 0) {
       log(`Sending notifications for ${newMatches.length} new matching job(s)...`);
       for (const job of newMatches) {
+        const restricted =
+          job.eligibility?.status === "restricted" &&
+          Array.isArray(job.eligibility.warnings) &&
+          job.eligibility.warnings.length > 0;
+
         if (dryRun) {
-          log(`[DRY-RUN] Would notify for: "${job.title}" at ${job.category}`);
+          log(
+            `[DRY-RUN] Would notify for: "${job.title}" at ${job.category}` +
+              (restricted ? " (eligibility warning instead of apply alert)" : "")
+          );
         } else {
           try {
-            log(`📧 Sending email notification for: "${job.title}"...`);
-            const notifyResult = await notifyJob(job, settings.notifyEmail);
+            if (restricted) {
+              log(`⛔ Sending eligibility warning for: "${job.title}"...`);
+            } else {
+              log(`📧 Sending email notification for: "${job.title}"...`);
+            }
+
+            const notifyResult = restricted
+              ? await notifyEligibilityWarning(job, job.eligibility.warnings, settings.notifyEmail)
+              : await notifyJob(job, settings.notifyEmail);
+
             if (notifyResult?.results?.some((r) => r.success)) {
               stats.notificationsSent++;
+              if (restricted) stats.warningNotificationsSent++;
               job.notifiedAt = new Date().toISOString();
+              if (restricted) job.eligibility.warningSentAt = job.notifiedAt;
               // Only mark as seen once delivery is confirmed — a failed send
               // must be retried on the next run instead of being skipped forever.
               seenIds.add(job.id);
-              log(`✅ Notification delivered for: "${job.title}"`);
+              log(
+                `✅ ${restricted ? "Eligibility warning" : "Notification"} delivered for: "${job.title}"`
+              );
             } else {
               const why = notifyResult?.errors?.length
                 ? notifyResult.errors.join(", ")
@@ -328,6 +399,12 @@ export async function runScraper(options = {}) {
       ...stats,
       matchedJobTitles: newMatches.map((m) => m.title),
       matchedJobPdfUrls: newMatches.map((m) => m.pdfUrl),
+      restrictedJobTitles: newMatches
+        .filter((m) => m.eligibility?.status === "restricted")
+        .map((m) => m.title),
+      eligibilityUnknownJobTitles: newMatches
+        .filter((m) => m.eligibility?.status === "unknown")
+        .map((m) => m.title),
     };
 
     await recordScrapeRun(summary);

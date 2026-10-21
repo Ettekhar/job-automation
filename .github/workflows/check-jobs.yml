@@ -41,6 +41,10 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_FROM: ${{ secrets.SMTP_FROM }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          # Read each new Teletalk match's public application form for hard
+          # restrictions and send an eligibility warning instead of an apply
+          # alert when needed. The check never fills or submits the form.
+          ELIGIBILITY_CHECK: "1"
           # Optional Resend / Telegram
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

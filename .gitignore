@@ -15,3 +15,5 @@ config/*.webp
 *.log
 dist/
 public/screenshots/
+
+tmp/
