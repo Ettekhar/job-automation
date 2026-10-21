@@ -62,7 +62,7 @@ export async function testSmtpConnection(customConfig = null, recipientEmail = n
                   <li>Port: <strong>${customConfig?.port || process.env.SMTP_PORT || "587"}</strong></li>
                   <li>User: <strong>${customConfig?.user || process.env.SMTP_USER}</strong></li>
                   <li>Recipient: <strong>${to}</strong></li>
-                  <li>Timestamp: <strong>${new Date().toLocaleString()}</strong></li>
+                  <li>Timestamp: <strong>${escapeHtml(formatDate(new Date()))}</strong></li>
                 </ul>
               </div>
               <p style="font-size: 14px; color: #94a3b8; margin-bottom: 0;">
@@ -288,7 +288,7 @@ export function buildEligibilityWarningHtml(job, warnings) {
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Deadline:</td>
-              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(formatDeadline(job.deadline))}</td>
+              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(formatDate(job.deadline))}</td>
             </tr>
             ${matchedKeywords ? `
             <tr>
@@ -339,48 +339,75 @@ const MONTH_NAMES = [
 
 function formatClock(hourText, minuteText, ampmText) {
   let hour = Number(hourText);
-  const minutes = String(minuteText || "00").padStart(2, "0");
-  const suffix = ampmText ? String(ampmText).toUpperCase() : hour >= 12 ? "PM" : "AM";
+  const minutes = String(minuteText ?? "00").padStart(2, "0");
+  let suffix;
 
   if (ampmText) {
+    suffix = String(ampmText).toUpperCase();
     if (hour === 0) hour = 12;
     else if (hour > 12) hour -= 12;
   } else {
+    suffix = hour >= 12 ? "PM" : "AM";
     hour = hour % 12 || 12;
   }
 
   return `${hour}:${minutes} ${suffix}`;
 }
 
-/**
- * Convert scraper deadline strings such as
- *   "Application Deadline: 2026-11-17 5:00 PM"
- * into a human date:
- *   "17 November 2026, 5:00 PM"
- *
- * Also handles BB's "25/10/2026" and date-only values. Unknown formats are
- * returned unchanged so the email never loses information.
- */
-export function formatDeadline(value) {
-  if (!value) return "Check circular";
+function parseDateParts(value) {
+  if (value === null || value === undefined) return null;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    value = value.toISOString();
+  } else if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
+    value = new Date(value).toISOString();
+  }
 
   let text = String(value).replace(/\s+/g, " ").trim();
   text = text.replace(/^Application Deadline:\s*/i, "").trim();
-  if (!text) return "Check circular";
-  if (/^(check|n\/a|unknown|not available)\b/i.test(text)) return text;
+  if (!text) return null;
 
-  // 2026-11-17 [5:00 PM] / 2026-11-17 [17:00]
+  if (/^(check|n\/a|unknown|not available|recent|recorded|never)\b/i.test(text)) {
+    return { text };
+  }
+
+  // ISO timestamp with an explicit timezone. Convert it to Bangladesh time
+  // (UTC+6, no DST) so emails sent from a UTC server show the local time.
+  if (
+    /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:?\d{2})$/i.test(
+      text
+    )
+  ) {
+    const parsed = new Date(text.replace(" ", "T"));
+    if (!Number.isNaN(parsed.getTime())) {
+      const dhaka = new Date(parsed.getTime() + 6 * 60 * 60 * 1000);
+      return {
+        year: dhaka.getUTCFullYear(),
+        month: dhaka.getUTCMonth(),
+        day: dhaka.getUTCDate(),
+        hour: dhaka.getUTCHours(),
+        minute: dhaka.getUTCMinutes(),
+      };
+    }
+  }
+
+  // 2026-11-17 [5:00 PM] / 2026-11-17 [17:00] / 2026-11-17
   let match = text.match(
     /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?)?$/i
   );
   if (match) {
     const day = Number(match[3]);
-    const month = MONTH_NAMES[Number(match[2]) - 1];
-    if (month && day >= 1 && day <= 31) {
-      const date = `${day} ${month} ${match[1]}`;
-      return match[4] !== undefined
-        ? `${date}, ${formatClock(match[4], match[5], match[6])}`
-        : date;
+    const month = Number(match[2]) - 1;
+    if (MONTH_NAMES[month] && day >= 1 && day <= 31) {
+      const parts = { year: Number(match[1]), month, day };
+      if (match[4] !== undefined) {
+        parts.hour = Number(match[4]);
+        parts.minute = Number(match[5]);
+        parts.ampm = match[6] || null;
+      }
+      return parts;
     }
   }
 
@@ -390,12 +417,15 @@ export function formatDeadline(value) {
   );
   if (match) {
     const day = Number(match[1]);
-    const month = MONTH_NAMES[Number(match[2]) - 1];
-    if (month && day >= 1 && day <= 31) {
-      const date = `${day} ${month} ${match[3]}`;
-      return match[4] !== undefined
-        ? `${date}, ${formatClock(match[4], match[5], match[6])}`
-        : date;
+    const month = Number(match[2]) - 1;
+    if (MONTH_NAMES[month] && day >= 1 && day <= 31) {
+      const parts = { year: Number(match[3]), month, day };
+      if (match[4] !== undefined) {
+        parts.hour = Number(match[4]);
+        parts.minute = Number(match[5]);
+        parts.ampm = match[6] || null;
+      }
+      return parts;
     }
   }
 
@@ -406,20 +436,53 @@ export function formatDeadline(value) {
   if (match) {
     const day = Number(match[1]);
     const monthName = match[2].toLowerCase();
-    const monthIndex = MONTH_NAMES.findIndex(
+    const month = MONTH_NAMES.findIndex(
       (name) =>
         name.toLowerCase() === monthName || name.slice(0, 3).toLowerCase() === monthName
     );
-    if (monthIndex >= 0 && day >= 1 && day <= 31) {
-      const date = `${day} ${MONTH_NAMES[monthIndex]} ${match[3]}`;
-      return match[4] !== undefined
-        ? `${date}, ${formatClock(match[4], match[5], match[6])}`
-        : date;
+    if (month >= 0 && day >= 1 && day <= 31) {
+      const parts = { year: Number(match[3]), month, day };
+      if (match[4] !== undefined) {
+        parts.hour = Number(match[4]);
+        parts.minute = Number(match[5]);
+        parts.ampm = match[6] || null;
+      }
+      return parts;
     }
   }
 
-  return text;
+  return { text };
 }
+
+/**
+ * Format any date value used by the app:
+ *   "Application Deadline: 2026-11-17 5:00 PM" -> "17 November 2026, 5:00 PM"
+ *   "19/10/2026" -> "19 October 2026"
+ *   "2026-10-20T23:45:05.601Z" -> "21 October 2026, 5:45 AM" (Bangladesh time)
+ *
+ * Unknown values are returned unchanged so a date is never lost.
+ */
+export function formatDate(value, options = {}) {
+  if (value === null || value === undefined || value === "") return "Check circular";
+
+  const parsed = parseDateParts(value);
+  if (!parsed) return "Check circular";
+  if (parsed.text !== undefined) return parsed.text;
+
+  const date = `${parsed.day} ${MONTH_NAMES[parsed.month]} ${parsed.year}`;
+  if (options.dateOnly || parsed.hour === undefined) return date;
+  return `${date}, ${formatClock(parsed.hour, parsed.minute, parsed.ampm)}`;
+}
+
+/** Time portion in the same style, or "" when the value has no time. */
+export function formatTime(value) {
+  const parsed = parseDateParts(value);
+  if (!parsed || parsed.text !== undefined || parsed.hour === undefined) return "";
+  return formatClock(parsed.hour, parsed.minute, parsed.ampm);
+}
+
+// Backwards-compatible alias for the existing alert code and tests.
+export const formatDeadline = formatDate;
 
 async function sendEmailSmtp(job, customEmailTo = null) {
   const transporter = createSmtpTransporter();
@@ -457,7 +520,7 @@ async function sendEmailSmtp(job, customEmailTo = null) {
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Deadline:</td>
-              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(formatDeadline(job.deadline))}</td>
+              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(formatDate(job.deadline))}</td>
             </tr>
             ${job.matchedKeywords ? `
             <tr>
@@ -518,7 +581,7 @@ async function sendEmailResend(job, customEmailTo = null) {
       html: `
         <p><strong>${job.title}</strong></p>
         <p>Organization: ${job.category || "N/A"}</p>
-        ${job.deadline ? `<p>Deadline: ${escapeHtml(formatDeadline(job.deadline))}</p>` : ""}
+        ${job.deadline ? `<p>Deadline: ${escapeHtml(formatDate(job.deadline))}</p>` : ""}
         <p><a href="${job.applyUrl}">Apply online</a></p>
         ${job.pdfUrl ? `<p><a href="${job.pdfUrl}">Circular PDF</a></p>` : ""}
       `,
@@ -535,7 +598,7 @@ async function sendTelegram(job) {
   const text = [
     `*New job match:* ${escapeMd(job.title)}`,
     job.category ? `Organization: ${escapeMd(job.category)}` : null,
-    job.deadline ? escapeMd(formatDeadline(job.deadline)) : null,
+    job.deadline ? escapeMd(formatDate(job.deadline)) : null,
     `Apply: ${job.applyUrl}`,
     job.pdfUrl ? `PDF: ${job.pdfUrl}` : null,
   ]
@@ -624,12 +687,12 @@ export async function notifyBankNotice(notice, appliedJob, customEmailTo = null)
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Notice Publish Date:</td>
-              <td style="padding: 8px 0; color: #10b981; font-weight: 700;">${escapeHtml(notice.publishDate || "Recent")}</td>
+              <td style="padding: 8px 0; color: #10b981; font-weight: 700;">${escapeHtml(formatDate(notice.publishDate || "Recent"))}</td>
             </tr>
             ${notice.closeDate ? `
             <tr>
               <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Exam / Deadline:</td>
-              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(notice.closeDate)}</td>
+              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(formatDate(notice.closeDate))}</td>
             </tr>` : ""}
             ${appliedJob?.rollNo ? `
             <tr>

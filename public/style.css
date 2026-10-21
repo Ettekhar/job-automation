@@ -363,6 +363,12 @@ body {
   color: var(--text-dim);
 }
 
+/* A full readable date needs a smaller size than the numeric stat cards. */
+#statLastScrapedTime {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
 .text-emerald { color: var(--emerald) !important; }
 .text-cyan { color: var(--cyan) !important; }
 .text-indigo { color: #818cf8 !important; }

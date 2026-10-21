@@ -29,7 +29,7 @@ import {
   saveSeenNotices,
 } from "./scripts/lib/store.mjs";
 import { runScraper } from "./scripts/lib/scraperCore.mjs";
-import { testSmtpConnection, notifyJob, notifyBankNotice } from "./scripts/notify.mjs";
+import { testSmtpConnection, notifyJob, notifyBankNotice, formatDate } from "./scripts/notify.mjs";
 import { getAIConfig, saveAIConfig, testAIProvider } from "./scripts/lib/aiService.mjs";
 import { scrapeBBJobs, scrapeBSCSNotices } from "./scripts/lib/bbScraper.mjs";
 import { chromium } from "playwright";
@@ -109,7 +109,7 @@ async function initScheduler() {
     }
 
     console.log(`[Scheduler] Auto-scrape enabled: runs every ${settings.autoScrapeIntervalMinutes}m (${(settings.autoScrapeIntervalMinutes / 60).toFixed(1)}h).`);
-    console.log(`[Scheduler] Next run at: ${nextScheduledRunTime}`);
+    console.log(`[Scheduler] Next run at: ${formatDate(nextScheduledRunTime)}`);
 
     // Heartbeat check every 60s: protects against Windows sleep, hibernate, and clock drift
     schedulerTimer = setInterval(async () => {
