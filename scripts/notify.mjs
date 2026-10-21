@@ -305,7 +305,7 @@ export function buildEligibilityWarningHtml(job, warnings) {
 
         <div style="text-align: center; margin: 28px 0 10px 0;">
           <a href="${escapeHtml(verifyUrl)}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 16px; padding: 14px 30px; border-radius: 10px; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4); margin: 0 8px 12px 8px;">
-            &#128269; Open the form and verify yourself
+            &#128270; Open the form and verify yourself
           </a>
           ${job.pdfUrl ? `
           <a href="${escapeHtml(job.pdfUrl)}" style="display: inline-block; background: #334155; color: #f1f5f9; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 24px; border-radius: 10px; border: 1px solid #475569; margin: 0 8px 12px 8px;">
