@@ -288,7 +288,7 @@ export function buildEligibilityWarningHtml(job, warnings) {
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Deadline:</td>
-              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(job.deadline || "Check circular")}</td>
+              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(formatDeadline(job.deadline))}</td>
             </tr>
             ${matchedKeywords ? `
             <tr>
@@ -320,6 +320,105 @@ export function buildEligibilityWarningHtml(job, warnings) {
       </div>
     </div>
   `;
+}
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function formatClock(hourText, minuteText, ampmText) {
+  let hour = Number(hourText);
+  const minutes = String(minuteText || "00").padStart(2, "0");
+  const suffix = ampmText ? String(ampmText).toUpperCase() : hour >= 12 ? "PM" : "AM";
+
+  if (ampmText) {
+    if (hour === 0) hour = 12;
+    else if (hour > 12) hour -= 12;
+  } else {
+    hour = hour % 12 || 12;
+  }
+
+  return `${hour}:${minutes} ${suffix}`;
+}
+
+/**
+ * Convert scraper deadline strings such as
+ *   "Application Deadline: 2026-11-17 5:00 PM"
+ * into a human date:
+ *   "17 November 2026, 5:00 PM"
+ *
+ * Also handles BB's "25/10/2026" and date-only values. Unknown formats are
+ * returned unchanged so the email never loses information.
+ */
+export function formatDeadline(value) {
+  if (!value) return "Check circular";
+
+  let text = String(value).replace(/\s+/g, " ").trim();
+  text = text.replace(/^Application Deadline:\s*/i, "").trim();
+  if (!text) return "Check circular";
+  if (/^(check|n\/a|unknown|not available)\b/i.test(text)) return text;
+
+  // 2026-11-17 [5:00 PM] / 2026-11-17 [17:00]
+  let match = text.match(
+    /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?)?$/i
+  );
+  if (match) {
+    const day = Number(match[3]);
+    const month = MONTH_NAMES[Number(match[2]) - 1];
+    if (month && day >= 1 && day <= 31) {
+      const date = `${day} ${month} ${match[1]}`;
+      return match[4] !== undefined
+        ? `${date}, ${formatClock(match[4], match[5], match[6])}`
+        : date;
+    }
+  }
+
+  // 25/10/2026 [5:00 PM] or 25-10-2026
+  match = text.match(
+    /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ ,]+(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?)?$/i
+  );
+  if (match) {
+    const day = Number(match[1]);
+    const month = MONTH_NAMES[Number(match[2]) - 1];
+    if (month && day >= 1 && day <= 31) {
+      const date = `${day} ${month} ${match[3]}`;
+      return match[4] !== undefined
+        ? `${date}, ${formatClock(match[4], match[5], match[6])}`
+        : date;
+    }
+  }
+
+  // 17 Nov 2026 [04:59:59 PM] / 17 November 2026
+  match = text.match(
+    /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})(?:[ ,]+(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?)?$/i
+  );
+  if (match) {
+    const day = Number(match[1]);
+    const monthName = match[2].toLowerCase();
+    const monthIndex = MONTH_NAMES.findIndex(
+      (name) =>
+        name.toLowerCase() === monthName || name.slice(0, 3).toLowerCase() === monthName
+    );
+    if (monthIndex >= 0 && day >= 1 && day <= 31) {
+      const date = `${day} ${MONTH_NAMES[monthIndex]} ${match[3]}`;
+      return match[4] !== undefined
+        ? `${date}, ${formatClock(match[4], match[5], match[6])}`
+        : date;
+    }
+  }
+
+  return text;
 }
 
 async function sendEmailSmtp(job, customEmailTo = null) {
@@ -358,7 +457,7 @@ async function sendEmailSmtp(job, customEmailTo = null) {
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #94a3b8; font-weight: 500;">Deadline:</td>
-              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${job.deadline || "Check circular"}</td>
+              <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${escapeHtml(formatDeadline(job.deadline))}</td>
             </tr>
             ${job.matchedKeywords ? `
             <tr>
@@ -419,7 +518,7 @@ async function sendEmailResend(job, customEmailTo = null) {
       html: `
         <p><strong>${job.title}</strong></p>
         <p>Organization: ${job.category || "N/A"}</p>
-        ${job.deadline ? `<p>Deadline: ${job.deadline}</p>` : ""}
+        ${job.deadline ? `<p>Deadline: ${escapeHtml(formatDeadline(job.deadline))}</p>` : ""}
         <p><a href="${job.applyUrl}">Apply online</a></p>
         ${job.pdfUrl ? `<p><a href="${job.pdfUrl}">Circular PDF</a></p>` : ""}
       `,
@@ -436,7 +535,7 @@ async function sendTelegram(job) {
   const text = [
     `*New job match:* ${escapeMd(job.title)}`,
     job.category ? `Organization: ${escapeMd(job.category)}` : null,
-    job.deadline ? escapeMd(job.deadline) : null,
+    job.deadline ? escapeMd(formatDeadline(job.deadline)) : null,
     `Apply: ${job.applyUrl}`,
     job.pdfUrl ? `PDF: ${job.pdfUrl}` : null,
   ]
