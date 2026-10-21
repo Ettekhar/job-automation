@@ -11,6 +11,10 @@ let defaultNotifyEmail = "";
 
 let rawAllJobsCache = [];
 let rawAllNoticesCache = [];
+let hideExpired = false;
+try {
+  hideExpired = localStorage.getItem("teletalk_hide_expired") === "1";
+} catch (_) {}
 
 // Global session guard: a 401 on any live API call (expired/missing login
 // cookie — e.g. after the public tunnel URL changes) sends the user to the
@@ -223,8 +227,16 @@ async function loadOverview() {
   }
 }
 
+function updateHideExpiredVisibility() {
+  const control = document.getElementById("hideExpiredControl");
+  if (!control) return;
+  const isNotices = currentFilter === "notices" || currentFilter === "notice";
+  control.style.display = isNotices ? "none" : "inline-flex";
+}
+
 async function loadJobs() {
   const grid = document.getElementById("jobsGrid");
+  updateHideExpiredVisibility();
 
   if (currentFilter === "notices" || currentFilter === "notice") {
     try {
@@ -291,14 +303,18 @@ async function loadJobs() {
 async function updateTabCounts() {
   try {
     if (rawAllJobsCache && rawAllJobsCache.length > 0) {
-      const matchedCount = rawAllJobsCache.filter((j) => j.isMatch).length;
-      const allCount = rawAllJobsCache.length;
-      const bbCount = rawAllJobsCache.filter((j) => j.source === "bb").length;
+      const visibleJobs = hideExpired
+        ? rawAllJobsCache.filter((j) => !isJobDeadlinePassed(j.deadline))
+        : rawAllJobsCache;
+      const matchedCount = visibleJobs.filter((j) => j.isMatch).length;
+      const allCount = visibleJobs.length;
+      const bbCount = visibleJobs.filter((j) => j.source === "bb").length;
+      const otherCount = visibleJobs.filter((j) => !j.isMatch && j.source !== "bb").length;
       const noticesCount = rawAllNoticesCache.length || 17;
 
       document.getElementById("tabCountMatched").textContent = matchedCount;
       document.getElementById("tabCountAll").textContent = allCount;
-      document.getElementById("tabCountOther").textContent = Math.max(0, allCount - matchedCount);
+      document.getElementById("tabCountOther").textContent = otherCount;
       const bbCountEl = document.getElementById("tabCountBB");
       if (bbCountEl) bbCountEl.textContent = bbCount;
       const noticesCountEl = document.getElementById("tabCountNotices");
@@ -326,6 +342,19 @@ async function updateTabCounts() {
   } catch (e) {}
 }
 
+function applyHideExpiredPreference(value, persist = true) {
+  hideExpired = Boolean(value);
+  if (persist) {
+    try {
+      localStorage.setItem("teletalk_hide_expired", hideExpired ? "1" : "0");
+    } catch (_) {}
+  }
+  const checkbox = document.getElementById("chkHideExpired");
+  if (checkbox) checkbox.checked = hideExpired;
+  updateTabCounts();
+  renderJobs(allJobs);
+}
+
 function renderJobs(jobs) {
   const grid = document.getElementById("jobsGrid");
   const search = document.getElementById("inputSearchJobs").value.trim().toLowerCase();
@@ -341,7 +370,30 @@ function renderJobs(jobs) {
     );
   }
 
+  const hiddenExpiredCount = hideExpired
+    ? filtered.filter((j) => isJobDeadlinePassed(j.deadline)).length
+    : 0;
+  if (hideExpired) {
+    filtered = filtered.filter((j) => !isJobDeadlinePassed(j.deadline));
+  }
+
   if (filtered.length === 0) {
+    if (hiddenExpiredCount > 0) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">✅</div>
+          <div class="empty-title">No Active Jobs</div>
+          <div class="empty-desc">${hiddenExpiredCount} expired job${hiddenExpiredCount === 1 ? "" : "s"} ${hiddenExpiredCount === 1 ? "is" : "are"} hidden by the "Hide expired jobs" filter.</div>
+          <button class="btn btn-secondary btn-sm" id="btnShowExpiredJobs" style="margin-top: 14px;">Show expired jobs</button>
+        </div>
+      `;
+      const showExpiredButton = document.getElementById("btnShowExpiredJobs");
+      if (showExpiredButton) {
+        showExpiredButton.addEventListener("click", () => applyHideExpiredPreference(false));
+      }
+      return;
+    }
+
     grid.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🔍</div>
@@ -2118,6 +2170,15 @@ function setupEventListeners() {
       loadJobs();
     });
   });
+
+  // Hide expired toggle
+  const hideExpiredCheckbox = document.getElementById("chkHideExpired");
+  if (hideExpiredCheckbox) {
+    hideExpiredCheckbox.checked = hideExpired;
+    hideExpiredCheckbox.addEventListener("change", () => {
+      applyHideExpiredPreference(hideExpiredCheckbox.checked);
+    });
+  }
 
   // Search Box
   const searchInput = document.getElementById("inputSearchJobs");
