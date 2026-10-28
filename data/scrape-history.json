@@ -1,5 +1,34 @@
 [
   {
+    "id": "scrape_1793189174595",
+    "timestamp": "2026-10-28T12:06:14.595Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 281,
+    "circularsScanned": 29,
+    "totalPostsFound": 192,
+    "matchedPosts": 3,
+    "newMatchingPosts": 0,
+    "notificationsSent": 0,
+    "bbJobsFound": 0,
+    "bbMatchedPosts": 0,
+    "bbNewMatches": 0,
+    "eligibilityChecked": 0,
+    "eligibilityRestricted": 0,
+    "eligibilityUnknown": 0,
+    "warningNotificationsSent": 0,
+    "errors": [
+      "BB portal did not serve the job list to this runner: F5 CAPTCHA challenge (support ID 2165770897486689620). This is expected on GitHub Actions (cloud IP) — the local Bangladeshi runner covers BB.",
+      "BSCS notice board did not serve content to this runner: F5 CAPTCHA challenge (support ID 2165770897483946454). Expected on cloud IPs — covered by the local runner."
+    ],
+    "bscsNotices": 0,
+    "bscsMatched": 0,
+    "matchedJobTitles": [],
+    "matchedJobPdfUrls": [],
+    "restrictedJobTitles": [],
+    "eligibilityUnknownJobTitles": []
+  },
+  {
     "id": "scrape_1793168719809",
     "timestamp": "2026-10-28T06:25:19.809Z",
     "status": "completed",
@@ -2469,25 +2498,5 @@
     "matchedJobPdfUrls": [
       "https://alljobs.teletalk.com.bd/media/public/uploads/governments/jobs/advertisement-1791886364791.pdf"
     ]
-  },
-  {
-    "id": "scrape_1791850221881",
-    "timestamp": "2026-10-13T00:10:21.881Z",
-    "status": "completed",
-    "dryRun": false,
-    "durationSeconds": 311,
-    "circularsScanned": 30,
-    "totalPostsFound": 164,
-    "matchedPosts": 3,
-    "newMatchingPosts": 0,
-    "notificationsSent": 0,
-    "bbJobsFound": 0,
-    "bbMatchedPosts": 0,
-    "bbNewMatches": 0,
-    "errors": [],
-    "bscsNotices": 0,
-    "bscsMatched": 0,
-    "matchedJobTitles": [],
-    "matchedJobPdfUrls": []
   }
 ]
