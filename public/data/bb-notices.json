@@ -10,7 +10,7 @@
     "closeDate": "07/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.631Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25121-viva",
@@ -23,7 +23,7 @@
     "closeDate": "06/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.632Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-26101-mcq",
@@ -36,7 +36,7 @@
     "closeDate": "28/10/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.632Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25103-viva",
@@ -49,20 +49,7 @@
     "closeDate": "21/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.632Z"
-  },
-  {
-    "id": "BSCS-26102-admit-card",
-    "jobId": "26102",
-    "source": "bscs",
-    "circularFor": "Admit Card",
-    "title": "Download Admit Card for the post of Officer (General) (Job ID-26102) of 07 Banks and 2 FIs",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261026_bscs_346_1793006823.pdf",
-    "publishDate": "26/10/2026",
-    "closeDate": "29/10/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.632Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-26131 and 26132-job-circular",
@@ -75,7 +62,7 @@
     "closeDate": "02/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.632Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25106-mcq-and-written-exam",
@@ -91,7 +78,7 @@
       "programmer",
       "assistant programmer"
     ],
-    "scrapedAt": "2026-10-29T17:45:17.633Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-26103-admit-card",
@@ -104,7 +91,7 @@
     "closeDate": "10/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.633Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25118-written-exam",
@@ -117,7 +104,7 @@
     "closeDate": "31/10/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.633Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25112-written-exam",
@@ -130,7 +117,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.633Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25113-written-exam",
@@ -143,7 +130,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.633Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-26131 - 26132-job-circular",
@@ -156,7 +143,7 @@
     "closeDate": "02/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.633Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25101-selected-candidate",
@@ -169,7 +156,7 @@
     "closeDate": "29/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.633Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -182,7 +169,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.634Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -195,7 +182,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.634Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -208,6 +195,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-10-29T17:45:17.634Z"
+    "scrapedAt": "2026-10-29T23:45:19.856Z"
   }
 ]
