@@ -1,5 +1,31 @@
 [
   {
+    "id": "scrape_1793360712370",
+    "timestamp": "2026-10-30T11:45:12.370Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 5,
+    "circularsScanned": 0,
+    "totalPostsFound": 2,
+    "matchedPosts": 1,
+    "newMatchingPosts": 0,
+    "notificationsSent": 0,
+    "bbJobsFound": 2,
+    "bbMatchedPosts": 1,
+    "bbNewMatches": 0,
+    "eligibilityChecked": 0,
+    "eligibilityRestricted": 0,
+    "eligibilityUnknown": 0,
+    "warningNotificationsSent": 0,
+    "errors": [],
+    "bscsNotices": 15,
+    "bscsMatched": 1,
+    "matchedJobTitles": [],
+    "matchedJobPdfUrls": [],
+    "restrictedJobTitles": [],
+    "eligibilityUnknownJobTitles": []
+  },
+  {
     "id": "scrape_1793340996985",
     "timestamp": "2026-10-30T06:16:36.985Z",
     "status": "completed",
@@ -2561,25 +2587,5 @@
     "matchedJobPdfUrls": [
       "https://erecruitment.bb.org.bd/career/20261005_bscs_321.pdf"
     ]
-  },
-  {
-    "id": "scrape_1792166698461",
-    "timestamp": "2026-10-16T16:04:58.461Z",
-    "status": "completed",
-    "dryRun": false,
-    "durationSeconds": 345,
-    "circularsScanned": 31,
-    "totalPostsFound": 182,
-    "matchedPosts": 4,
-    "newMatchingPosts": 0,
-    "notificationsSent": 0,
-    "bbJobsFound": 0,
-    "bbMatchedPosts": 0,
-    "bbNewMatches": 0,
-    "errors": [],
-    "bscsNotices": 0,
-    "bscsMatched": 0,
-    "matchedJobTitles": [],
-    "matchedJobPdfUrls": []
   }
 ]
