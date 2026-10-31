@@ -1,5 +1,34 @@
 [
   {
+    "id": "scrape_1793446852611",
+    "timestamp": "2026-10-31T11:40:52.611Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 219,
+    "circularsScanned": 25,
+    "totalPostsFound": 171,
+    "matchedPosts": 3,
+    "newMatchingPosts": 0,
+    "notificationsSent": 0,
+    "bbJobsFound": 0,
+    "bbMatchedPosts": 0,
+    "bbNewMatches": 0,
+    "eligibilityChecked": 0,
+    "eligibilityRestricted": 0,
+    "eligibilityUnknown": 0,
+    "warningNotificationsSent": 0,
+    "errors": [
+      "BB portal did not serve the job list to this runner: F5 CAPTCHA challenge (support ID 2165770897560667639). This is expected on GitHub Actions (cloud IP) — the local Bangladeshi runner covers BB.",
+      "BSCS notice board did not serve content to this runner: F5 CAPTCHA challenge (support ID 2165770897684255670). Expected on cloud IPs — covered by the local runner."
+    ],
+    "bscsNotices": 0,
+    "bscsMatched": 0,
+    "matchedJobTitles": [],
+    "matchedJobPdfUrls": [],
+    "restrictedJobTitles": [],
+    "eligibilityUnknownJobTitles": []
+  },
+  {
     "id": "scrape_1793425512264",
     "timestamp": "2026-10-31T05:45:12.264Z",
     "status": "completed",
@@ -2600,26 +2629,6 @@
     ],
     "bscsNotices": 0,
     "bscsMatched": 0,
-    "matchedJobTitles": [],
-    "matchedJobPdfUrls": []
-  },
-  {
-    "id": "scrape_1792215910573",
-    "timestamp": "2026-10-17T05:45:10.573Z",
-    "status": "completed",
-    "dryRun": false,
-    "durationSeconds": 4,
-    "circularsScanned": 0,
-    "totalPostsFound": 19,
-    "matchedPosts": 1,
-    "newMatchingPosts": 0,
-    "notificationsSent": 0,
-    "bbJobsFound": 19,
-    "bbMatchedPosts": 1,
-    "bbNewMatches": 0,
-    "errors": [],
-    "bscsNotices": 14,
-    "bscsMatched": 2,
     "matchedJobTitles": [],
     "matchedJobPdfUrls": []
   }
