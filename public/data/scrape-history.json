@@ -1,5 +1,34 @@
 [
   {
+    "id": "scrape_1793887191204",
+    "timestamp": "2026-11-05T13:59:51.204Z",
+    "status": "completed",
+    "dryRun": false,
+    "durationSeconds": 304,
+    "circularsScanned": 31,
+    "totalPostsFound": 209,
+    "matchedPosts": 3,
+    "newMatchingPosts": 0,
+    "notificationsSent": 0,
+    "bbJobsFound": 0,
+    "bbMatchedPosts": 0,
+    "bbNewMatches": 0,
+    "eligibilityChecked": 0,
+    "eligibilityRestricted": 0,
+    "eligibilityUnknown": 0,
+    "warningNotificationsSent": 0,
+    "errors": [
+      "BB portal did not serve the job list to this runner: F5 CAPTCHA challenge (support ID 2165770898331721236). This is expected on GitHub Actions (cloud IP) — the local Bangladeshi runner covers BB.",
+      "BSCS notice board did not serve content to this runner: F5 CAPTCHA challenge (support ID 2165770898331722612). Expected on cloud IPs — covered by the local runner."
+    ],
+    "bscsNotices": 0,
+    "bscsMatched": 0,
+    "matchedJobTitles": [],
+    "matchedJobPdfUrls": [],
+    "restrictedJobTitles": [],
+    "eligibilityUnknownJobTitles": []
+  },
+  {
     "id": "scrape_1793860388425",
     "timestamp": "2026-11-05T06:33:08.425Z",
     "status": "completed",
@@ -2757,29 +2786,6 @@
     "errors": [],
     "bscsNotices": 13,
     "bscsMatched": 1,
-    "matchedJobTitles": [],
-    "matchedJobPdfUrls": []
-  },
-  {
-    "id": "scrape_1792530997827",
-    "timestamp": "2026-10-20T21:16:37.827Z",
-    "status": "completed",
-    "dryRun": false,
-    "durationSeconds": 317,
-    "circularsScanned": 33,
-    "totalPostsFound": 204,
-    "matchedPosts": 5,
-    "newMatchingPosts": 0,
-    "notificationsSent": 0,
-    "bbJobsFound": 0,
-    "bbMatchedPosts": 0,
-    "bbNewMatches": 0,
-    "errors": [
-      "BB portal did not serve the job list to this runner: F5 CAPTCHA challenge (support ID 9697294390251851894). This is expected on GitHub Actions (cloud IP) — the local Bangladeshi runner covers BB.",
-      "BSCS notice board did not serve content to this runner: F5 CAPTCHA challenge (support ID 9697294389649426615). Expected on cloud IPs — covered by the local runner."
-    ],
-    "bscsNotices": 0,
-    "bscsMatched": 0,
     "matchedJobTitles": [],
     "matchedJobPdfUrls": []
   }
