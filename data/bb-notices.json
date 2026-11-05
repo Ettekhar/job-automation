@@ -1,5 +1,18 @@
 [
   {
+    "id": "BSCS-25117-written-exam",
+    "jobId": "25117",
+    "source": "bscs",
+    "circularFor": "Written Exam",
+    "title": "Schedule of Written Test and Exam Content with Mark Distribution for the Post of Officer (Law) (Job ID: 25117) (Grade-10) of Basic Bank PLC.",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261105_bscs_356_1793861927.pdf",
+    "publishDate": "05/11/2026",
+    "closeDate": "14/11/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-11-05T11:45:11.094Z"
+  },
+  {
     "id": "BSCS-25111-viva",
     "jobId": "25111",
     "source": "bscs",
@@ -10,7 +23,7 @@
     "closeDate": "07/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.357Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-25121-viva",
@@ -23,7 +36,7 @@
     "closeDate": "06/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.380Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-26101-mcq",
@@ -36,7 +49,7 @@
     "closeDate": "28/10/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.380Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-25103-viva",
@@ -49,7 +62,7 @@
     "closeDate": "21/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.381Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-26103-admit-card",
@@ -62,7 +75,7 @@
     "closeDate": "10/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.381Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-25112-written-exam",
@@ -75,7 +88,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.381Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-25113-written-exam",
@@ -88,7 +101,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.381Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-25101-selected-candidate",
@@ -101,7 +114,7 @@
     "closeDate": "29/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.381Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -114,7 +127,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.381Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -127,7 +140,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.381Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -140,6 +153,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-05T06:33:08.381Z"
+    "scrapedAt": "2026-11-05T11:45:11.103Z"
   }
 ]
