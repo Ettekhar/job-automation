@@ -12,7 +12,7 @@
       "closeDate": "14/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.914Z"
+      "scrapedAt": "2026-11-06T23:45:13.563Z"
     },
     {
       "id": "BSCS-25111-viva",
@@ -25,20 +25,7 @@
       "closeDate": "07/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.928Z"
-    },
-    {
-      "id": "BSCS-25121-viva",
-      "jobId": "25121",
-      "source": "bscs",
-      "circularFor": "VIVA",
-      "title": "Schedule of Viva Voce for the Post of Principal Officer (PO-Doctor) (Job ID-25121) of Janata Bank PLC.",
-      "pdfUrl": "https://erecruitment.bb.org.bd/career/20261029_bscs_353_1793270885.pdf",
-      "publishDate": "29/10/2026",
-      "closeDate": "06/11/2026",
-      "isMatch": false,
-      "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.928Z"
+      "scrapedAt": "2026-11-06T23:45:13.576Z"
     },
     {
       "id": "BSCS-26101-mcq",
@@ -51,7 +38,7 @@
       "closeDate": "28/10/2027",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.928Z"
+      "scrapedAt": "2026-11-06T23:45:13.576Z"
     },
     {
       "id": "BSCS-25103-viva",
@@ -64,7 +51,7 @@
       "closeDate": "21/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.928Z"
+      "scrapedAt": "2026-11-06T23:45:13.576Z"
     },
     {
       "id": "BSCS-26103-admit-card",
@@ -77,7 +64,7 @@
       "closeDate": "10/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.928Z"
+      "scrapedAt": "2026-11-06T23:45:13.576Z"
     },
     {
       "id": "BSCS-25112-written-exam",
@@ -90,7 +77,7 @@
       "closeDate": "08/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.928Z"
+      "scrapedAt": "2026-11-06T23:45:13.576Z"
     },
     {
       "id": "BSCS-25113-written-exam",
@@ -103,7 +90,7 @@
       "closeDate": "08/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.928Z"
+      "scrapedAt": "2026-11-06T23:45:13.576Z"
     },
     {
       "id": "BSCS-25101-selected-candidate",
@@ -116,7 +103,7 @@
       "closeDate": "29/11/2026",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.928Z"
+      "scrapedAt": "2026-11-06T23:45:13.576Z"
     },
     {
       "id": "BSCS-25103-mcq",
@@ -129,7 +116,7 @@
       "closeDate": "21/06/2027",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.929Z"
+      "scrapedAt": "2026-11-06T23:45:13.576Z"
     },
     {
       "id": "BSCS-25102-mcq",
@@ -142,7 +129,7 @@
       "closeDate": "06/05/2027",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.929Z"
+      "scrapedAt": "2026-11-06T23:45:13.577Z"
     },
     {
       "id": "BSCS-25101-mcq",
@@ -155,9 +142,9 @@
       "closeDate": "05/05/2027",
       "isMatch": false,
       "matchedKeywords": [],
-      "scrapedAt": "2026-11-06T17:45:18.929Z"
+      "scrapedAt": "2026-11-06T23:45:13.577Z"
     }
   ],
-  "total": 12,
+  "total": 11,
   "matchedCount": 0
 }
