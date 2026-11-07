@@ -10,7 +10,7 @@
     "closeDate": "14/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.563Z"
+    "scrapedAt": "2026-11-07T05:45:14.434Z"
   },
   {
     "id": "BSCS-25111-viva",
@@ -23,7 +23,7 @@
     "closeDate": "07/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.576Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   },
   {
     "id": "BSCS-26101-mcq",
@@ -36,7 +36,7 @@
     "closeDate": "28/10/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.576Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   },
   {
     "id": "BSCS-25103-viva",
@@ -49,7 +49,7 @@
     "closeDate": "21/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.576Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   },
   {
     "id": "BSCS-26103-admit-card",
@@ -62,7 +62,7 @@
     "closeDate": "10/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.576Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   },
   {
     "id": "BSCS-25112-written-exam",
@@ -75,7 +75,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.576Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   },
   {
     "id": "BSCS-25113-written-exam",
@@ -88,7 +88,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.576Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   },
   {
     "id": "BSCS-25101-selected-candidate",
@@ -101,7 +101,7 @@
     "closeDate": "29/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.576Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -114,7 +114,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.576Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -127,7 +127,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.577Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -140,6 +140,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-06T23:45:13.577Z"
+    "scrapedAt": "2026-11-07T05:45:14.452Z"
   }
 ]

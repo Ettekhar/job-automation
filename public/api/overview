@@ -9,8 +9,8 @@
     "matchedNoticesCount": 0,
     "titanStatus": "Ready",
     "lastScrape": {
-      "id": "scrape_1794008713590",
-      "timestamp": "2026-11-06T23:45:13.590Z",
+      "id": "scrape_1794030314465",
+      "timestamp": "2026-11-07T05:45:14.465Z",
       "status": "completed",
       "dryRun": false,
       "durationSeconds": 4,
@@ -37,7 +37,7 @@
     "scheduler": {
       "enabled": true,
       "intervalMinutes": 360,
-      "nextRun": "2026-11-07T05:45:14.187Z",
+      "nextRun": "2026-11-07T11:45:15.075Z",
       "mode": "GitHub Actions (Every 6h)"
     }
   }
