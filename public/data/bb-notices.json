@@ -10,20 +10,7 @@
     "closeDate": "14/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.734Z"
-  },
-  {
-    "id": "BSCS-25111-viva",
-    "jobId": "25111",
-    "source": "bscs",
-    "circularFor": "VIVA",
-    "title": "Schedule of Viva Voce for the Post of Maintenance Engineer (Job ID-25111) of Anser VDP Union Bank .",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261029_bscs_352_1793261834.pdf",
-    "publishDate": "29/10/2026",
-    "closeDate": "07/11/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.743Z"
+    "scrapedAt": "2026-11-08T06:42:02.530Z"
   },
   {
     "id": "BSCS-26101-mcq",
@@ -36,7 +23,7 @@
     "closeDate": "28/10/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.743Z"
+    "scrapedAt": "2026-11-08T06:42:02.541Z"
   },
   {
     "id": "BSCS-25103-viva",
@@ -49,7 +36,7 @@
     "closeDate": "21/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.743Z"
+    "scrapedAt": "2026-11-08T06:42:02.541Z"
   },
   {
     "id": "BSCS-26103-admit-card",
@@ -62,7 +49,7 @@
     "closeDate": "10/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.743Z"
+    "scrapedAt": "2026-11-08T06:42:02.541Z"
   },
   {
     "id": "BSCS-25112-written-exam",
@@ -75,7 +62,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.743Z"
+    "scrapedAt": "2026-11-08T06:42:02.541Z"
   },
   {
     "id": "BSCS-25113-written-exam",
@@ -88,7 +75,7 @@
     "closeDate": "08/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.743Z"
+    "scrapedAt": "2026-11-08T06:42:02.541Z"
   },
   {
     "id": "BSCS-25101-selected-candidate",
@@ -101,7 +88,7 @@
     "closeDate": "29/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.743Z"
+    "scrapedAt": "2026-11-08T06:42:02.541Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -114,7 +101,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.744Z"
+    "scrapedAt": "2026-11-08T06:42:02.541Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -127,7 +114,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.744Z"
+    "scrapedAt": "2026-11-08T06:42:02.541Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -140,6 +127,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-07T11:45:23.744Z"
+    "scrapedAt": "2026-11-08T06:42:02.542Z"
   }
 ]
