@@ -1,5 +1,18 @@
 [
   {
+    "id": "BSCS-26101-mcq",
+    "jobId": "26101",
+    "source": "bscs",
+    "circularFor": "MCQ",
+    "title": "Schedule of the MCQ test and Exam Center list for the Post of Senior Officer (General) (Job ID: 26101) (Grade-9) of 09 Banks & 2 FIs..",
+    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261108_bscs_357_1794134950.pdf",
+    "publishDate": "08/11/2026",
+    "closeDate": "13/11/2026",
+    "isMatch": false,
+    "matchedKeywords": [],
+    "scrapedAt": "2026-11-08T18:06:47.434Z"
+  },
+  {
     "id": "BSCS-25117-written-exam",
     "jobId": "25117",
     "source": "bscs",
@@ -10,7 +23,7 @@
     "closeDate": "14/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.530Z"
+    "scrapedAt": "2026-11-08T18:06:47.796Z"
   },
   {
     "id": "BSCS-26101-mcq",
@@ -23,7 +36,7 @@
     "closeDate": "28/10/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.541Z"
+    "scrapedAt": "2026-11-08T18:06:47.796Z"
   },
   {
     "id": "BSCS-25103-viva",
@@ -36,7 +49,7 @@
     "closeDate": "21/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.541Z"
+    "scrapedAt": "2026-11-08T18:06:47.797Z"
   },
   {
     "id": "BSCS-26103-admit-card",
@@ -49,33 +62,7 @@
     "closeDate": "10/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.541Z"
-  },
-  {
-    "id": "BSCS-25112-written-exam",
-    "jobId": "25112",
-    "source": "bscs",
-    "circularFor": "Written Exam",
-    "title": "Schedule of Written Test and Exam Content with Mark Distribution for the Post of Assistant Engineer (Civil) (Job ID: 25112) (Grade-09) of 03 Banks.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261008_bscs_329_1791455713.pdf",
-    "publishDate": "08/10/2026",
-    "closeDate": "08/11/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.541Z"
-  },
-  {
-    "id": "BSCS-25113-written-exam",
-    "jobId": "25113",
-    "source": "bscs",
-    "circularFor": "Written Exam",
-    "title": "Schedule of Written Test and Exam Content with Mark Distribution for the Post of Sub-Assistant Engineer (Electrical) (Job ID: 25113) (Grade-10) of Sonali Bank PLC.",
-    "pdfUrl": "https://erecruitment.bb.org.bd/career/20261008_bscs_331_1791456562.pdf",
-    "publishDate": "08/10/2026",
-    "closeDate": "08/11/2026",
-    "isMatch": false,
-    "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.541Z"
+    "scrapedAt": "2026-11-08T18:06:47.797Z"
   },
   {
     "id": "BSCS-25101-selected-candidate",
@@ -88,7 +75,7 @@
     "closeDate": "29/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.541Z"
+    "scrapedAt": "2026-11-08T18:06:47.797Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -101,7 +88,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.541Z"
+    "scrapedAt": "2026-11-08T18:06:47.797Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -114,7 +101,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.541Z"
+    "scrapedAt": "2026-11-08T18:06:47.797Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -127,6 +114,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-08T06:42:02.542Z"
+    "scrapedAt": "2026-11-08T18:06:47.797Z"
   }
 ]
