@@ -10,7 +10,7 @@
     "closeDate": "13/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-09T18:01:41.964Z"
+    "scrapedAt": "2026-11-09T23:45:17.387Z"
   },
   {
     "id": "BSCS-25117-written-exam",
@@ -23,7 +23,7 @@
     "closeDate": "14/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-09T18:01:42.012Z"
+    "scrapedAt": "2026-11-09T23:45:17.396Z"
   },
   {
     "id": "BSCS-26101-mcq",
@@ -36,7 +36,7 @@
     "closeDate": "28/10/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-09T18:01:42.012Z"
+    "scrapedAt": "2026-11-09T23:45:17.396Z"
   },
   {
     "id": "BSCS-25103-viva",
@@ -49,7 +49,7 @@
     "closeDate": "21/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-09T18:01:42.013Z"
+    "scrapedAt": "2026-11-09T23:45:17.396Z"
   },
   {
     "id": "BSCS-26103-admit-card",
@@ -62,7 +62,7 @@
     "closeDate": "10/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-09T18:01:42.013Z"
+    "scrapedAt": "2026-11-09T23:45:17.396Z"
   },
   {
     "id": "BSCS-25101-selected-candidate",
@@ -75,7 +75,7 @@
     "closeDate": "29/11/2026",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-09T18:01:42.013Z"
+    "scrapedAt": "2026-11-09T23:45:17.396Z"
   },
   {
     "id": "BSCS-25103-mcq",
@@ -88,7 +88,7 @@
     "closeDate": "21/06/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-09T18:01:42.013Z"
+    "scrapedAt": "2026-11-09T23:45:17.396Z"
   },
   {
     "id": "BSCS-25102-mcq",
@@ -101,7 +101,7 @@
     "closeDate": "06/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-09T18:01:42.013Z"
+    "scrapedAt": "2026-11-09T23:45:17.396Z"
   },
   {
     "id": "BSCS-25101-mcq",
@@ -114,6 +114,6 @@
     "closeDate": "05/05/2027",
     "isMatch": false,
     "matchedKeywords": [],
-    "scrapedAt": "2026-11-09T18:01:42.014Z"
+    "scrapedAt": "2026-11-09T23:45:17.396Z"
   }
 ]
